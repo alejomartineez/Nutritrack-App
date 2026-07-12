@@ -1,0 +1,1028 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  Home, PlusCircle, TrendingUp, Settings, Droplet, Droplets, Trash2, X, Check,
+  ChevronRight, ChevronLeft, Sparkles, Lightbulb, Award, Plus, Minus,
+  Save, RotateCcw, Info, Utensils, Coffee,
+} from 'lucide-react';
+
+// ---------------------------------------------------------------------------
+// DATOS BASE DEL PLAN
+// ---------------------------------------------------------------------------
+
+const dateKeyOf = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+    d.getDate()
+  ).padStart(2, '0')}`;
+
+const TODAY_KEY = dateKeyOf(new Date());
+
+const DEFAULT_GOALS = { calories: 1610, protein: 116.5, carbs: 159, fat: 56.5, water: 2000 };
+const TOLERANCE = { calories: 100, protein: 10, carbs: 10, fat: 10 };
+const GLASS_ML = 250;
+
+const PLAN_CATALOG = {
+  desayuno: [
+    { id: 'd1', name: '2 Tostadas integrales + queso untable light', kcal: 180, p: 8, c: 24, f: 5 },
+    { id: 'd2', name: '2 Huevos revueltos o claras', kcal: 150, p: 14, c: 1, f: 10 },
+    { id: 'd3', name: 'Yogur descremado + granola', kcal: 160, p: 10, c: 20, f: 3 },
+    { id: 'd4', name: 'Panqueques de avena (2) + fruta', kcal: 220, p: 8, c: 30, f: 6 },
+    { id: 'd5', name: 'Tostadas integrales + huevo', kcal: 210, p: 12, c: 22, f: 8 },
+  ],
+  principal: [
+    { id: 'm1', name: 'Pollo grillado + arroz integral + ensalada verde', kcal: 420, p: 35, c: 40, f: 10 },
+    { id: 'm2', name: 'Carne magra + puré de batata + vegetales al vapor', kcal: 450, p: 32, c: 45, f: 12 },
+    { id: 'm3', name: 'Pescado al horno + quinoa + vegetales grillados', kcal: 400, p: 30, c: 38, f: 11 },
+    { id: 'm4', name: 'Tofu salteado + legumbres + vegetales salteados', kcal: 380, p: 22, c: 42, f: 9 },
+    { id: 'm5', name: 'Milanesa al horno + puré de calabaza + ensalada', kcal: 440, p: 30, c: 35, f: 15 },
+  ],
+  colacion: [
+    { id: 'co1', name: 'Fruta grupo A (manzana, pera, naranja)', kcal: 70, p: 1, c: 18, f: 0 },
+    { id: 'co2', name: 'Fruta grupo B (banana, uva, mango)', kcal: 100, p: 1, c: 25, f: 0 },
+    { id: 'co3', name: 'Yogur descremado', kcal: 80, p: 8, c: 10, f: 1 },
+    { id: 'co4', name: 'Barrita íntegra', kcal: 120, p: 4, c: 18, f: 4 },
+  ],
+};
+
+const MOMENTS = [
+  { key: 'desayuno', label: 'Desayuno', catalog: 'desayuno' },
+  { key: 'merienda', label: 'Merienda', catalog: 'desayuno' },
+  { key: 'principal', label: 'Almuerzo / Cena', catalog: 'principal' },
+  { key: 'colacion', label: 'Colación', catalog: 'colacion' },
+];
+
+const FREE_PRESETS = [
+  { id: 'f1', name: '1 Factura', kcal: 300, p: 5, c: 35, f: 15 },
+  { id: 'f2', name: '2 Porciones de pizza', kcal: 560, p: 22, c: 60, f: 24 },
+  { id: 'f3', name: '3 Empanadas', kcal: 450, p: 18, c: 45, f: 21 },
+  { id: 'f4', name: '1 Bocha de helado', kcal: 150, p: 2, c: 20, f: 7 },
+  { id: 'f5', name: 'Lomito mediano', kcal: 650, p: 35, c: 55, f: 30 },
+  { id: 'f6', name: '1 Vaso de cerveza / vino', kcal: 150, p: 1, c: 12, f: 0 },
+];
+
+const TIPS = [
+  'Acompañá cada comida principal con 2 vasos de agua.',
+  'Priorizá masticar despacio y evitar distracciones (celular, TV) al comer.',
+  'Si comés algo fuera de plan, no te saltees la próxima comida: volvé a tu pauta con normalidad.',
+  'Guardá porciones extra de comida en el freezer para no improvisar en días con poco tiempo.',
+  'Las proteínas en cada comida ayudan a sostener la saciedad durante más horas.',
+  'Un puñado de frutos secos puede reemplazar una colación si no tenés fruta a mano.',
+  'Dormir bien también es parte del plan: el descanso influye en tus resultados.',
+  'Planificá el menú semanal un día antes para reducir decisiones de último momento.',
+  'Serví tu plato de a poco y esperá unos minutos antes de repetir.',
+  'Llevá siempre una botella de agua a mano para llegar más fácil a tu meta diaria.',
+];
+
+const emptyLog = () => ({ water: 0, planMeals: [], freeMeals: [] });
+
+const nowHM = () =>
+  new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+
+const round1 = (n) => Math.round(n * 10) / 10;
+
+// ---------------------------------------------------------------------------
+// COMPONENTE PRINCIPAL
+// ---------------------------------------------------------------------------
+
+export default function NutriTrackApp() {
+  const [activeTab, setActiveTab] = useState('dia');
+  const [showSettings, setShowSettings] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  const [goals, setGoals] = useState(DEFAULT_GOALS);
+  const [log, setLog] = useState(emptyLog());
+  const [tipIndex, setTipIndex] = useState(0);
+
+  const [selectedMoment, setSelectedMoment] = useState('desayuno');
+  const [registerMode, setRegisterMode] = useState('plan'); // 'plan' | 'libre'
+  const [customName, setCustomName] = useState('');
+  const [customKcal, setCustomKcal] = useState('');
+  const [customP, setCustomP] = useState('');
+  const [customC, setCustomC] = useState('');
+  const [customF, setCustomF] = useState('');
+  const [showCustomForm, setShowCustomForm] = useState(false);
+
+  const [tempGoals, setTempGoals] = useState(DEFAULT_GOALS);
+  const [confirmMsg, setConfirmMsg] = useState('');
+
+  // Cargar datos guardados al iniciar
+  useEffect(() => {
+    try {
+      const storedGoals = localStorage.getItem('nutri_goals');
+      if (storedGoals) {
+        const parsed = JSON.parse(storedGoals);
+        setGoals(parsed);
+        setTempGoals(parsed);
+      }
+    } catch (e) {
+      // Si falla la lectura, se conservan los valores predeterminados
+    }
+    try {
+      const storedLog = localStorage.getItem(`nutri_log_${TODAY_KEY}`);
+      if (storedLog) setLog(JSON.parse(storedLog));
+    } catch (e) {
+      // Si falla la lectura, se conserva el registro vacío
+    }
+    setLoaded(true);
+  }, []);
+
+  // Persistir registro diario
+  useEffect(() => {
+    if (!loaded) return;
+    try {
+      localStorage.setItem(`nutri_log_${TODAY_KEY}`, JSON.stringify(log));
+    } catch (e) {
+      // almacenamiento no disponible, se continúa sin persistir
+    }
+  }, [log, loaded]);
+
+  // Persistir metas
+  useEffect(() => {
+    if (!loaded) return;
+    try {
+      localStorage.setItem('nutri_goals', JSON.stringify(goals));
+    } catch (e) {
+      // almacenamiento no disponible, se continúa sin persistir
+    }
+  }, [goals, loaded]);
+
+  // Totales del día
+  const totals = useMemo(() => {
+    const all = [...log.planMeals, ...log.freeMeals];
+    return all.reduce(
+      (acc, m) => ({
+        kcal: acc.kcal + m.kcal,
+        p: acc.p + m.p,
+        c: acc.c + m.c,
+        f: acc.f + m.f,
+      }),
+      { kcal: 0, p: 0, c: 0, f: 0 }
+    );
+  }, [log]);
+
+  const waterGlasses = Math.round(log.water / GLASS_ML);
+  const waterGoalGlasses = Math.max(1, Math.round(goals.water / GLASS_ML));
+
+  // ------------------------- Acciones sobre el registro -------------------
+  const addPlanMeal = (moment, item) => {
+    const entry = {
+      id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      moment,
+      name: item.name,
+      kcal: item.kcal,
+      p: item.p,
+      c: item.c,
+      f: item.f,
+      time: nowHM(),
+    };
+    setLog((prev) => ({ ...prev, planMeals: [...prev.planMeals, entry] }));
+    flashConfirm('Comida agregada a tu plan de hoy ✓');
+  };
+
+  const addFreeMeal = (item) => {
+    const entry = {
+      id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      name: item.name,
+      kcal: item.kcal,
+      p: item.p,
+      c: item.c,
+      f: item.f,
+      time: nowHM(),
+    };
+    setLog((prev) => ({ ...prev, freeMeals: [...prev.freeMeals, entry] }));
+    flashConfirm('Registrado fuera de plan, ¡disfrutalo con calma!');
+  };
+
+  const removeEntry = (id, isPlan) => {
+    setLog((prev) => ({
+      ...prev,
+      planMeals: isPlan ? prev.planMeals.filter((m) => m.id !== id) : prev.planMeals,
+      freeMeals: !isPlan ? prev.freeMeals.filter((m) => m.id !== id) : prev.freeMeals,
+    }));
+  };
+
+  const addWater = (deltaGlasses) => {
+    setLog((prev) => ({
+      ...prev,
+      water: Math.max(0, prev.water + deltaGlasses * GLASS_ML),
+    }));
+  };
+
+  const flashConfirm = (text) => {
+    setConfirmMsg(text);
+    setTimeout(() => setConfirmMsg(''), 2200);
+  };
+
+  const submitCustomFree = () => {
+    const kcalNum = parseFloat(customKcal);
+    if (!customName.trim() || isNaN(kcalNum) || kcalNum <= 0) return;
+    addFreeMeal({
+      name: customName.trim(),
+      kcal: kcalNum,
+      p: parseFloat(customP) || 0,
+      c: parseFloat(customC) || 0,
+      f: parseFloat(customF) || 0,
+    });
+    setCustomName('');
+    setCustomKcal('');
+    setCustomP('');
+    setCustomC('');
+    setCustomF('');
+    setShowCustomForm(false);
+  };
+
+  // ------------------------- Ajustes --------------------------------------
+  const openSettings = () => {
+    setTempGoals(goals);
+    setShowSettings(true);
+  };
+
+  const saveSettings = () => {
+    const cleaned = {
+      calories: parseFloat(tempGoals.calories) || DEFAULT_GOALS.calories,
+      protein: parseFloat(tempGoals.protein) || DEFAULT_GOALS.protein,
+      carbs: parseFloat(tempGoals.carbs) || DEFAULT_GOALS.carbs,
+      fat: parseFloat(tempGoals.fat) || DEFAULT_GOALS.fat,
+      water: parseFloat(tempGoals.water) || DEFAULT_GOALS.water,
+    };
+    setGoals(cleaned);
+    setShowSettings(false);
+    flashConfirm('Metas actualizadas ✓');
+  };
+
+  const resetSettings = () => {
+    setTempGoals(DEFAULT_GOALS);
+  };
+
+  // ------------------------- Feedback dinámico ----------------------------
+  const feedback = useMemo(() => {
+    const msgs = [];
+    const hasAny = log.planMeals.length > 0 || log.freeMeals.length > 0;
+    const withinKcal = Math.abs(totals.kcal - goals.calories) <= TOLERANCE.calories;
+    const withinP = Math.abs(totals.p - goals.protein) <= TOLERANCE.protein;
+    const withinC = Math.abs(totals.c - goals.carbs) <= TOLERANCE.carbs;
+    const withinF = Math.abs(totals.f - goals.fat) <= TOLERANCE.fat;
+
+    if (hasAny && withinKcal && withinP && withinC && withinF) {
+      msgs.push({
+        type: 'positive',
+        text: '¡Excelente adherencia hoy! Vas por muy buen camino para tus metas de composición corporal.',
+      });
+    }
+
+    if (log.freeMeals.length > 0) {
+      msgs.push({
+        type: 'free',
+        text: '¡Disfrutalo! Recordá que el balance y el control de la porción son la clave de la sostenibilidad a largo plazo.',
+      });
+    }
+
+    if (totals.p < goals.protein - TOLERANCE.protein) {
+      msgs.push({
+        type: 'reminder',
+        text: 'Estás un poco abajo en tus proteínas de hoy, ¿sumamos un huevo o yogur en la merienda?',
+      });
+    }
+
+    if (log.water < goals.water - GLASS_ML * 2) {
+      msgs.push({
+        type: 'water',
+        text: 'Todavía te faltan varios vasos de agua para llegar a tu meta diaria de hoy.',
+      });
+    }
+
+    if (!hasAny) {
+      msgs.push({
+        type: 'neutral',
+        text: 'Registrá tus comidas de hoy para ver tu progreso y recibir feedback personalizado.',
+      });
+    }
+    return msgs;
+  }, [totals, goals, log]);
+
+  // ------------------------- Anillo de composición ------------------------
+  const ring = useMemo(() => {
+    const size = 220;
+    const center = size / 2;
+    const rOuter = 96;
+    const rInner = 66;
+    const swOuter = 12;
+    const swInner = 24;
+    const cOuter = 2 * Math.PI * rOuter;
+    const cInner = 2 * Math.PI * rInner;
+
+    const pctCalories = Math.min(totals.kcal / (goals.calories || 1), 1);
+    const overshoot = totals.kcal > goals.calories + TOLERANCE.calories;
+
+    const pKcal = totals.p * 4;
+    const cKcal = totals.c * 4;
+    const fKcal = totals.f * 9;
+    const macroTotal = pKcal + cKcal + fKcal;
+
+    const segments =
+      macroTotal > 0
+        ? [
+            { color: '#10b981', pct: pKcal / macroTotal }, // proteína - emerald-500
+            { color: '#2dd4bf', pct: cKcal / macroTotal }, // carbohidratos - teal-400
+            { color: '#94a3b8', pct: fKcal / macroTotal }, // grasas - slate-400
+          ]
+        : [];
+
+    let cumulative = 0;
+    const arcs = segments.map((seg) => {
+      const len = cInner * seg.pct;
+      const dasharray = `${len} ${cInner - len}`;
+      const dashoffset = -cumulative * cInner;
+      cumulative += seg.pct;
+      return { ...seg, dasharray, dashoffset };
+    });
+
+    return { size, center, rOuter, rInner, swOuter, swInner, cOuter, pctCalories, overshoot, arcs };
+  }, [totals, goals]);
+
+  // ------------------------- Últimos 7 días (progreso) --------------------
+  const weekStats = useMemo(() => {
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const key = dateKeyOf(d);
+      let kcal = 0;
+      try {
+        const raw = localStorage.getItem(`nutri_log_${key}`);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const all = [...(parsed.planMeals || []), ...(parsed.freeMeals || [])];
+          kcal = all.reduce((s, m) => s + m.kcal, 0);
+        }
+      } catch (e) {
+        kcal = 0;
+      }
+      const label = d.toLocaleDateString('es-AR', { weekday: 'short' }).slice(0, 3);
+      days.push({ key, label, kcal });
+    }
+    return days;
+  }, [log, loaded]);
+
+  // ---------------------------------------------------------------------
+  // RENDER
+  // ---------------------------------------------------------------------
+
+  const macroRows = [
+    { label: 'Proteínas', value: totals.p, goal: goals.protein, unit: 'g', tol: TOLERANCE.protein, color: 'bg-emerald-500' },
+    { label: 'Carbohidratos', value: totals.c, goal: goals.carbs, unit: 'g', tol: TOLERANCE.carbs, color: 'bg-teal-400' },
+    { label: 'Grasas', value: totals.f, goal: goals.fat, unit: 'g', tol: TOLERANCE.fat, color: 'bg-slate-400' },
+  ];
+
+  return (
+    <div className="min-h-screen w-full bg-slate-900 text-slate-100 flex justify-center">
+      <div className="w-full max-w-md flex flex-col min-h-screen relative">
+        {/* HEADER */}
+        <header className="px-5 pt-6 pb-4 flex items-center justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold">Hoy</p>
+            <h1 className="text-2xl font-black tracking-tight bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">
+              Mi Plan Nutricional
+            </h1>
+          </div>
+          <button
+            onClick={openSettings}
+            aria-label="Ajustes del plan"
+            className="p-2.5 rounded-full bg-slate-800 border border-slate-700 hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-emerald-400 transition-colors"
+          >
+            <Settings className="w-5 h-5 text-slate-300" />
+          </button>
+        </header>
+
+        {/* CONFIRMACIÓN FLOTANTE */}
+        {confirmMsg && (
+          <div className="mx-5 mb-2 -mt-1 px-4 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-sm flex items-center gap-2 animate-pulse">
+            <Check className="w-4 h-4 shrink-0" />
+            <span>{confirmMsg}</span>
+          </div>
+        )}
+
+        {/* CONTENIDO */}
+        <main className="flex-1 overflow-y-auto px-5 pb-28 space-y-5">
+          {activeTab === 'dia' && (
+            <TabMiDia
+              ring={ring}
+              totals={totals}
+              goals={goals}
+              macroRows={macroRows}
+              feedback={feedback}
+              waterGlasses={waterGlasses}
+              waterGoalGlasses={waterGoalGlasses}
+              addWater={addWater}
+              log={log}
+              removeEntry={removeEntry}
+            />
+          )}
+
+          {activeTab === 'registrar' && (
+            <TabRegistrar
+              registerMode={registerMode}
+              setRegisterMode={setRegisterMode}
+              selectedMoment={selectedMoment}
+              setSelectedMoment={setSelectedMoment}
+              addPlanMeal={addPlanMeal}
+              addFreeMeal={addFreeMeal}
+              showCustomForm={showCustomForm}
+              setShowCustomForm={setShowCustomForm}
+              customName={customName}
+              setCustomName={setCustomName}
+              customKcal={customKcal}
+              setCustomKcal={setCustomKcal}
+              customP={customP}
+              setCustomP={setCustomP}
+              customC={customC}
+              setCustomC={setCustomC}
+              customF={customF}
+              setCustomF={setCustomF}
+              submitCustomFree={submitCustomFree}
+            />
+          )}
+
+          {activeTab === 'progreso' && (
+            <TabProgreso
+              weekStats={weekStats}
+              goals={goals}
+              tipIndex={tipIndex}
+              setTipIndex={setTipIndex}
+            />
+          )}
+        </main>
+
+        {/* NAV INFERIOR */}
+        <nav className="fixed bottom-0 inset-x-0 flex justify-center pointer-events-none">
+          <div className="w-full max-w-md bg-slate-800/95 backdrop-blur border-t border-slate-700 px-4 pt-2 pb-5 flex justify-around pointer-events-auto">
+            <NavButton icon={Home} label="Mi Día" active={activeTab === 'dia'} onClick={() => setActiveTab('dia')} />
+            <NavButton icon={PlusCircle} label="Registrar" active={activeTab === 'registrar'} onClick={() => setActiveTab('registrar')} />
+            <NavButton icon={TrendingUp} label="Progreso" active={activeTab === 'progreso'} onClick={() => setActiveTab('progreso')} />
+          </div>
+        </nav>
+
+        {/* MODAL DE AJUSTES */}
+        {showSettings && (
+          <SettingsModal
+            tempGoals={tempGoals}
+            setTempGoals={setTempGoals}
+            onSave={saveSettings}
+            onCancel={() => setShowSettings(false)}
+            onReset={resetSettings}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// SUBCOMPONENTES DE UI
+// ---------------------------------------------------------------------------
+
+function NavButton({ icon: Icon, label, active, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex flex-col items-center gap-1 px-4 py-1 rounded-xl focus-visible:ring-2 focus-visible:ring-emerald-400 transition-colors ${
+        active ? 'text-emerald-400' : 'text-slate-500'
+      }`}
+    >
+      <Icon className="w-5 h-5" />
+      <span className="text-[11px] font-medium">{label}</span>
+    </button>
+  );
+}
+
+function ProgressBar({ pct, colorClass }) {
+  const width = Math.min(100, Math.max(0, pct * 100));
+  return (
+    <div className="h-2 w-full rounded-full bg-slate-700 overflow-hidden">
+      <div className={`h-full rounded-full ${colorClass} transition-all duration-500`} style={{ width: `${width}%` }} />
+    </div>
+  );
+}
+
+function FeedbackBanner({ feedback }) {
+  const styleFor = (type) => {
+    switch (type) {
+      case 'positive':
+        return { wrap: 'bg-emerald-500/10 border-emerald-500/30', icon: Award, iconClass: 'text-emerald-400' };
+      case 'free':
+        return { wrap: 'bg-amber-500/10 border-amber-500/30', icon: Sparkles, iconClass: 'text-amber-400' };
+      case 'reminder':
+        return { wrap: 'bg-teal-500/10 border-teal-500/30', icon: Info, iconClass: 'text-teal-300' };
+      case 'water':
+        return { wrap: 'bg-cyan-500/10 border-cyan-500/30', icon: Droplet, iconClass: 'text-cyan-300' };
+      default:
+        return { wrap: 'bg-slate-800 border-slate-700', icon: Info, iconClass: 'text-slate-400' };
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      {feedback.map((f, i) => {
+        const s = styleFor(f.type);
+        const Icon = s.icon;
+        return (
+          <div key={i} className={`rounded-2xl border px-4 py-3 flex items-start gap-3 ${s.wrap}`}>
+            <Icon className={`w-5 h-5 mt-0.5 shrink-0 ${s.iconClass}`} />
+            <p className="text-sm text-slate-200 leading-snug">{f.text}</p>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function TabMiDia({
+  ring,
+  totals,
+  goals,
+  macroRows,
+  feedback,
+  waterGlasses,
+  waterGoalGlasses,
+  addWater,
+  log,
+  removeEntry,
+}) {
+  const kcalColor = ring.overshoot ? '#f59e0b' : '#10b981';
+  const statusText = ring.overshoot
+    ? 'Por encima de tu meta de hoy'
+    : Math.abs(totals.kcal - goals.calories) <= TOLERANCE_CAL
+    ? 'Dentro de tu rango objetivo'
+    : 'Por debajo de tu meta de hoy';
+
+  const allEntries = [
+    ...log.planMeals.map((m) => ({ ...m, kind: 'plan' })),
+    ...log.freeMeals.map((m) => ({ ...m, kind: 'free' })),
+  ].sort((a, b) => (a.time > b.time ? 1 : -1));
+
+  return (
+    <div className="space-y-5">
+      {/* ANILLO DE COMPOSICIÓN */}
+      <div className="rounded-3xl bg-slate-800/60 border border-slate-700 p-5 flex flex-col items-center">
+        <svg width={ring.size} height={ring.size} viewBox={`0 0 ${ring.size} ${ring.size}`}>
+          {/* track exterior */}
+          <circle
+            cx={ring.center}
+            cy={ring.center}
+            r={ring.rOuter}
+            fill="none"
+            stroke="#334155"
+            strokeWidth={ring.swOuter}
+          />
+          {/* progreso calorías */}
+          <circle
+            cx={ring.center}
+            cy={ring.center}
+            r={ring.rOuter}
+            fill="none"
+            stroke={kcalColor}
+            strokeWidth={ring.swOuter}
+            strokeDasharray={`${ring.cOuter * ring.pctCalories} ${ring.cOuter}`}
+            strokeLinecap="round"
+            transform={`rotate(-90 ${ring.center} ${ring.center})`}
+            style={{ transition: 'stroke-dasharray 0.6s ease' }}
+          />
+          {/* track interior */}
+          <circle cx={ring.center} cy={ring.center} r={ring.rInner} fill="none" stroke="#1e293b" strokeWidth={ring.swInner} />
+          {/* segmentos de composición (donut) */}
+          {ring.arcs.map((seg, i) => (
+            <circle
+              key={i}
+              cx={ring.center}
+              cy={ring.center}
+              r={ring.rInner}
+              fill="none"
+              stroke={seg.color}
+              strokeWidth={ring.swInner}
+              strokeDasharray={seg.dasharray}
+              strokeDashoffset={seg.dashoffset}
+              transform={`rotate(-90 ${ring.center} ${ring.center})`}
+            />
+          ))}
+          <text x={ring.center} y={ring.center - 6} textAnchor="middle" className="fill-slate-100" style={{ fontSize: 30, fontWeight: 800, fontFamily: 'ui-monospace, monospace' }}>
+            {Math.round(totals.kcal)}
+          </text>
+          <text x={ring.center} y={ring.center + 18} textAnchor="middle" className="fill-slate-400" style={{ fontSize: 12, fontWeight: 600 }}>
+            de {Math.round(goals.calories)} kcal
+          </text>
+        </svg>
+        <p className={`mt-1 text-xs font-semibold ${ring.overshoot ? 'text-amber-400' : 'text-emerald-400'}`}>{statusText}</p>
+
+        <div className="w-full mt-4 space-y-3">
+          {macroRows.map((m) => (
+            <div key={m.label}>
+              <div className="flex justify-between text-xs mb-1">
+                <span className="text-slate-400 font-medium">{m.label}</span>
+                <span className="font-mono text-slate-300">
+                  {round1(m.value)} / {round1(m.goal)} {m.unit}
+                </span>
+              </div>
+              <ProgressBar pct={m.value / (m.goal || 1)} colorClass={m.color} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* AGUA */}
+      <div className="rounded-3xl bg-slate-800/60 border border-slate-700 p-5">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Droplets className="w-5 h-5 text-cyan-300" />
+            <span className="font-semibold text-slate-200">Agua de hoy</span>
+          </div>
+          <span className="font-mono text-sm text-cyan-200">
+            {waterGlasses}/{waterGoalGlasses} vasos
+          </span>
+        </div>
+        <ProgressBar pct={log.water / (goals.water || 1)} colorClass="bg-cyan-400" />
+        <div className="flex items-center justify-center gap-4 mt-4">
+          <button
+            onClick={() => addWater(-1)}
+            aria-label="Quitar un vaso de agua"
+            className="p-3 rounded-full bg-slate-700 hover:bg-slate-600 focus-visible:ring-2 focus-visible:ring-cyan-400"
+          >
+            <Minus className="w-5 h-5 text-slate-200" />
+          </button>
+          <div className="flex items-center gap-1 text-cyan-300">
+            <Droplet className="w-6 h-6" />
+            <span className="font-mono text-lg font-bold">{log.water} ml</span>
+          </div>
+          <button
+            onClick={() => addWater(1)}
+            aria-label="Agregar un vaso de agua"
+            className="p-3 rounded-full bg-cyan-500/20 border border-cyan-400/40 hover:bg-cyan-500/30 focus-visible:ring-2 focus-visible:ring-cyan-400"
+          >
+            <Plus className="w-5 h-5 text-cyan-300" />
+          </button>
+        </div>
+      </div>
+
+      {/* FEEDBACK */}
+      <FeedbackBanner feedback={feedback} />
+
+      {/* HISTORIAL DEL DÍA */}
+      <div>
+        <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wide mb-2">Registro de hoy</h2>
+        {allEntries.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-700 p-6 text-center text-slate-500 text-sm">
+            Todavía no registraste comidas hoy. Andá a la pestaña "Registrar" para empezar.
+          </div>
+        ) : (
+          <ul className="space-y-2">
+            {allEntries.map((entry) => (
+              <li
+                key={entry.id}
+                className={`rounded-2xl border p-3 flex items-center justify-between gap-3 ${
+                  entry.kind === 'plan' ? 'bg-emerald-500/5 border-emerald-500/25' : 'bg-amber-500/5 border-amber-500/25'
+                }`}
+              >
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                        entry.kind === 'plan' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'
+                      }`}
+                    >
+                      {entry.kind === 'plan' ? 'Plan oficial' : 'Fuera de plan'}
+                    </span>
+                    <span className="text-[11px] text-slate-500">{entry.time}</span>
+                  </div>
+                  <p className="text-sm text-slate-200 truncate mt-0.5">{entry.name}</p>
+                  <p className="text-xs text-slate-400 font-mono mt-0.5">
+                    {Math.round(entry.kcal)} kcal · P {round1(entry.p)}g · C {round1(entry.c)}g · G {round1(entry.f)}g
+                  </p>
+                </div>
+                <button
+                  onClick={() => removeEntry(entry.id, entry.kind === 'plan')}
+                  aria-label="Eliminar registro"
+                  className="p-2 rounded-full hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-slate-400 shrink-0"
+                >
+                  <Trash2 className="w-4 h-4 text-slate-500" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const TOLERANCE_CAL = TOLERANCE.calories;
+
+function TabRegistrar({
+  registerMode,
+  setRegisterMode,
+  selectedMoment,
+  setSelectedMoment,
+  addPlanMeal,
+  addFreeMeal,
+  showCustomForm,
+  setShowCustomForm,
+  customName,
+  setCustomName,
+  customKcal,
+  setCustomKcal,
+  customP,
+  setCustomP,
+  customC,
+  setCustomC,
+  customF,
+  setCustomF,
+  submitCustomFree,
+}) {
+  const momentData = MOMENTS.find((m) => m.key === selectedMoment);
+  const options = PLAN_CATALOG[momentData.catalog];
+
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-2 gap-2 bg-slate-800 border border-slate-700 rounded-2xl p-1">
+        <button
+          onClick={() => setRegisterMode('plan')}
+          className={`py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors ${
+            registerMode === 'plan' ? 'bg-emerald-500 text-slate-900' : 'text-slate-400'
+          }`}
+        >
+          <Utensils className="w-4 h-4" /> Plan Oficial
+        </button>
+        <button
+          onClick={() => setRegisterMode('libre')}
+          className={`py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors ${
+            registerMode === 'libre' ? 'bg-amber-500 text-slate-900' : 'text-slate-400'
+          }`}
+        >
+          <Coffee className="w-4 h-4" /> Fuera de Plan
+        </button>
+      </div>
+
+      {registerMode === 'plan' && (
+        <div className="space-y-4">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold mb-2">Momento del día</p>
+            <div className="flex gap-2 flex-wrap">
+              {MOMENTS.map((m) => (
+                <button
+                  key={m.key}
+                  onClick={() => setSelectedMoment(m.key)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                    selectedMoment === m.key
+                      ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
+                      : 'bg-slate-800 border-slate-700 text-slate-400'
+                  }`}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            {options.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => addPlanMeal(momentData.label, item)}
+                className="w-full text-left rounded-2xl bg-slate-800/60 border border-slate-700 p-4 flex items-center justify-between gap-3 hover:border-emerald-500/50 hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-emerald-400 transition-colors"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-slate-200">{item.name}</p>
+                  <p className="text-xs text-slate-500 font-mono mt-0.5">
+                    {item.kcal} kcal · P {item.p}g · C {item.c}g · G {item.f}g
+                  </p>
+                </div>
+                <PlusCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {registerMode === 'libre' && (
+        <div className="space-y-4">
+          <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">Gustos frecuentes</p>
+          <div className="space-y-2">
+            {FREE_PRESETS.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => addFreeMeal(item)}
+                className="w-full text-left rounded-2xl bg-slate-800/60 border border-slate-700 p-4 flex items-center justify-between gap-3 hover:border-amber-500/50 hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-amber-400 transition-colors"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-slate-200">{item.name}</p>
+                  <p className="text-xs text-slate-500 font-mono mt-0.5">
+                    {item.kcal} kcal · P {item.p}g · C {item.c}g · G {item.f}g
+                  </p>
+                </div>
+                <PlusCircle className="w-5 h-5 text-amber-400 shrink-0" />
+              </button>
+            ))}
+          </div>
+
+          {!showCustomForm ? (
+            <button
+              onClick={() => setShowCustomForm(true)}
+              className="w-full rounded-2xl border border-dashed border-amber-500/40 text-amber-300 py-3 text-sm font-semibold hover:bg-amber-500/5 focus-visible:ring-2 focus-visible:ring-amber-400"
+            >
+              + Cargar otra comida fuera de plan
+            </button>
+          ) : (
+            <div className="rounded-2xl bg-slate-800/60 border border-amber-500/30 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-amber-300">Nueva comida libre</p>
+                <button onClick={() => setShowCustomForm(false)} aria-label="Cerrar formulario">
+                  <X className="w-4 h-4 text-slate-400" />
+                </button>
+              </div>
+              <input
+                value={customName}
+                onChange={(e) => setCustomName(e.target.value)}
+                placeholder="¿Qué comiste?"
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400"
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  value={customKcal}
+                  onChange={(e) => setCustomKcal(e.target.value)}
+                  placeholder="Kcal"
+                  inputMode="decimal"
+                  className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                />
+                <input
+                  value={customP}
+                  onChange={(e) => setCustomP(e.target.value)}
+                  placeholder="Proteínas (g)"
+                  inputMode="decimal"
+                  className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                />
+                <input
+                  value={customC}
+                  onChange={(e) => setCustomC(e.target.value)}
+                  placeholder="Carbohidratos (g)"
+                  inputMode="decimal"
+                  className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                />
+                <input
+                  value={customF}
+                  onChange={(e) => setCustomF(e.target.value)}
+                  placeholder="Grasas (g)"
+                  inputMode="decimal"
+                  className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                />
+              </div>
+              <button
+                onClick={submitCustomFree}
+                className="w-full rounded-xl bg-amber-500 text-slate-900 font-semibold py-2.5 text-sm hover:bg-amber-400 focus-visible:ring-2 focus-visible:ring-amber-300"
+              >
+                Agregar a mi registro
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TabProgreso({ weekStats, goals, tipIndex, setTipIndex }) {
+  const maxKcal = Math.max(goals.calories, ...weekStats.map((d) => d.kcal), 1);
+
+  const nextTip = () => setTipIndex((i) => (i + 1) % TIPS.length);
+  const prevTip = () => setTipIndex((i) => (i - 1 + TIPS.length) % TIPS.length);
+
+  return (
+    <div className="space-y-5">
+      <div className="rounded-3xl bg-slate-800/60 border border-slate-700 p-5">
+        <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wide mb-4">Últimos 7 días</h2>
+        <div className="flex items-end justify-between gap-2 h-36">
+          {weekStats.map((d) => {
+            const h = Math.max(4, (d.kcal / maxKcal) * 100);
+            const withinTol = d.kcal > 0 && Math.abs(d.kcal - goals.calories) <= TOLERANCE.calories;
+            return (
+              <div key={d.key} className="flex-1 flex flex-col items-center gap-1.5">
+                <div className="w-full h-28 flex items-end">
+                  <div
+                    className={`w-full rounded-t-md ${
+                      d.kcal === 0 ? 'bg-slate-700' : withinTol ? 'bg-emerald-500' : 'bg-teal-600'
+                    }`}
+                    style={{ height: `${h}%` }}
+                  />
+                </div>
+                <span className="text-[10px] text-slate-500 uppercase font-medium">{d.label}</span>
+              </div>
+            );
+          })}
+        </div>
+        <div className="flex items-center gap-2 mt-3 text-[11px] text-slate-500">
+          <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block" /> Dentro de rango
+          <span className="w-2.5 h-2.5 rounded-sm bg-teal-600 inline-block ml-3" /> Fuera de rango
+        </div>
+      </div>
+
+      <div className="rounded-3xl bg-gradient-to-br from-emerald-500/10 to-teal-500/5 border border-emerald-500/25 p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <Lightbulb className="w-5 h-5 text-emerald-300" />
+          <h2 className="text-sm font-bold text-emerald-200 uppercase tracking-wide">Tip del día</h2>
+        </div>
+        <p className="text-sm text-slate-200 leading-relaxed min-h-[3rem]">{TIPS[tipIndex]}</p>
+        <div className="flex items-center justify-between mt-4">
+          <button
+            onClick={prevTip}
+            aria-label="Tip anterior"
+            className="p-2 rounded-full bg-slate-800/60 hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-emerald-400"
+          >
+            <ChevronLeft className="w-4 h-4 text-slate-300" />
+          </button>
+          <span className="text-xs text-slate-500 font-mono">
+            {tipIndex + 1} / {TIPS.length}
+          </span>
+          <button
+            onClick={nextTip}
+            aria-label="Tip siguiente"
+            className="p-2 rounded-full bg-slate-800/60 hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-emerald-400"
+          >
+            <ChevronRight className="w-4 h-4 text-slate-300" />
+          </button>
+        </div>
+      </div>
+
+      <div className="rounded-3xl bg-slate-800/60 border border-slate-700 p-5">
+        <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wide mb-3">Tus metas actuales</h2>
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <GoalChip label="Calorías" value={`${Math.round(goals.calories)} kcal`} />
+          <GoalChip label="Proteínas" value={`${round1(goals.protein)} g`} />
+          <GoalChip label="Carbohidratos" value={`${round1(goals.carbs)} g`} />
+          <GoalChip label="Grasas" value={`${round1(goals.fat)} g`} />
+          <GoalChip label="Agua" value={`${goals.water} ml`} />
+        </div>
+        <p className="text-xs text-slate-500 mt-3">
+          Podés editar estos valores desde el ícono de ajustes en la parte superior de la app.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function GoalChip({ label, value }) {
+  return (
+    <div className="rounded-xl bg-slate-900/60 border border-slate-700 px-3 py-2">
+      <p className="text-[10px] uppercase text-slate-500 font-semibold">{label}</p>
+      <p className="font-mono text-slate-200 font-semibold">{value}</p>
+    </div>
+  );
+}
+
+function SettingsModal({ tempGoals, setTempGoals, onSave, onCancel, onReset }) {
+  const fields = [
+    { key: 'calories', label: 'Calorías (kcal)', step: '10' },
+    { key: 'protein', label: 'Proteínas (g)', step: '0.5' },
+    { key: 'carbs', label: 'Carbohidratos (g)', step: '0.5' },
+    { key: 'fat', label: 'Grasas (g)', step: '0.5' },
+    { key: 'water', label: 'Agua (ml)', step: '50' },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 px-0 sm:px-4">
+      <div className="w-full max-w-md bg-slate-800 border border-slate-700 rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-lg font-bold text-slate-100">Ajustes de mi plan</h2>
+          <button onClick={onCancel} aria-label="Cerrar ajustes" className="p-2 rounded-full hover:bg-slate-700">
+            <X className="w-5 h-5 text-slate-400" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          {fields.map((f) => (
+            <div key={f.key}>
+              <label className="text-xs font-semibold text-slate-400 mb-1 block">{f.label}</label>
+              <input
+                type="number"
+                step={f.step}
+                value={tempGoals[f.key]}
+                onChange={(e) => setTempGoals((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              />
+            </div>
+          ))}
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <button
+            onClick={onReset}
+            className="flex-1 rounded-xl border border-slate-600 text-slate-300 py-2.5 text-sm font-semibold flex items-center justify-center gap-2 hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-slate-400"
+          >
+            <RotateCcw className="w-4 h-4" /> Restaurar
+          </button>
+          <button
+            onClick={onSave}
+            className="flex-1 rounded-xl bg-emerald-500 text-slate-900 py-2.5 text-sm font-bold flex items-center justify-center gap-2 hover:bg-emerald-400 focus-visible:ring-2 focus-visible:ring-emerald-300"
+          >
+            <Save className="w-4 h-4" /> Guardar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
