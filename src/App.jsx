@@ -41,7 +41,7 @@ const DEFAULT_GOALS = { calories: 1610, protein: 116.5, carbs: 159, fat: 56.5, w
 const TOLERANCE = { calories: 100, protein: 10, carbs: 10, fat: 10 };
 const GLASS_ML = 250;
 
-const PLAN_CATALOG = {
+const DEFAULT_PLAN_CATALOG = {
   desayuno: [
     { id: 'd1', name: '2 Tostadas integrales + queso untable light', kcal: 180, p: 8, c: 24, f: 5 },
     { id: 'd2', name: '2 Huevos revueltos o claras', kcal: 150, p: 14, c: 1, f: 10 },
@@ -112,6 +112,22 @@ export default function NutriTrackApp() {
   const [goals, setGoals] = useState(DEFAULT_GOALS);
   const [log, setLog] = useState(emptyLog());
   const [tipIndex, setTipIndex] = useState(0);
+
+  const [planCatalog, setPlanCatalog] = useState(() => {
+    try {
+      const stored = localStorage.getItem('nutri_catalog');
+      return stored ? JSON.parse(stored) : JSON.parse(JSON.stringify(DEFAULT_PLAN_CATALOG));
+    } catch (e) {
+      return JSON.parse(JSON.stringify(DEFAULT_PLAN_CATALOG));
+    }
+  });
+
+  const [editingCatalogItem, setEditingCatalogItem] = useState(null); // { catalogKey, id }
+  const [catalogName, setCatalogName] = useState('');
+  const [catalogKcal, setCatalogKcal] = useState('');
+  const [catalogP, setCatalogP] = useState('');
+  const [catalogC, setCatalogC] = useState('');
+  const [catalogF, setCatalogF] = useState('');
 
   const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()));
   const dateKey = dateKeyOf(selectedDate);
@@ -186,6 +202,16 @@ export default function NutriTrackApp() {
       // almacenamiento no disponible, se continúa sin persistir
     }
   }, [goals, loaded]);
+
+  // Persistir catálogo del plan (opciones de desayuno, almuerzo/cena y colación)
+  useEffect(() => {
+    if (!loaded) return;
+    try {
+      localStorage.setItem('nutri_catalog', JSON.stringify(planCatalog));
+    } catch (e) {
+      // almacenamiento no disponible, se continúa sin persistir
+    }
+  }, [planCatalog, loaded]);
 
   // Totales del día
   const totals = useMemo(() => {
@@ -333,7 +359,65 @@ export default function NutriTrackApp() {
     setShowCustomForm(false);
   };
 
-  // ------------------------- Ajustes --------------------------------------
+  // ------------------------- Catálogo editable del plan --------------------
+  const openAddCatalogItem = (catalogKey) => {
+    setEditingCatalogItem({ catalogKey, id: null });
+    setCatalogName('');
+    setCatalogKcal('');
+    setCatalogP('');
+    setCatalogC('');
+    setCatalogF('');
+  };
+
+  const openEditCatalogItem = (catalogKey, item) => {
+    setEditingCatalogItem({ catalogKey, id: item.id });
+    setCatalogName(item.name);
+    setCatalogKcal(String(item.kcal));
+    setCatalogP(String(item.p));
+    setCatalogC(String(item.c));
+    setCatalogF(String(item.f));
+  };
+
+  const closeCatalogModal = () => setEditingCatalogItem(null);
+
+  const saveCatalogItem = () => {
+    if (!editingCatalogItem) return;
+    const kcalNum = parseFloat(catalogKcal);
+    if (!catalogName.trim() || isNaN(kcalNum) || kcalNum <= 0) return;
+    const { catalogKey, id } = editingCatalogItem;
+    const values = {
+      name: catalogName.trim(),
+      kcal: kcalNum,
+      p: parseFloat(catalogP) || 0,
+      c: parseFloat(catalogC) || 0,
+      f: parseFloat(catalogF) || 0,
+    };
+    setPlanCatalog((prev) => {
+      const list = prev[catalogKey];
+      if (id) {
+        return { ...prev, [catalogKey]: list.map((it) => (it.id === id ? { ...it, ...values } : it)) };
+      }
+      const newItem = { id: `custom_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, ...values };
+      return { ...prev, [catalogKey]: [...list, newItem] };
+    });
+    setEditingCatalogItem(null);
+    flashConfirm(id ? 'Opción del plan actualizada ✓' : 'Opción agregada a tu plan ✓');
+  };
+
+  const deleteCatalogItem = () => {
+    if (!editingCatalogItem || !editingCatalogItem.id) return;
+    const { catalogKey, id } = editingCatalogItem;
+    setPlanCatalog((prev) => ({ ...prev, [catalogKey]: prev[catalogKey].filter((it) => it.id !== id) }));
+    setEditingCatalogItem(null);
+    flashConfirm('Opción eliminada de tu plan');
+  };
+
+  const resetCatalog = () => {
+    setPlanCatalog(JSON.parse(JSON.stringify(DEFAULT_PLAN_CATALOG)));
+    flashConfirm('Se restauraron las opciones originales del plan');
+  };
+
+
   const openSettings = () => {
     setTempGoals(goals);
     setShowSettings(true);
@@ -576,6 +660,10 @@ export default function NutriTrackApp() {
               setRegisterMode={setRegisterMode}
               selectedMoment={selectedMoment}
               setSelectedMoment={setSelectedMoment}
+              planCatalog={planCatalog}
+              onAddCatalogItem={openAddCatalogItem}
+              onEditCatalogItem={openEditCatalogItem}
+              onResetCatalog={resetCatalog}
               addPlanMeal={addPlanMeal}
               addFreeMeal={addFreeMeal}
               showCustomForm={showCustomForm}
@@ -642,6 +730,26 @@ export default function NutriTrackApp() {
             setF={setEditF}
             onSave={saveEditEntry}
             onCancel={closeEditEntry}
+          />
+        )}
+
+        {/* MODAL DE EDICIÓN DE OPCIÓN DEL CATÁLOGO */}
+        {editingCatalogItem && (
+          <CatalogItemModal
+            isNew={!editingCatalogItem.id}
+            name={catalogName}
+            setName={setCatalogName}
+            kcal={catalogKcal}
+            setKcal={setCatalogKcal}
+            p={catalogP}
+            setP={setCatalogP}
+            c={catalogC}
+            setC={setCatalogC}
+            f={catalogF}
+            setF={setCatalogF}
+            onSave={saveCatalogItem}
+            onCancel={closeCatalogModal}
+            onDelete={deleteCatalogItem}
           />
         )}
       </div>
@@ -937,6 +1045,10 @@ function TabRegistrar({
   setRegisterMode,
   selectedMoment,
   setSelectedMoment,
+  planCatalog,
+  onAddCatalogItem,
+  onEditCatalogItem,
+  onResetCatalog,
   addPlanMeal,
   addFreeMeal,
   showCustomForm,
@@ -954,7 +1066,7 @@ function TabRegistrar({
   submitCustomFree,
 }) {
   const momentData = MOMENTS.find((m) => m.key === selectedMoment);
-  const options = PLAN_CATALOG[momentData.catalog];
+  const options = planCatalog[momentData.catalog];
 
   return (
     <div className="space-y-5">
@@ -1000,21 +1112,52 @@ function TabRegistrar({
 
           <div className="space-y-2">
             {options.map((item) => (
-              <button
+              <div
                 key={item.id}
-                onClick={() => addPlanMeal(momentData.label, item)}
-                className="w-full text-left rounded-2xl bg-slate-800/60 border border-slate-700 p-4 flex items-center justify-between gap-3 hover:border-emerald-500/50 hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-emerald-400 transition-colors"
+                className="rounded-2xl bg-slate-800/60 border border-slate-700 flex items-center gap-1 pr-1 hover:border-emerald-500/50 transition-colors"
               >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-slate-200">{item.name}</p>
-                  <p className="text-xs text-slate-500 font-mono mt-0.5">
-                    {item.kcal} kcal · P {item.p}g · C {item.c}g · G {item.f}g
-                  </p>
-                </div>
-                <PlusCircle className="w-5 h-5 text-emerald-400 shrink-0" />
-              </button>
+                <button
+                  onClick={() => addPlanMeal(momentData.label, item)}
+                  className="flex-1 min-w-0 text-left p-4 flex items-center justify-between gap-3 focus-visible:ring-2 focus-visible:ring-emerald-400 rounded-2xl"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-slate-200">{item.name}</p>
+                    <p className="text-xs text-slate-500 font-mono mt-0.5">
+                      {item.kcal} kcal · P {item.p}g · C {item.c}g · G {item.f}g
+                    </p>
+                  </div>
+                  <PlusCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+                </button>
+                <button
+                  onClick={() => onEditCatalogItem(momentData.catalog, item)}
+                  aria-label="Editar esta opción del plan"
+                  className="p-2 rounded-full hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-slate-400 shrink-0"
+                >
+                  <Pencil className="w-4 h-4 text-slate-500" />
+                </button>
+              </div>
             ))}
+
+            {options.length === 0 && (
+              <div className="rounded-2xl border border-dashed border-slate-700 p-6 text-center text-slate-500 text-sm">
+                No hay opciones cargadas para este momento. Agregá la primera con el botón de abajo.
+              </div>
+            )}
+
+            <button
+              onClick={() => onAddCatalogItem(momentData.catalog)}
+              className="w-full rounded-2xl border border-dashed border-emerald-500/40 text-emerald-300 py-3 text-sm font-semibold hover:bg-emerald-500/5 focus-visible:ring-2 focus-visible:ring-emerald-400"
+            >
+              + Agregar opción a "{momentData.label}"
+            </button>
           </div>
+
+          <button
+            onClick={onResetCatalog}
+            className="w-full text-center text-[11px] text-slate-500 hover:text-slate-300 py-1"
+          >
+            Restaurar las opciones originales del plan
+          </button>
         </div>
       )}
 
@@ -1296,6 +1439,102 @@ function EditEntryModal({ isPlan, name, setName, kcal, setKcal, p, setP, c, setC
           <button
             onClick={onSave}
             className={`flex-1 rounded-xl ${accentBg} text-slate-900 py-2.5 text-sm font-bold flex items-center justify-center gap-2 focus-visible:ring-2 ${accentRing}`}
+          >
+            <Save className="w-4 h-4" /> Guardar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CatalogItemModal({ isNew, name, setName, kcal, setKcal, p, setP, c, setC, f, setF, onSave, onCancel, onDelete }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 px-0 sm:px-4">
+      <div className="w-full max-w-md bg-slate-800 border border-emerald-500/30 rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="text-lg font-bold text-slate-100">{isNew ? 'Nueva opción del plan' : 'Editar opción del plan'}</h2>
+          <button onClick={onCancel} aria-label="Cerrar" className="p-2 rounded-full hover:bg-slate-700">
+            <X className="w-5 h-5 text-slate-400" />
+          </button>
+        </div>
+        <p className="text-xs font-semibold mb-5 text-emerald-300">
+          Estos valores son los que va a usar la app cada vez que agregues esta opción
+        </p>
+
+        <div className="space-y-4">
+          <div>
+            <label className="text-xs font-semibold text-slate-400 mb-1 block">Nombre</label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Ej: Tostadas con palta"
+              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold text-slate-400 mb-1 block">Calorías (kcal)</label>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={kcal}
+                onChange={(e) => setKcal(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-400 mb-1 block">Proteínas (g)</label>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={p}
+                onChange={(e) => setP(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-400 mb-1 block">Carbohidratos (g)</label>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={c}
+                onChange={(e) => setC(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-400 mb-1 block">Grasas (g)</label>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={f}
+                onChange={(e) => setF(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              />
+            </div>
+          </div>
+        </div>
+
+        {!isNew && (
+          <button
+            onClick={onDelete}
+            className="w-full mt-4 text-center text-xs text-rose-400 hover:text-rose-300 py-1 flex items-center justify-center gap-1.5"
+          >
+            <Trash2 className="w-3.5 h-3.5" /> Eliminar esta opción del plan
+          </button>
+        )}
+
+        <div className="flex gap-3 mt-5">
+          <button
+            onClick={onCancel}
+            className="flex-1 rounded-xl border border-slate-600 text-slate-300 py-2.5 text-sm font-semibold hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-slate-400"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={onSave}
+            className="flex-1 rounded-xl bg-emerald-500 text-slate-900 py-2.5 text-sm font-bold flex items-center justify-center gap-2 hover:bg-emerald-400 focus-visible:ring-2 focus-visible:ring-emerald-300"
           >
             <Save className="w-4 h-4" /> Guardar
           </button>
