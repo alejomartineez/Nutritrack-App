@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Home, PlusCircle, TrendingUp, Settings, Droplet, Droplets, Trash2, X, Check,
   ChevronRight, ChevronLeft, Sparkles, Lightbulb, Award, Plus, Minus,
-  Save, RotateCcw, Info, Utensils, Coffee, Pencil, Flame,
+  Save, RotateCcw, Info, Utensils, Coffee, Pencil, Flame, Camera,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -41,34 +41,22 @@ const DEFAULT_GOALS = { calories: 1610, protein: 116.5, carbs: 159, fat: 56.5, w
 const TOLERANCE = { calories: 100, protein: 10, carbs: 10, fat: 10 };
 const GLASS_ML = 250;
 
-const DEFAULT_PLAN_CATALOG = {
-  desayuno: [
-    { id: 'd1', name: '2 Tostadas integrales + queso untable light', kcal: 180, p: 8, c: 24, f: 5 },
-    { id: 'd2', name: '2 Huevos revueltos o claras', kcal: 150, p: 14, c: 1, f: 10 },
-    { id: 'd3', name: 'Yogur descremado + granola', kcal: 160, p: 10, c: 20, f: 3 },
-    { id: 'd4', name: 'Panqueques de avena (2) + fruta', kcal: 220, p: 8, c: 30, f: 6 },
-    { id: 'd5', name: 'Tostadas integrales + huevo', kcal: 210, p: 12, c: 22, f: 8 },
-  ],
-  principal: [
-    { id: 'm1', name: 'Pollo grillado + arroz integral + ensalada verde', kcal: 420, p: 35, c: 40, f: 10 },
-    { id: 'm2', name: 'Carne magra + puré de batata + vegetales al vapor', kcal: 450, p: 32, c: 45, f: 12 },
-    { id: 'm3', name: 'Pescado al horno + quinoa + vegetales grillados', kcal: 400, p: 30, c: 38, f: 11 },
-    { id: 'm4', name: 'Tofu salteado + legumbres + vegetales salteados', kcal: 380, p: 22, c: 42, f: 9 },
-    { id: 'm5', name: 'Milanesa al horno + puré de calabaza + ensalada', kcal: 440, p: 30, c: 35, f: 15 },
-  ],
-  colacion: [
-    { id: 'co1', name: 'Fruta grupo A (manzana, pera, naranja)', kcal: 70, p: 1, c: 18, f: 0 },
-    { id: 'co2', name: 'Fruta grupo B (banana, uva, mango)', kcal: 100, p: 1, c: 25, f: 0 },
-    { id: 'co3', name: 'Yogur descremado', kcal: 80, p: 8, c: 10, f: 1 },
-    { id: 'co4', name: 'Barrita íntegra', kcal: 120, p: 4, c: 18, f: 4 },
-  ],
-};
-
-const MOMENTS = [
-  { key: 'desayuno', label: 'Desayuno', catalog: 'desayuno' },
-  { key: 'merienda', label: 'Merienda', catalog: 'desayuno' },
-  { key: 'principal', label: 'Almuerzo / Cena', catalog: 'principal' },
-  { key: 'colacion', label: 'Colación', catalog: 'colacion' },
+// Catálogo único de alimentos del plan (sin clasificación por momento del día)
+const DEFAULT_CATALOG = [
+  { id: 'd1', name: '2 Tostadas integrales + queso untable light', kcal: 180, p: 8, c: 24, f: 5 },
+  { id: 'd2', name: '2 Huevos revueltos o claras', kcal: 150, p: 14, c: 1, f: 10 },
+  { id: 'd3', name: 'Yogur descremado + granola', kcal: 160, p: 10, c: 20, f: 3 },
+  { id: 'd4', name: 'Panqueques de avena (2) + fruta', kcal: 220, p: 8, c: 30, f: 6 },
+  { id: 'd5', name: 'Tostadas integrales + huevo', kcal: 210, p: 12, c: 22, f: 8 },
+  { id: 'm1', name: 'Pollo grillado + arroz integral + ensalada verde', kcal: 420, p: 35, c: 40, f: 10 },
+  { id: 'm2', name: 'Carne magra + puré de batata + vegetales al vapor', kcal: 450, p: 32, c: 45, f: 12 },
+  { id: 'm3', name: 'Pescado al horno + quinoa + vegetales grillados', kcal: 400, p: 30, c: 38, f: 11 },
+  { id: 'm4', name: 'Tofu salteado + legumbres + vegetales salteados', kcal: 380, p: 22, c: 42, f: 9 },
+  { id: 'm5', name: 'Milanesa al horno + puré de calabaza + ensalada', kcal: 440, p: 30, c: 35, f: 15 },
+  { id: 'co1', name: 'Fruta grupo A (manzana, pera, naranja)', kcal: 70, p: 1, c: 18, f: 0 },
+  { id: 'co2', name: 'Fruta grupo B (banana, uva, mango)', kcal: 100, p: 1, c: 25, f: 0 },
+  { id: 'co3', name: 'Yogur descremado', kcal: 80, p: 8, c: 10, f: 1 },
+  { id: 'co4', name: 'Barrita íntegra', kcal: 120, p: 4, c: 18, f: 4 },
 ];
 
 const FREE_PRESETS = [
@@ -116,13 +104,17 @@ export default function NutriTrackApp() {
   const [planCatalog, setPlanCatalog] = useState(() => {
     try {
       const stored = localStorage.getItem('nutri_catalog');
-      return stored ? JSON.parse(stored) : JSON.parse(JSON.stringify(DEFAULT_PLAN_CATALOG));
+      if (!stored) return JSON.parse(JSON.stringify(DEFAULT_CATALOG));
+      const parsed = JSON.parse(stored);
+      // Migración desde el formato anterior agrupado por momento del día
+      if (Array.isArray(parsed)) return parsed;
+      return Object.values(parsed).flat();
     } catch (e) {
-      return JSON.parse(JSON.stringify(DEFAULT_PLAN_CATALOG));
+      return JSON.parse(JSON.stringify(DEFAULT_CATALOG));
     }
   });
 
-  const [editingCatalogItem, setEditingCatalogItem] = useState(null); // { catalogKey, id }
+  const [editingCatalogItem, setEditingCatalogItem] = useState(null); // { id } — id null = nueva opción
   const [catalogName, setCatalogName] = useState('');
   const [catalogKcal, setCatalogKcal] = useState('');
   const [catalogP, setCatalogP] = useState('');
@@ -134,7 +126,6 @@ export default function NutriTrackApp() {
   const isToday = dateKey === TODAY_KEY;
   const loadedDateKeyRef = useRef(null);
 
-  const [selectedMoment, setSelectedMoment] = useState('desayuno');
   const [registerMode, setRegisterMode] = useState('plan'); // 'plan' | 'libre'
   const [customName, setCustomName] = useState('');
   const [customKcal, setCustomKcal] = useState('');
@@ -146,7 +137,7 @@ export default function NutriTrackApp() {
   const [tempGoals, setTempGoals] = useState(DEFAULT_GOALS);
   const [confirmMsg, setConfirmMsg] = useState('');
 
-  const [editingEntry, setEditingEntry] = useState(null); // { id, isPlan, ... }
+  const [editingEntry, setEditingEntry] = useState(null); // { id, isPlan, time }
   const [editName, setEditName] = useState('');
   const [editKcal, setEditKcal] = useState('');
   const [editP, setEditP] = useState('');
@@ -155,6 +146,17 @@ export default function NutriTrackApp() {
 
   const [pendingDelete, setPendingDelete] = useState(null); // { entry, isPlan }
   const undoTimeoutRef = useRef(null);
+
+  // ------------------------- Escáner de tabla nutricional -------------------
+  const [showScanModal, setShowScanModal] = useState(false);
+  const [scanImage, setScanImage] = useState(null);
+  const [scanName, setScanName] = useState('');
+  const [scanGBase, setScanGBase] = useState('');
+  const [scanGReal, setScanGReal] = useState('');
+  const [scanKcalBase, setScanKcalBase] = useState('');
+  const [scanPBase, setScanPBase] = useState('');
+  const [scanCBase, setScanCBase] = useState('');
+  const [scanFBase, setScanFBase] = useState('');
 
   // Cargar metas guardadas al iniciar
   useEffect(() => {
@@ -203,7 +205,7 @@ export default function NutriTrackApp() {
     }
   }, [goals, loaded]);
 
-  // Persistir catálogo del plan (opciones de desayuno, almuerzo/cena y colación)
+  // Persistir catálogo global de alimentos del plan
   useEffect(() => {
     if (!loaded) return;
     try {
@@ -236,10 +238,9 @@ export default function NutriTrackApp() {
   const goToday = () => setSelectedDate(startOfDay(new Date()));
 
   // ------------------------- Acciones sobre el registro -------------------
-  const addPlanMeal = (moment, item) => {
+  const addPlanMeal = (item) => {
     const entry = {
       id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-      moment,
       name: item.name,
       kcal: item.kcal,
       p: item.p,
@@ -292,7 +293,7 @@ export default function NutriTrackApp() {
   };
 
   const openEditEntry = (entry, isPlan) => {
-    setEditingEntry({ id: entry.id, isPlan, moment: entry.moment, time: entry.time });
+    setEditingEntry({ id: entry.id, isPlan, time: entry.time });
     setEditName(entry.name);
     setEditKcal(String(entry.kcal));
     setEditP(String(entry.p));
@@ -308,7 +309,6 @@ export default function NutriTrackApp() {
     if (!editName.trim() || isNaN(kcalNum) || kcalNum <= 0) return;
     const updated = {
       id: editingEntry.id,
-      moment: editingEntry.moment,
       time: editingEntry.time,
       name: editName.trim(),
       kcal: kcalNum,
@@ -360,8 +360,8 @@ export default function NutriTrackApp() {
   };
 
   // ------------------------- Catálogo editable del plan --------------------
-  const openAddCatalogItem = (catalogKey) => {
-    setEditingCatalogItem({ catalogKey, id: null });
+  const openAddCatalogItem = () => {
+    setEditingCatalogItem({ id: null });
     setCatalogName('');
     setCatalogKcal('');
     setCatalogP('');
@@ -369,8 +369,8 @@ export default function NutriTrackApp() {
     setCatalogF('');
   };
 
-  const openEditCatalogItem = (catalogKey, item) => {
-    setEditingCatalogItem({ catalogKey, id: item.id });
+  const openEditCatalogItem = (item) => {
+    setEditingCatalogItem({ id: item.id });
     setCatalogName(item.name);
     setCatalogKcal(String(item.kcal));
     setCatalogP(String(item.p));
@@ -384,7 +384,7 @@ export default function NutriTrackApp() {
     if (!editingCatalogItem) return;
     const kcalNum = parseFloat(catalogKcal);
     if (!catalogName.trim() || isNaN(kcalNum) || kcalNum <= 0) return;
-    const { catalogKey, id } = editingCatalogItem;
+    const { id } = editingCatalogItem;
     const values = {
       name: catalogName.trim(),
       kcal: kcalNum,
@@ -393,12 +393,11 @@ export default function NutriTrackApp() {
       f: parseFloat(catalogF) || 0,
     };
     setPlanCatalog((prev) => {
-      const list = prev[catalogKey];
       if (id) {
-        return { ...prev, [catalogKey]: list.map((it) => (it.id === id ? { ...it, ...values } : it)) };
+        return prev.map((it) => (it.id === id ? { ...it, ...values } : it));
       }
       const newItem = { id: `custom_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, ...values };
-      return { ...prev, [catalogKey]: [...list, newItem] };
+      return [...prev, newItem];
     });
     setEditingCatalogItem(null);
     flashConfirm(id ? 'Opción del plan actualizada ✓' : 'Opción agregada a tu plan ✓');
@@ -406,17 +405,83 @@ export default function NutriTrackApp() {
 
   const deleteCatalogItem = () => {
     if (!editingCatalogItem || !editingCatalogItem.id) return;
-    const { catalogKey, id } = editingCatalogItem;
-    setPlanCatalog((prev) => ({ ...prev, [catalogKey]: prev[catalogKey].filter((it) => it.id !== id) }));
+    const { id } = editingCatalogItem;
+    setPlanCatalog((prev) => prev.filter((it) => it.id !== id));
     setEditingCatalogItem(null);
     flashConfirm('Opción eliminada de tu plan');
   };
 
   const resetCatalog = () => {
-    setPlanCatalog(JSON.parse(JSON.stringify(DEFAULT_PLAN_CATALOG)));
+    setPlanCatalog(JSON.parse(JSON.stringify(DEFAULT_CATALOG)));
     flashConfirm('Se restauraron las opciones originales del plan');
   };
 
+  // ------------------------- Escáner de tabla nutricional ------------------
+  const openScanModal = () => {
+    setScanImage(null);
+    setScanName('');
+    setScanGBase('');
+    setScanGReal('');
+    setScanKcalBase('');
+    setScanPBase('');
+    setScanCBase('');
+    setScanFBase('');
+    setShowScanModal(true);
+  };
+
+  const closeScanModal = () => setShowScanModal(false);
+
+  const handleScanImageFile = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setScanImage(reader.result);
+    reader.readAsDataURL(file);
+  };
+
+  const scanGBaseNum = parseFloat(scanGBase) || 0;
+  const scanGRealNum = parseFloat(scanGReal) || 0;
+  const scanFactor = scanGBaseNum > 0 && scanGRealNum > 0 ? scanGRealNum / scanGBaseNum : 0;
+  const scanKcalBaseNum = parseFloat(scanKcalBase) || 0;
+  const scanPBaseNum = parseFloat(scanPBase) || 0;
+  const scanCBaseNum = parseFloat(scanCBase) || 0;
+  const scanFBaseNum = parseFloat(scanFBase) || 0;
+
+  // Valor Final = Valor Base × (Greal / Gbase), recalculado en tiempo real
+  const scanFinal = {
+    kcal: scanKcalBaseNum * scanFactor,
+    p: scanPBaseNum * scanFactor,
+    c: scanCBaseNum * scanFactor,
+    f: scanFBaseNum * scanFactor,
+  };
+
+  const confirmScan = () => {
+    if (!scanName.trim() || scanGBaseNum <= 0 || scanGRealNum <= 0) return;
+    const finalValues = {
+      kcal: Math.round(scanFinal.kcal),
+      p: round1(scanFinal.p),
+      c: round1(scanFinal.c),
+      f: round1(scanFinal.f),
+    };
+    // Se guarda en el día seleccionado
+    const entry = {
+      id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      name: `${scanName.trim()} (${scanGRealNum} g)`,
+      ...finalValues,
+      time: nowHM(),
+    };
+    setLog((prev) => ({ ...prev, planMeals: [...prev.planMeals, entry] }));
+
+    // Se guarda también en el catálogo global de alimentos
+    const catalogItem = {
+      id: `scan_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      name: scanName.trim(),
+      ...finalValues,
+    };
+    setPlanCatalog((prev) => [...prev, catalogItem]);
+
+    setShowScanModal(false);
+    flashConfirm('Alimento escaneado y guardado ✓');
+  };
 
   const openSettings = () => {
     setTempGoals(goals);
@@ -466,7 +531,7 @@ export default function NutriTrackApp() {
     if (totals.p < goals.protein - TOLERANCE.protein) {
       msgs.push({
         type: 'reminder',
-        text: 'Estás un poco abajo en tus proteínas, ¿sumamos un huevo o yogur en la merienda?',
+        text: 'Estás un poco abajo en tus proteínas, ¿sumamos un huevo o yogur en la próxima comida?',
       });
     }
 
@@ -658,12 +723,11 @@ export default function NutriTrackApp() {
             <TabRegistrar
               registerMode={registerMode}
               setRegisterMode={setRegisterMode}
-              selectedMoment={selectedMoment}
-              setSelectedMoment={setSelectedMoment}
-              planCatalog={planCatalog}
+              catalog={planCatalog}
               onAddCatalogItem={openAddCatalogItem}
               onEditCatalogItem={openEditCatalogItem}
               onResetCatalog={resetCatalog}
+              onOpenScan={openScanModal}
               addPlanMeal={addPlanMeal}
               addFreeMeal={addFreeMeal}
               showCustomForm={showCustomForm}
@@ -750,6 +814,32 @@ export default function NutriTrackApp() {
             onSave={saveCatalogItem}
             onCancel={closeCatalogModal}
             onDelete={deleteCatalogItem}
+          />
+        )}
+
+        {/* MODAL DE ESCÁNER DE TABLA NUTRICIONAL */}
+        {showScanModal && (
+          <ScannerModal
+            image={scanImage}
+            onImageFile={handleScanImageFile}
+            onRemoveImage={() => setScanImage(null)}
+            name={scanName}
+            setName={setScanName}
+            gBase={scanGBase}
+            setGBase={setScanGBase}
+            gReal={scanGReal}
+            setGReal={setScanGReal}
+            kcalBase={scanKcalBase}
+            setKcalBase={setScanKcalBase}
+            pBase={scanPBase}
+            setPBase={setScanPBase}
+            cBase={scanCBase}
+            setCBase={setScanCBase}
+            fBase={scanFBase}
+            setFBase={setScanFBase}
+            final={scanFinal}
+            onSave={confirmScan}
+            onCancel={closeScanModal}
           />
         )}
       </div>
@@ -871,6 +961,7 @@ function TabMiDia({
     ? 'Dentro de tu rango objetivo'
     : 'Por debajo de la meta';
 
+  // Listado general único: todas las comidas del día juntas, sin clasificación por momento
   const allEntries = [
     ...log.planMeals.map((m) => ({ ...m, kind: 'plan' })),
     ...log.freeMeals.map((m) => ({ ...m, kind: 'free' })),
@@ -981,7 +1072,7 @@ function TabMiDia({
       {/* FEEDBACK */}
       <FeedbackBanner feedback={feedback} />
 
-      {/* HISTORIAL DEL DÍA */}
+      {/* HISTORIAL DEL DÍA — listado general único, sin momentos del día */}
       <div>
         <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wide mb-2">Registro del día</h2>
         {allEntries.length === 0 ? (
@@ -1043,12 +1134,11 @@ const TOLERANCE_CAL = TOLERANCE.calories;
 function TabRegistrar({
   registerMode,
   setRegisterMode,
-  selectedMoment,
-  setSelectedMoment,
-  planCatalog,
+  catalog,
   onAddCatalogItem,
   onEditCatalogItem,
   onResetCatalog,
+  onOpenScan,
   addPlanMeal,
   addFreeMeal,
   showCustomForm,
@@ -1065,11 +1155,16 @@ function TabRegistrar({
   setCustomF,
   submitCustomFree,
 }) {
-  const momentData = MOMENTS.find((m) => m.key === selectedMoment);
-  const options = planCatalog[momentData.catalog];
-
   return (
     <div className="space-y-5">
+      {/* ESCÁNER DE TABLA NUTRICIONAL */}
+      <button
+        onClick={onOpenScan}
+        className="w-full rounded-2xl border border-sky-500/40 bg-sky-500/10 text-sky-300 py-3.5 text-sm font-semibold flex items-center justify-center gap-2 hover:bg-sky-500/20 focus-visible:ring-2 focus-visible:ring-sky-400"
+      >
+        <Camera className="w-4 h-4" /> Escanear tabla nutricional (gramaje dinámico)
+      </button>
+
       <div className="grid grid-cols-2 gap-2 bg-slate-800 border border-slate-700 rounded-2xl p-1">
         <button
           onClick={() => setRegisterMode('plan')}
@@ -1091,33 +1186,14 @@ function TabRegistrar({
 
       {registerMode === 'plan' && (
         <div className="space-y-4">
-          <div>
-            <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold mb-2">Momento del día</p>
-            <div className="flex gap-2 flex-wrap">
-              {MOMENTS.map((m) => (
-                <button
-                  key={m.key}
-                  onClick={() => setSelectedMoment(m.key)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                    selectedMoment === m.key
-                      ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
-                      : 'bg-slate-800 border-slate-700 text-slate-400'
-                  }`}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
           <div className="space-y-2">
-            {options.map((item) => (
+            {catalog.map((item) => (
               <div
                 key={item.id}
                 className="rounded-2xl bg-slate-800/60 border border-slate-700 flex items-center gap-1 pr-1 hover:border-emerald-500/50 transition-colors"
               >
                 <button
-                  onClick={() => addPlanMeal(momentData.label, item)}
+                  onClick={() => addPlanMeal(item)}
                   className="flex-1 min-w-0 text-left p-4 flex items-center justify-between gap-3 focus-visible:ring-2 focus-visible:ring-emerald-400 rounded-2xl"
                 >
                   <div className="min-w-0">
@@ -1129,7 +1205,7 @@ function TabRegistrar({
                   <PlusCircle className="w-5 h-5 text-emerald-400 shrink-0" />
                 </button>
                 <button
-                  onClick={() => onEditCatalogItem(momentData.catalog, item)}
+                  onClick={() => onEditCatalogItem(item)}
                   aria-label="Editar esta opción del plan"
                   className="p-2 rounded-full hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-slate-400 shrink-0"
                 >
@@ -1138,17 +1214,17 @@ function TabRegistrar({
               </div>
             ))}
 
-            {options.length === 0 && (
+            {catalog.length === 0 && (
               <div className="rounded-2xl border border-dashed border-slate-700 p-6 text-center text-slate-500 text-sm">
-                No hay opciones cargadas para este momento. Agregá la primera con el botón de abajo.
+                No hay opciones cargadas todavía. Agregá la primera con el botón de abajo.
               </div>
             )}
 
             <button
-              onClick={() => onAddCatalogItem(momentData.catalog)}
+              onClick={onAddCatalogItem}
               className="w-full rounded-2xl border border-dashed border-emerald-500/40 text-emerald-300 py-3 text-sm font-semibold hover:bg-emerald-500/5 focus-visible:ring-2 focus-visible:ring-emerald-400"
             >
-              + Agregar opción a "{momentData.label}"
+              + Agregar opción al listado
             </button>
           </div>
 
@@ -1535,6 +1611,181 @@ function CatalogItemModal({ isNew, name, setName, kcal, setKcal, p, setP, c, set
           <button
             onClick={onSave}
             className="flex-1 rounded-xl bg-emerald-500 text-slate-900 py-2.5 text-sm font-bold flex items-center justify-center gap-2 hover:bg-emerald-400 focus-visible:ring-2 focus-visible:ring-emerald-300"
+          >
+            <Save className="w-4 h-4" /> Guardar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ScannerModal({
+  image,
+  onImageFile,
+  onRemoveImage,
+  name,
+  setName,
+  gBase,
+  setGBase,
+  gReal,
+  setGReal,
+  kcalBase,
+  setKcalBase,
+  pBase,
+  setPBase,
+  cBase,
+  setCBase,
+  fBase,
+  setFBase,
+  final,
+  onSave,
+  onCancel,
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 px-0 sm:px-4">
+      <div className="w-full max-w-md bg-slate-800 border border-sky-500/30 rounded-t-3xl sm:rounded-3xl p-6 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="text-lg font-bold text-slate-100">Escanear tabla nutricional</h2>
+          <button onClick={onCancel} aria-label="Cerrar escáner" className="p-2 rounded-full hover:bg-slate-700">
+            <X className="w-5 h-5 text-slate-400" />
+          </button>
+        </div>
+        <p className="text-xs font-semibold mb-5 text-sky-300">
+          Cargá la foto de la etiqueta, completá los valores base y ajustá el gramaje real. Los totales se recalculan automáticamente.
+        </p>
+
+        <div className="space-y-4">
+          {/* IMAGEN DE LA ETIQUETA */}
+          <div>
+            <label className="text-xs font-semibold text-slate-400 mb-1 block">Foto de la tabla nutricional</label>
+            {image ? (
+              <div className="relative">
+                <img
+                  src={image}
+                  alt="Tabla nutricional escaneada"
+                  className="w-full max-h-48 object-cover rounded-xl border border-slate-700"
+                />
+                <button
+                  onClick={onRemoveImage}
+                  aria-label="Quitar imagen"
+                  className="absolute top-2 right-2 p-1.5 rounded-full bg-slate-900/80 hover:bg-slate-900"
+                >
+                  <X className="w-4 h-4 text-slate-200" />
+                </button>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-sky-500/40 py-6 text-sky-300 text-sm font-semibold cursor-pointer hover:bg-sky-500/5">
+                <Camera className="w-6 h-6" />
+                Tomar o subir foto
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => onImageFile(e.target.files && e.target.files[0])}
+                />
+              </label>
+            )}
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-slate-400 mb-1 block">Nombre del alimento</label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Ej: Yogur natural"
+              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-400"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold text-slate-400 mb-1 block">Porción base (g/ml)</label>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={gBase}
+                onChange={(e) => setGBase(e.target.value)}
+                placeholder="Ej: 100"
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-sky-400"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-sky-300 mb-1 block">Gramos reales a consumir</label>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={gReal}
+                onChange={(e) => setGReal(e.target.value)}
+                placeholder="Ej: 150"
+                className="w-full bg-slate-900 border border-sky-500/50 rounded-xl px-3 py-2.5 text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-sky-400"
+              />
+            </div>
+          </div>
+
+          <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold pt-1">Nutrientes por porción base</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold text-slate-400 mb-1 block">Calorías (kcal)</label>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={kcalBase}
+                onChange={(e) => setKcalBase(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-sky-400"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-400 mb-1 block">Proteínas (g)</label>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={pBase}
+                onChange={(e) => setPBase(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-sky-400"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-400 mb-1 block">Carbohidratos (g)</label>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={cBase}
+                onChange={(e) => setCBase(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-sky-400"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-400 mb-1 block">Grasas (g)</label>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={fBase}
+                onChange={(e) => setFBase(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-sky-400"
+              />
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-sky-500/10 border border-sky-500/30 p-4">
+            <p className="text-xs font-semibold text-sky-300 mb-2">Valores finales para {gReal || 0} g/ml</p>
+            <p className="text-sm text-slate-100 font-mono">
+              {Math.round(final.kcal)} kcal · P {round1(final.p)}g · C {round1(final.c)}g · G {round1(final.f)}g
+            </p>
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <button
+            onClick={onCancel}
+            className="flex-1 rounded-xl border border-slate-600 text-slate-300 py-2.5 text-sm font-semibold hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-slate-400"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={onSave}
+            className="flex-1 rounded-xl bg-sky-500 text-slate-900 py-2.5 text-sm font-bold flex items-center justify-center gap-2 hover:bg-sky-400 focus-visible:ring-2 focus-visible:ring-sky-300"
           >
             <Save className="w-4 h-4" /> Guardar
           </button>
