@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Home, PlusCircle, TrendingUp, Settings, Droplet, Droplets, Trash2, X, Check,
   ChevronRight, ChevronLeft, Sparkles, Lightbulb, Award, Plus, Minus,
-  Save, RotateCcw, Info, Utensils, Coffee, Pencil, Flame, Camera,
+  Save, RotateCcw, Info, Utensils, Coffee, Pencil, Flame, Camera, Loader2,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -89,6 +89,69 @@ const nowHM = () =>
 const round1 = (n) => Math.round(n * 10) / 10;
 
 // ---------------------------------------------------------------------------
+// LECTURA DE TABLAS NUTRICIONALES (OCR)
+// ---------------------------------------------------------------------------
+
+const NUM_RE = '(\\d+(?:[.,]\\d+)?)';
+
+// Busca el primer número que aparezca después de alguna de las etiquetas dadas
+const extractFirstNumber = (text, regexes) => {
+  for (const re of regexes) {
+    const m = text.match(re);
+    if (m && m[1] != null) {
+      const n = parseFloat(m[1].replace(',', '.'));
+      if (!isNaN(n)) return n;
+    }
+  }
+  return null;
+};
+
+// Interpreta el texto crudo devuelto por el OCR de una etiqueta nutricional
+// y extrae nombre, porción base y nutrientes. Cualquier valor no detectado
+// queda en null y el usuario lo completa/corrige a mano antes de guardar.
+function parseNutritionLabelText(rawText) {
+  const text = (rawText || '').replace(/\r/g, ' ').replace(/[ \t]+/g, ' ');
+
+  const gBase = extractFirstNumber(text, [
+    new RegExp(`tama[ñn]o de (?:la )?porci[oó]n[^\\d]{0,20}${NUM_RE}\\s*(?:g|gr|ml)`, 'i'),
+    new RegExp(`porci[oó]n[^\\d]{0,20}${NUM_RE}\\s*(?:g|gr|ml)`, 'i'),
+    new RegExp(`serving\\s*size[^\\d]{0,20}${NUM_RE}\\s*(?:g|ml)`, 'i'),
+    new RegExp(`contenido neto[^\\d]{0,20}${NUM_RE}\\s*(?:g|gr|ml)`, 'i'),
+  ]);
+
+  const kcal = extractFirstNumber(text, [
+    new RegExp(`valor energ[eé]tico[^\\d]{0,20}${NUM_RE}\\s*kcal`, 'i'),
+    new RegExp(`(?:calor[ií]as|energy|calories)[^\\d]{0,20}${NUM_RE}\\s*kcal`, 'i'),
+    new RegExp(`(?:valor energ[eé]tico|calor[ií]as|energy|calories)[^\\d]{0,20}${NUM_RE}`, 'i'),
+  ]);
+
+  const p = extractFirstNumber(text, [
+    new RegExp(`prote[ií]nas?[^\\d]{0,20}${NUM_RE}\\s*g`, 'i'),
+    new RegExp(`protein[^\\d]{0,20}${NUM_RE}\\s*g`, 'i'),
+  ]);
+
+  const c = extractFirstNumber(text, [
+    new RegExp(`(?:hidratos de carbono|carbohidratos)[^\\d]{0,20}${NUM_RE}\\s*g`, 'i'),
+    new RegExp(`(?:total\\s*)?carbohydrate[^\\d]{0,20}${NUM_RE}\\s*g`, 'i'),
+  ]);
+
+  const f = extractFirstNumber(text, [
+    new RegExp(`grasas?\\s*totales?[^\\d]{0,20}${NUM_RE}\\s*g`, 'i'),
+    new RegExp(`total\\s*fat[^\\d]{0,20}${NUM_RE}\\s*g`, 'i'),
+    new RegExp(`grasas?[^\\d]{0,20}${NUM_RE}\\s*g`, 'i'),
+  ]);
+
+  const name = (() => {
+    const skip = /informaci[oó]n nutricional|nutrition facts|porci[oó]n|valor energ[eé]tico|prote[ií]nas|carbohidratos|hidratos de carbono|grasas|calor[ií]as|serving size|calories|protein|carbohydrate|fat|sodio|sodium|az[uú]cares|sugars|fibra|fiber/i;
+    const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
+    const candidate = lines.find((l) => l.length >= 3 && !skip.test(l) && !/^\d/.test(l));
+    return candidate || '';
+  })();
+
+  return { name, gBase, kcal, p, c, f };
+}
+
+// ---------------------------------------------------------------------------
 // COMPONENTE PRINCIPAL
 // ---------------------------------------------------------------------------
 
@@ -157,6 +220,8 @@ export default function NutriTrackApp() {
   const [scanPBase, setScanPBase] = useState('');
   const [scanCBase, setScanCBase] = useState('');
   const [scanFBase, setScanFBase] = useState('');
+  const [scanLoading, setScanLoading] = useState(false);
+  const [scanOcrError, setScanOcrError] = useState('');
 
   // Cargar metas guardadas al iniciar
   useEffect(() => {
@@ -426,16 +491,52 @@ export default function NutriTrackApp() {
     setScanPBase('');
     setScanCBase('');
     setScanFBase('');
+    setScanLoading(false);
+    setScanOcrError('');
     setShowScanModal(true);
   };
 
   const closeScanModal = () => setShowScanModal(false);
+
+  // Corre OCR sobre la foto de la etiqueta y precarga los campos detectados;
+  // el usuario los revisa y corrige antes de guardar.
+  const runLabelOcr = async (file) => {
+    setScanLoading(true);
+    setScanOcrError('');
+    try {
+      const { createWorker } = await import('tesseract.js');
+      const worker = await createWorker('spa');
+      const { data: { text } } = await worker.recognize(file);
+      await worker.terminate();
+      const parsed = parseNutritionLabelText(text);
+
+      if (parsed.name) setScanName(parsed.name);
+      if (parsed.gBase != null) {
+        const gBaseStr = String(parsed.gBase);
+        setScanGBase(gBaseStr);
+        setScanGReal((prev) => prev || gBaseStr);
+      }
+      if (parsed.kcal != null) setScanKcalBase(String(parsed.kcal));
+      if (parsed.p != null) setScanPBase(String(parsed.p));
+      if (parsed.c != null) setScanCBase(String(parsed.c));
+      if (parsed.f != null) setScanFBase(String(parsed.f));
+
+      if (parsed.gBase == null && parsed.kcal == null && parsed.p == null && parsed.c == null && parsed.f == null) {
+        setScanOcrError('No pudimos detectar los valores automáticamente. Completalos a mano.');
+      }
+    } catch (e) {
+      setScanOcrError('No pudimos leer la imagen. Completá los datos manualmente.');
+    } finally {
+      setScanLoading(false);
+    }
+  };
 
   const handleScanImageFile = (file) => {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => setScanImage(reader.result);
     reader.readAsDataURL(file);
+    runLabelOcr(file);
   };
 
   const scanGBaseNum = parseFloat(scanGBase) || 0;
@@ -838,6 +939,8 @@ export default function NutriTrackApp() {
             fBase={scanFBase}
             setFBase={setScanFBase}
             final={scanFinal}
+            loading={scanLoading}
+            ocrError={scanOcrError}
             onSave={confirmScan}
             onCancel={closeScanModal}
           />
@@ -1639,6 +1742,8 @@ function ScannerModal({
   fBase,
   setFBase,
   final,
+  loading,
+  ocrError,
   onSave,
   onCancel,
 }) {
@@ -1652,7 +1757,7 @@ function ScannerModal({
           </button>
         </div>
         <p className="text-xs font-semibold mb-5 text-sky-300">
-          Cargá la foto de la etiqueta, completá los valores base y ajustá el gramaje real. Los totales se recalculan automáticamente.
+          Subí la foto de la etiqueta: leemos el texto automáticamente y completamos los campos. Revisalos y corregilos antes de guardar.
         </p>
 
         <div className="space-y-4">
@@ -1686,6 +1791,19 @@ function ScannerModal({
                   onChange={(e) => onImageFile(e.target.files && e.target.files[0])}
                 />
               </label>
+            )}
+            {loading && (
+              <p className="text-xs text-sky-300 flex items-center gap-2 mt-2">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Leyendo la etiqueta...
+              </p>
+            )}
+            {!loading && ocrError && (
+              <p className="text-xs text-amber-400 mt-2">{ocrError}</p>
+            )}
+            {!loading && !ocrError && image && (
+              <p className="text-xs text-slate-500 mt-2">
+                Revisá los valores detectados y corregilos si hace falta antes de guardar.
+              </p>
             )}
           </div>
 
@@ -1785,7 +1903,10 @@ function ScannerModal({
           </button>
           <button
             onClick={onSave}
-            className="flex-1 rounded-xl bg-sky-500 text-slate-900 py-2.5 text-sm font-bold flex items-center justify-center gap-2 hover:bg-sky-400 focus-visible:ring-2 focus-visible:ring-sky-300"
+            disabled={loading}
+            className={`flex-1 rounded-xl bg-sky-500 text-slate-900 py-2.5 text-sm font-bold flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-sky-300 ${
+              loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-sky-400'
+            }`}
           >
             <Save className="w-4 h-4" /> Guardar
           </button>
