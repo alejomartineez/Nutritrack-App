@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Home, PlusCircle, TrendingUp, Settings, Droplet, Droplets, Trash2, X, Check,
   ChevronRight, ChevronLeft, Sparkles, Lightbulb, Award, Plus, Minus,
-  Save, RotateCcw, Info, Utensils, Coffee,
+  Save, RotateCcw, Info, Utensils, Coffee, Pencil, Flame,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -15,6 +15,27 @@ const dateKeyOf = (d) =>
   ).padStart(2, '0')}`;
 
 const TODAY_KEY = dateKeyOf(new Date());
+
+const startOfDay = (d) => {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+};
+
+const addDays = (d, amount) => {
+  const x = new Date(d);
+  x.setDate(x.getDate() + amount);
+  return x;
+};
+
+const formatDisplayDate = (date) => {
+  const today = startOfDay(new Date());
+  const yesterday = addDays(today, -1);
+  if (dateKeyOf(date) === dateKeyOf(today)) return 'Hoy';
+  if (dateKeyOf(date) === dateKeyOf(yesterday)) return 'Ayer';
+  const text = date.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' });
+  return text.charAt(0).toUpperCase() + text.slice(1);
+};
 
 const DEFAULT_GOALS = { calories: 1610, protein: 116.5, carbs: 159, fat: 56.5, water: 2000 };
 const TOLERANCE = { calories: 100, protein: 10, carbs: 10, fat: 10 };
@@ -92,6 +113,11 @@ export default function NutriTrackApp() {
   const [log, setLog] = useState(emptyLog());
   const [tipIndex, setTipIndex] = useState(0);
 
+  const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()));
+  const dateKey = dateKeyOf(selectedDate);
+  const isToday = dateKey === TODAY_KEY;
+  const loadedDateKeyRef = useRef(null);
+
   const [selectedMoment, setSelectedMoment] = useState('desayuno');
   const [registerMode, setRegisterMode] = useState('plan'); // 'plan' | 'libre'
   const [customName, setCustomName] = useState('');
@@ -104,7 +130,17 @@ export default function NutriTrackApp() {
   const [tempGoals, setTempGoals] = useState(DEFAULT_GOALS);
   const [confirmMsg, setConfirmMsg] = useState('');
 
-  // Cargar datos guardados al iniciar
+  const [editingEntry, setEditingEntry] = useState(null); // { id, isPlan, ... }
+  const [editName, setEditName] = useState('');
+  const [editKcal, setEditKcal] = useState('');
+  const [editP, setEditP] = useState('');
+  const [editC, setEditC] = useState('');
+  const [editF, setEditF] = useState('');
+
+  const [pendingDelete, setPendingDelete] = useState(null); // { entry, isPlan }
+  const undoTimeoutRef = useRef(null);
+
+  // Cargar metas guardadas al iniciar
   useEffect(() => {
     try {
       const storedGoals = localStorage.getItem('nutri_goals');
@@ -116,24 +152,30 @@ export default function NutriTrackApp() {
     } catch (e) {
       // Si falla la lectura, se conservan los valores predeterminados
     }
-    try {
-      const storedLog = localStorage.getItem(`nutri_log_${TODAY_KEY}`);
-      if (storedLog) setLog(JSON.parse(storedLog));
-    } catch (e) {
-      // Si falla la lectura, se conserva el registro vacío
-    }
     setLoaded(true);
   }, []);
 
-  // Persistir registro diario
+  // Cargar el registro correspondiente al día seleccionado cada vez que cambia
+  useEffect(() => {
+    try {
+      const storedLog = localStorage.getItem(`nutri_log_${dateKey}`);
+      setLog(storedLog ? JSON.parse(storedLog) : emptyLog());
+    } catch (e) {
+      setLog(emptyLog());
+    }
+    loadedDateKeyRef.current = dateKey;
+  }, [dateKey]);
+
+  // Persistir el registro del día que está actualmente seleccionado
   useEffect(() => {
     if (!loaded) return;
+    if (loadedDateKeyRef.current !== dateKey) return; // evita pisar datos mientras se carga otro día
     try {
-      localStorage.setItem(`nutri_log_${TODAY_KEY}`, JSON.stringify(log));
+      localStorage.setItem(`nutri_log_${dateKey}`, JSON.stringify(log));
     } catch (e) {
       // almacenamiento no disponible, se continúa sin persistir
     }
-  }, [log, loaded]);
+  }, [log, dateKey, loaded]);
 
   // Persistir metas
   useEffect(() => {
@@ -162,6 +204,11 @@ export default function NutriTrackApp() {
   const waterGlasses = Math.round(log.water / GLASS_ML);
   const waterGoalGlasses = Math.max(1, Math.round(goals.water / GLASS_ML));
 
+  // ------------------------- Navegación entre días -------------------------
+  const goPrevDay = () => setSelectedDate((prev) => addDays(prev, -1));
+  const goNextDay = () => setSelectedDate((prev) => (isToday ? prev : addDays(prev, 1)));
+  const goToday = () => setSelectedDate(startOfDay(new Date()));
+
   // ------------------------- Acciones sobre el registro -------------------
   const addPlanMeal = (moment, item) => {
     const entry = {
@@ -175,7 +222,7 @@ export default function NutriTrackApp() {
       time: nowHM(),
     };
     setLog((prev) => ({ ...prev, planMeals: [...prev.planMeals, entry] }));
-    flashConfirm('Comida agregada a tu plan de hoy ✓');
+    flashConfirm('Comida agregada a tu registro ✓');
   };
 
   const addFreeMeal = (item) => {
@@ -193,11 +240,67 @@ export default function NutriTrackApp() {
   };
 
   const removeEntry = (id, isPlan) => {
+    const source = isPlan ? log.planMeals : log.freeMeals;
+    const entry = source.find((m) => m.id === id);
+    if (!entry) return;
     setLog((prev) => ({
       ...prev,
       planMeals: isPlan ? prev.planMeals.filter((m) => m.id !== id) : prev.planMeals,
       freeMeals: !isPlan ? prev.freeMeals.filter((m) => m.id !== id) : prev.freeMeals,
     }));
+    clearTimeout(undoTimeoutRef.current);
+    setPendingDelete({ entry, isPlan });
+    undoTimeoutRef.current = setTimeout(() => setPendingDelete(null), 5000);
+  };
+
+  const undoDelete = () => {
+    if (!pendingDelete) return;
+    const { entry, isPlan } = pendingDelete;
+    setLog((prev) => ({
+      ...prev,
+      planMeals: isPlan ? [...prev.planMeals, entry] : prev.planMeals,
+      freeMeals: !isPlan ? [...prev.freeMeals, entry] : prev.freeMeals,
+    }));
+    clearTimeout(undoTimeoutRef.current);
+    setPendingDelete(null);
+  };
+
+  const openEditEntry = (entry, isPlan) => {
+    setEditingEntry({ id: entry.id, isPlan, moment: entry.moment, time: entry.time });
+    setEditName(entry.name);
+    setEditKcal(String(entry.kcal));
+    setEditP(String(entry.p));
+    setEditC(String(entry.c));
+    setEditF(String(entry.f));
+  };
+
+  const closeEditEntry = () => setEditingEntry(null);
+
+  const saveEditEntry = () => {
+    if (!editingEntry) return;
+    const kcalNum = parseFloat(editKcal);
+    if (!editName.trim() || isNaN(kcalNum) || kcalNum <= 0) return;
+    const updated = {
+      id: editingEntry.id,
+      moment: editingEntry.moment,
+      time: editingEntry.time,
+      name: editName.trim(),
+      kcal: kcalNum,
+      p: parseFloat(editP) || 0,
+      c: parseFloat(editC) || 0,
+      f: parseFloat(editF) || 0,
+    };
+    setLog((prev) => ({
+      ...prev,
+      planMeals: editingEntry.isPlan
+        ? prev.planMeals.map((m) => (m.id === editingEntry.id ? updated : m))
+        : prev.planMeals,
+      freeMeals: !editingEntry.isPlan
+        ? prev.freeMeals.map((m) => (m.id === editingEntry.id ? updated : m))
+        : prev.freeMeals,
+    }));
+    setEditingEntry(null);
+    flashConfirm('Comida actualizada ✓');
   };
 
   const addWater = (deltaGlasses) => {
@@ -265,7 +368,7 @@ export default function NutriTrackApp() {
     if (hasAny && withinKcal && withinP && withinC && withinF) {
       msgs.push({
         type: 'positive',
-        text: '¡Excelente adherencia hoy! Vas por muy buen camino para tus metas de composición corporal.',
+        text: '¡Excelente adherencia! Vas por muy buen camino para tus metas de composición corporal.',
       });
     }
 
@@ -279,21 +382,21 @@ export default function NutriTrackApp() {
     if (totals.p < goals.protein - TOLERANCE.protein) {
       msgs.push({
         type: 'reminder',
-        text: 'Estás un poco abajo en tus proteínas de hoy, ¿sumamos un huevo o yogur en la merienda?',
+        text: 'Estás un poco abajo en tus proteínas, ¿sumamos un huevo o yogur en la merienda?',
       });
     }
 
     if (log.water < goals.water - GLASS_ML * 2) {
       msgs.push({
         type: 'water',
-        text: 'Todavía te faltan varios vasos de agua para llegar a tu meta diaria de hoy.',
+        text: 'Todavía faltan varios vasos de agua para llegar a la meta diaria.',
       });
     }
 
     if (!hasAny) {
       msgs.push({
         type: 'neutral',
-        text: 'Registrá tus comidas de hoy para ver tu progreso y recibir feedback personalizado.',
+        text: 'Registrá comidas en este día para ver el progreso y recibir feedback personalizado.',
       });
     }
     return msgs;
@@ -347,21 +450,46 @@ export default function NutriTrackApp() {
       d.setDate(d.getDate() - i);
       const key = dateKeyOf(d);
       let kcal = 0;
+      let freeCount = 0;
+      let hasData = false;
       try {
         const raw = localStorage.getItem(`nutri_log_${key}`);
         if (raw) {
           const parsed = JSON.parse(raw);
-          const all = [...(parsed.planMeals || []), ...(parsed.freeMeals || [])];
+          const plan = parsed.planMeals || [];
+          const free = parsed.freeMeals || [];
+          const all = [...plan, ...free];
           kcal = all.reduce((s, m) => s + m.kcal, 0);
+          freeCount = free.length;
+          hasData = all.length > 0 || (parsed.water || 0) > 0;
         }
       } catch (e) {
         kcal = 0;
       }
       const label = d.toLocaleDateString('es-AR', { weekday: 'short' }).slice(0, 3);
-      days.push({ key, label, kcal });
+      days.push({ key, label, kcal, freeCount, hasData });
     }
     return days;
   }, [log, loaded]);
+
+  // Racha de días consecutivos (terminando hoy) dentro del rango de calorías
+  const streak = useMemo(() => {
+    let count = 0;
+    for (let i = weekStats.length - 1; i >= 0; i--) {
+      const d = weekStats[i];
+      if (d.hasData && Math.abs(d.kcal - goals.calories) <= TOLERANCE.calories) {
+        count++;
+      } else {
+        break;
+      }
+    }
+    return count;
+  }, [weekStats, goals]);
+
+  const weeklyFreeCount = useMemo(
+    () => weekStats.reduce((sum, d) => sum + d.freeCount, 0),
+    [weekStats]
+  );
 
   // ---------------------------------------------------------------------
   // RENDER
@@ -379,7 +507,7 @@ export default function NutriTrackApp() {
         {/* HEADER */}
         <header className="px-5 pt-6 pb-4 flex items-center justify-between">
           <div>
-            <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold">Hoy</p>
+            <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold">{formatDisplayDate(selectedDate)}</p>
             <h1 className="text-2xl font-black tracking-tight bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">
               Mi Plan Nutricional
             </h1>
@@ -401,8 +529,31 @@ export default function NutriTrackApp() {
           </div>
         )}
 
+        {/* DESHACER ELIMINACIÓN */}
+        {pendingDelete && (
+          <div className="mx-5 mb-2 -mt-1 px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-sm flex items-center justify-between gap-3">
+            <span>Comida eliminada</span>
+            <button
+              onClick={undoDelete}
+              className="text-emerald-400 font-semibold shrink-0 focus-visible:ring-2 focus-visible:ring-emerald-400 rounded px-1"
+            >
+              Deshacer
+            </button>
+          </div>
+        )}
+
         {/* CONTENIDO */}
         <main className="flex-1 overflow-y-auto px-5 pb-28 space-y-5">
+          {(activeTab === 'dia' || activeTab === 'registrar') && (
+            <DateNav
+              isToday={isToday}
+              label={formatDisplayDate(selectedDate)}
+              onPrev={goPrevDay}
+              onNext={goNextDay}
+              onToday={goToday}
+            />
+          )}
+
           {activeTab === 'dia' && (
             <TabMiDia
               ring={ring}
@@ -415,6 +566,7 @@ export default function NutriTrackApp() {
               addWater={addWater}
               log={log}
               removeEntry={removeEntry}
+              onEdit={openEditEntry}
             />
           )}
 
@@ -448,6 +600,8 @@ export default function NutriTrackApp() {
               goals={goals}
               tipIndex={tipIndex}
               setTipIndex={setTipIndex}
+              streak={streak}
+              weeklyFreeCount={weeklyFreeCount}
             />
           )}
         </main>
@@ -471,6 +625,25 @@ export default function NutriTrackApp() {
             onReset={resetSettings}
           />
         )}
+
+        {/* MODAL DE EDICIÓN DE COMIDA */}
+        {editingEntry && (
+          <EditEntryModal
+            isPlan={editingEntry.isPlan}
+            name={editName}
+            setName={setEditName}
+            kcal={editKcal}
+            setKcal={setEditKcal}
+            p={editP}
+            setP={setEditP}
+            c={editC}
+            setC={setEditC}
+            f={editF}
+            setF={setEditF}
+            onSave={saveEditEntry}
+            onCancel={closeEditEntry}
+          />
+        )}
       </div>
     </div>
   );
@@ -479,6 +652,41 @@ export default function NutriTrackApp() {
 // ---------------------------------------------------------------------------
 // SUBCOMPONENTES DE UI
 // ---------------------------------------------------------------------------
+
+function DateNav({ isToday, label, onPrev, onNext, onToday }) {
+  return (
+    <div className="flex items-center justify-between rounded-2xl bg-slate-800/60 border border-slate-700 px-3 py-2.5">
+      <button
+        onClick={onPrev}
+        aria-label="Ver día anterior"
+        className="p-2 rounded-full hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-emerald-400"
+      >
+        <ChevronLeft className="w-4 h-4 text-slate-300" />
+      </button>
+      <div className="text-center min-w-[120px]">
+        <p className="text-sm font-semibold text-slate-200">{label}</p>
+        {!isToday && (
+          <button
+            onClick={onToday}
+            className="text-[11px] text-emerald-400 font-semibold mt-0.5 focus-visible:ring-2 focus-visible:ring-emerald-400 rounded"
+          >
+            Volver a hoy
+          </button>
+        )}
+      </div>
+      <button
+        onClick={onNext}
+        disabled={isToday}
+        aria-label="Ver día siguiente"
+        className={`p-2 rounded-full focus-visible:ring-2 focus-visible:ring-emerald-400 ${
+          isToday ? 'opacity-30 cursor-not-allowed' : 'hover:bg-slate-700'
+        }`}
+      >
+        <ChevronRight className="w-4 h-4 text-slate-300" />
+      </button>
+    </div>
+  );
+}
 
 function NavButton({ icon: Icon, label, active, onClick }) {
   return (
@@ -546,13 +754,14 @@ function TabMiDia({
   addWater,
   log,
   removeEntry,
+  onEdit,
 }) {
   const kcalColor = ring.overshoot ? '#f59e0b' : '#10b981';
   const statusText = ring.overshoot
-    ? 'Por encima de tu meta de hoy'
+    ? 'Por encima de la meta'
     : Math.abs(totals.kcal - goals.calories) <= TOLERANCE_CAL
     ? 'Dentro de tu rango objetivo'
-    : 'Por debajo de tu meta de hoy';
+    : 'Por debajo de la meta';
 
   const allEntries = [
     ...log.planMeals.map((m) => ({ ...m, kind: 'plan' })),
@@ -632,7 +841,7 @@ function TabMiDia({
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Droplets className="w-5 h-5 text-cyan-300" />
-            <span className="font-semibold text-slate-200">Agua de hoy</span>
+            <span className="font-semibold text-slate-200">Agua registrada</span>
           </div>
           <span className="font-mono text-sm text-cyan-200">
             {waterGlasses}/{waterGoalGlasses} vasos
@@ -666,10 +875,10 @@ function TabMiDia({
 
       {/* HISTORIAL DEL DÍA */}
       <div>
-        <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wide mb-2">Registro de hoy</h2>
+        <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wide mb-2">Registro del día</h2>
         {allEntries.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-700 p-6 text-center text-slate-500 text-sm">
-            Todavía no registraste comidas hoy. Andá a la pestaña "Registrar" para empezar.
+            Todavía no hay comidas registradas para este día. Andá a la pestaña "Registrar" para cargarlas.
           </div>
         ) : (
           <ul className="space-y-2">
@@ -696,13 +905,22 @@ function TabMiDia({
                     {Math.round(entry.kcal)} kcal · P {round1(entry.p)}g · C {round1(entry.c)}g · G {round1(entry.f)}g
                   </p>
                 </div>
-                <button
-                  onClick={() => removeEntry(entry.id, entry.kind === 'plan')}
-                  aria-label="Eliminar registro"
-                  className="p-2 rounded-full hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-slate-400 shrink-0"
-                >
-                  <Trash2 className="w-4 h-4 text-slate-500" />
-                </button>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    onClick={() => onEdit(entry, entry.kind === 'plan')}
+                    aria-label="Editar comida"
+                    className="p-2 rounded-full hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-slate-400"
+                  >
+                    <Pencil className="w-4 h-4 text-slate-500" />
+                  </button>
+                  <button
+                    onClick={() => removeEntry(entry.id, entry.kind === 'plan')}
+                    aria-label="Eliminar registro"
+                    className="p-2 rounded-full hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-slate-400"
+                  >
+                    <Trash2 className="w-4 h-4 text-slate-500" />
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
@@ -886,7 +1104,7 @@ function TabRegistrar({
   );
 }
 
-function TabProgreso({ weekStats, goals, tipIndex, setTipIndex }) {
+function TabProgreso({ weekStats, goals, tipIndex, setTipIndex, streak, weeklyFreeCount }) {
   const maxKcal = Math.max(goals.calories, ...weekStats.map((d) => d.kcal), 1);
 
   const nextTip = () => setTipIndex((i) => (i + 1) % TIPS.length);
@@ -894,6 +1112,27 @@ function TabProgreso({ weekStats, goals, tipIndex, setTipIndex }) {
 
   return (
     <div className="space-y-5">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-2xl bg-slate-800/60 border border-slate-700 p-4 flex flex-col items-center justify-center text-center">
+          <div className="flex items-center gap-1.5 text-emerald-400">
+            <Flame className="w-5 h-5" />
+            <span className="font-mono text-2xl font-black text-slate-100">{streak}</span>
+          </div>
+          <p className="text-[11px] text-slate-400 mt-1 leading-tight">
+            {streak === 1 ? 'día seguido dentro de rango' : 'días seguidos dentro de rango'}
+          </p>
+        </div>
+        <div className="rounded-2xl bg-slate-800/60 border border-slate-700 p-4 flex flex-col items-center justify-center text-center">
+          <div className="flex items-center gap-1.5 text-amber-400">
+            <Sparkles className="w-5 h-5" />
+            <span className="font-mono text-2xl font-black text-slate-100">{weeklyFreeCount}</span>
+          </div>
+          <p className="text-[11px] text-slate-400 mt-1 leading-tight">
+            {weeklyFreeCount === 1 ? 'gusto esta semana' : 'gustos esta semana'}
+          </p>
+        </div>
+      </div>
+
       <div className="rounded-3xl bg-slate-800/60 border border-slate-700 p-5">
         <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wide mb-4">Últimos 7 días</h2>
         <div className="flex items-end justify-between gap-2 h-36">
@@ -970,6 +1209,98 @@ function GoalChip({ label, value }) {
     <div className="rounded-xl bg-slate-900/60 border border-slate-700 px-3 py-2">
       <p className="text-[10px] uppercase text-slate-500 font-semibold">{label}</p>
       <p className="font-mono text-slate-200 font-semibold">{value}</p>
+    </div>
+  );
+}
+
+function EditEntryModal({ isPlan, name, setName, kcal, setKcal, p, setP, c, setC, f, setF, onSave, onCancel }) {
+  const accent = isPlan ? 'emerald' : 'amber';
+  const accentText = isPlan ? 'text-emerald-300' : 'text-amber-300';
+  const accentBorder = isPlan ? 'border-emerald-500/30' : 'border-amber-500/30';
+  const accentBg = isPlan ? 'bg-emerald-500' : 'bg-amber-500';
+  const accentRing = isPlan ? 'focus-visible:ring-emerald-400' : 'focus-visible:ring-amber-400';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 px-0 sm:px-4">
+      <div className={`w-full max-w-md bg-slate-800 border ${accentBorder} rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto`}>
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="text-lg font-bold text-slate-100">Editar comida</h2>
+          <button onClick={onCancel} aria-label="Cerrar edición" className="p-2 rounded-full hover:bg-slate-700">
+            <X className="w-5 h-5 text-slate-400" />
+          </button>
+        </div>
+        <p className={`text-xs font-semibold mb-5 ${accentText}`}>
+          {isPlan ? 'Comida del plan oficial' : 'Comida fuera de plan'}
+        </p>
+
+        <div className="space-y-4">
+          <div>
+            <label className="text-xs font-semibold text-slate-400 mb-1 block">Nombre</label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 focus:outline-none focus:ring-2 ${accentRing}`}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold text-slate-400 mb-1 block">Calorías (kcal)</label>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={kcal}
+                onChange={(e) => setKcal(e.target.value)}
+                className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono focus:outline-none focus:ring-2 ${accentRing}`}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-400 mb-1 block">Proteínas (g)</label>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={p}
+                onChange={(e) => setP(e.target.value)}
+                className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono focus:outline-none focus:ring-2 ${accentRing}`}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-400 mb-1 block">Carbohidratos (g)</label>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={c}
+                onChange={(e) => setC(e.target.value)}
+                className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono focus:outline-none focus:ring-2 ${accentRing}`}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-400 mb-1 block">Grasas (g)</label>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={f}
+                onChange={(e) => setF(e.target.value)}
+                className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono focus:outline-none focus:ring-2 ${accentRing}`}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <button
+            onClick={onCancel}
+            className="flex-1 rounded-xl border border-slate-600 text-slate-300 py-2.5 text-sm font-semibold hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-slate-400"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={onSave}
+            className={`flex-1 rounded-xl ${accentBg} text-slate-900 py-2.5 text-sm font-bold flex items-center justify-center gap-2 focus-visible:ring-2 ${accentRing}`}
+          >
+            <Save className="w-4 h-4" /> Guardar
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
