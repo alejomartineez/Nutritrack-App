@@ -2,8 +2,9 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Home, PlusCircle, TrendingUp, Settings, Droplet, Droplets, Trash2, X, Check,
   ChevronRight, ChevronLeft, Sparkles, Lightbulb, Award, Plus, Minus,
-  Save, RotateCcw, Info, Utensils, Coffee, Pencil, Flame,
+  Save, RotateCcw, Info, Utensils, Coffee, Pencil, Flame, Dumbbell,
 } from 'lucide-react';
+import WorkoutModule from './workout/WorkoutModule';
 
 // ---------------------------------------------------------------------------
 // DATOS BASE DEL PLAN
@@ -578,18 +579,26 @@ export default function NutriTrackApp() {
         {/* HEADER */}
         <header className="px-5 pt-6 pb-4 flex items-center justify-between">
           <div>
-            <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold">{formatDisplayDate(selectedDate)}</p>
-            <h1 className="text-2xl font-black tracking-tight bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">
-              Mi Plan Nutricional
+            <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold">
+              {activeTab === 'entreno' ? 'Seguimiento semanal' : formatDisplayDate(selectedDate)}
+            </p>
+            <h1
+              className={`text-2xl font-black tracking-tight bg-clip-text text-transparent ${
+                activeTab === 'entreno' ? 'bg-gradient-to-r from-orange-400 to-amber-300' : 'bg-gradient-to-r from-emerald-400 to-teal-300'
+              }`}
+            >
+              {activeTab === 'entreno' ? 'Mis Entrenamientos' : 'Mi Plan Nutricional'}
             </h1>
           </div>
-          <button
-            onClick={openSettings}
-            aria-label="Ajustes del plan"
-            className="p-2.5 rounded-full bg-slate-800 border border-slate-700 hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-emerald-400 transition-colors"
-          >
-            <Settings className="w-5 h-5 text-slate-300" />
-          </button>
+          {activeTab !== 'entreno' && (
+            <button
+              onClick={openSettings}
+              aria-label="Ajustes del plan"
+              className="p-2.5 rounded-full bg-slate-800 border border-slate-700 hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-emerald-400 transition-colors"
+            >
+              <Settings className="w-5 h-5 text-slate-300" />
+            </button>
+          )}
         </header>
 
         {/* CONFIRMACIÓN FLOTANTE */}
@@ -677,6 +686,8 @@ export default function NutriTrackApp() {
               weeklyFreeCount={weeklyFreeCount}
             />
           )}
+
+          {activeTab === 'entreno' && <WorkoutModule />}
         </main>
 
         {/* NAV INFERIOR */}
@@ -685,6 +696,13 @@ export default function NutriTrackApp() {
             <NavButton icon={Home} label="Mi Día" active={activeTab === 'dia'} onClick={() => setActiveTab('dia')} />
             <NavButton icon={PlusCircle} label="Registrar" active={activeTab === 'registrar'} onClick={() => setActiveTab('registrar')} />
             <NavButton icon={TrendingUp} label="Progreso" active={activeTab === 'progreso'} onClick={() => setActiveTab('progreso')} />
+            <NavButton
+              icon={Dumbbell}
+              label="Entreno"
+              active={activeTab === 'entreno'}
+              onClick={() => setActiveTab('entreno')}
+              activeColorClass="text-orange-400"
+            />
           </div>
         </nav>
 
@@ -782,12 +800,12 @@ function DateNav({ isToday, label, onPrev, onNext, onToday }) {
   );
 }
 
-function NavButton({ icon: Icon, label, active, onClick }) {
+function NavButton({ icon: Icon, label, active, onClick, activeColorClass = 'text-emerald-400' }) {
   return (
     <button
       onClick={onClick}
       className={`flex flex-col items-center gap-1 px-4 py-1 rounded-xl focus-visible:ring-2 focus-visible:ring-emerald-400 transition-colors ${
-        active ? 'text-emerald-400' : 'text-slate-500'
+        active ? activeColorClass : 'text-slate-500'
       }`}
     >
       <Icon className="w-5 h-5" />
