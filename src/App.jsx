@@ -45,21 +45,26 @@ const TOLERANCE = { calories: 100, protein: 10, carbs: 10, fat: 10 };
 const GLASS_ML = 250;
 
 // Catálogo único de alimentos del plan (sin clasificación por momento del día)
+// Macros verificados para que kcal ≈ proteína×4 + carbohidratos×4 + grasa×9,
+// y con los alimentos con perfiles distintos separados en opciones propias
+// (ej: huevo entero vs. clara, que tienen grasa muy diferente).
 const DEFAULT_CATALOG = [
-  { id: 'd1', name: '2 Tostadas integrales + queso untable light', kcal: 180, p: 8, c: 24, f: 5 },
-  { id: 'd2', name: '2 Huevos revueltos o claras', kcal: 150, p: 14, c: 1, f: 10 },
-  { id: 'd3', name: 'Yogur descremado + granola', kcal: 160, p: 10, c: 20, f: 3 },
-  { id: 'd4', name: 'Panqueques de avena (2) + fruta', kcal: 220, p: 8, c: 30, f: 6 },
-  { id: 'd5', name: 'Tostadas integrales + huevo', kcal: 210, p: 12, c: 22, f: 8 },
-  { id: 'm1', name: 'Pollo grillado + arroz integral + ensalada verde', kcal: 420, p: 35, c: 40, f: 10 },
-  { id: 'm2', name: 'Carne magra + puré de batata + vegetales al vapor', kcal: 450, p: 32, c: 45, f: 12 },
-  { id: 'm3', name: 'Pescado al horno + quinoa + vegetales grillados', kcal: 400, p: 30, c: 38, f: 11 },
-  { id: 'm4', name: 'Tofu salteado + legumbres + vegetales salteados', kcal: 380, p: 22, c: 42, f: 9 },
-  { id: 'm5', name: 'Milanesa al horno + puré de calabaza + ensalada', kcal: 440, p: 30, c: 35, f: 15 },
-  { id: 'co1', name: 'Fruta grupo A (manzana, pera, naranja)', kcal: 70, p: 1, c: 18, f: 0 },
-  { id: 'co2', name: 'Fruta grupo B (banana, uva, mango)', kcal: 100, p: 1, c: 25, f: 0 },
-  { id: 'co3', name: 'Yogur descremado', kcal: 80, p: 8, c: 10, f: 1 },
-  { id: 'co4', name: 'Barrita íntegra', kcal: 120, p: 4, c: 18, f: 4 },
+  { id: 'd1', name: '2 Tostadas integrales + queso untable light', kcal: 175, p: 7, c: 25, f: 5 },
+  { id: 'd2', name: '2 Huevos revueltos (enteros)', kcal: 190, p: 13, c: 1, f: 15 },
+  { id: 'd3', name: '3 Claras de huevo', kcal: 55, p: 11, c: 1, f: 0 },
+  { id: 'd4', name: 'Yogur descremado + granola', kcal: 190, p: 12, c: 28, f: 3 },
+  { id: 'd5', name: 'Panqueques de avena (2) + fruta', kcal: 260, p: 9, c: 38, f: 8 },
+  { id: 'd6', name: 'Tostadas integrales + 1 huevo', kcal: 220, p: 11, c: 24, f: 9 },
+  { id: 'm1', name: 'Pollo grillado + arroz integral + ensalada verde', kcal: 415, p: 40, c: 38, f: 11 },
+  { id: 'm2', name: 'Carne magra + puré de batata + vegetales al vapor', kcal: 420, p: 36, c: 42, f: 10 },
+  { id: 'm3', name: 'Pescado al horno + quinoa + vegetales grillados', kcal: 405, p: 38, c: 42, f: 8 },
+  { id: 'm4', name: 'Tofu salteado + legumbres + vegetales salteados', kcal: 380, p: 28, c: 34, f: 14 },
+  { id: 'm5', name: 'Milanesa al horno + puré de calabaza + ensalada', kcal: 410, p: 30, c: 33, f: 16 },
+  { id: 'co1', name: 'Fruta grupo A (manzana, pera, naranja)', kcal: 72, p: 1, c: 17, f: 0 },
+  { id: 'co2', name: 'Fruta grupo B (banana, uva, mango)', kcal: 100, p: 1, c: 24, f: 0 },
+  { id: 'co3', name: 'Yogur descremado', kcal: 90, p: 9, c: 12, f: 1 },
+  { id: 'co4', name: 'Barrita de cereal integral', kcal: 120, p: 3, c: 20, f: 3 },
+  { id: 'co5', name: 'Puñado de frutos secos (almendras/nueces)', kcal: 170, p: 5, c: 5, f: 15 },
 ];
 
 const FREE_PRESETS = [
