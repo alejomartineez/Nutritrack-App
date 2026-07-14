@@ -15,8 +15,12 @@ function WatermarkHint({ last }) {
   );
 }
 
+const RIR_CYCLE = ['', 0, 1, 2, 3, '4+'];
+
 function SetRow({ set, index, onOpenPad, onUpdate, onRemove, onComplete }) {
   const typeInfo = SET_TYPES.find((t) => t.id === set.type) || SET_TYPES[1];
+  const isDefaultType = !set.type || set.type === 'effective';
+  const hasRir = set.rir !== '' && set.rir != null;
 
   const cycleType = () => {
     const i = SET_TYPES.findIndex((t) => t.id === set.type);
@@ -24,65 +28,76 @@ function SetRow({ set, index, onOpenPad, onUpdate, onRemove, onComplete }) {
     onUpdate({ type: next.id });
   };
 
+  const cycleRir = () => {
+    const i = RIR_CYCLE.findIndex((v) => String(v) === String(set.rir ?? ''));
+    const next = RIR_CYCLE[(i + 1) % RIR_CYCLE.length];
+    onUpdate({ rir: next });
+  };
+
   return (
-    <div className={`rounded-xl border p-2.5 space-y-2 ${set.completed ? 'bg-orange-500/10 border-orange-500/30' : 'bg-neutral-800/60 border-neutral-700'}`}>
-      <div className="flex items-center gap-2">
-        <span className="w-5 text-center text-xs font-mono text-slate-500 shrink-0">{index + 1}</span>
+    <div
+      className={`rounded-xl border p-2 flex items-center gap-1.5 ${
+        set.completed ? 'bg-orange-500/10 border-orange-500/30' : 'bg-neutral-800/60 border-neutral-700'
+      }`}
+    >
+      <span className="w-4 text-center text-xs font-mono text-slate-500 shrink-0">{index + 1}</span>
 
-        <button
-          onClick={cycleType}
-          className={`shrink-0 w-8 h-8 rounded-lg text-[11px] font-bold flex items-center justify-center ${typeInfo.color}`}
-          aria-label={`Tipo de serie: ${typeInfo.label}. Tocar para cambiar`}
-          title={typeInfo.label}
-        >
-          {typeInfo.short}
-        </button>
+      {/* Tipo de serie: punto discreto para "efectiva" (el caso común), chip de color solo para tipos especiales */}
+      <button
+        onClick={cycleType}
+        aria-label={`Tipo de serie: ${typeInfo.label}. Tocar para cambiar`}
+        className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center"
+      >
+        {isDefaultType ? (
+          <span className="w-1.5 h-1.5 rounded-full bg-neutral-600" />
+        ) : (
+          <span className={`w-full h-full rounded-lg text-[10px] font-bold flex items-center justify-center ${typeInfo.color}`}>
+            {typeInfo.short}
+          </span>
+        )}
+      </button>
 
-        <button
-          onClick={() => onOpenPad('weight', String(set.weight ?? ''), 'Peso (kg)', [-5, -2.5, -1, 1, 2.5, 5])}
-          className="flex-1 min-w-0 bg-neutral-900 border border-neutral-700 rounded-lg py-2 text-center font-mono text-sm text-slate-100"
-        >
-          {set.weight !== '' && set.weight != null ? `${set.weight}kg` : '—'}
-        </button>
+      <button
+        onClick={() => onOpenPad('weight', String(set.weight ?? ''), 'Peso (kg)', [-5, -2.5, -1, 1, 2.5, 5])}
+        className="flex-1 min-w-0 bg-neutral-900 border border-neutral-700 rounded-lg py-2.5 text-center font-mono text-base font-semibold text-slate-100"
+      >
+        {set.weight !== '' && set.weight != null ? `${set.weight}kg` : '—'}
+      </button>
 
-        <button
-          onClick={() => onOpenPad('reps', String(set.reps ?? ''), 'Repeticiones', [-1, 1], false)}
-          className="flex-1 min-w-0 bg-neutral-900 border border-neutral-700 rounded-lg py-2 text-center font-mono text-sm text-slate-100"
-        >
-          {set.reps !== '' && set.reps != null ? `${set.reps}` : '—'}
-        </button>
+      <button
+        onClick={() => onOpenPad('reps', String(set.reps ?? ''), 'Repeticiones', [-1, 1], false)}
+        className="flex-1 min-w-0 bg-neutral-900 border border-neutral-700 rounded-lg py-2.5 text-center font-mono text-base font-semibold text-slate-100"
+      >
+        {set.reps !== '' && set.reps != null ? `${set.reps}` : '—'}
+      </button>
 
-        <button
-          onClick={onComplete}
-          aria-label="Marcar serie completa"
-          className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center focus-visible:ring-2 focus-visible:ring-orange-400 ${
-            set.completed ? 'bg-orange-500 text-neutral-900' : 'bg-neutral-700 text-slate-400 hover:bg-neutral-600'
-          }`}
-        >
-          <Check className="w-4 h-4" />
-        </button>
+      {/* RIR: un solo chip que rota en cada toque, en vez de 5 botones siempre visibles */}
+      <button
+        onClick={cycleRir}
+        aria-label="RIR (repeticiones en reserva). Tocar para cambiar"
+        className={`shrink-0 w-11 h-9 rounded-lg text-[11px] font-bold flex items-center justify-center ${
+          hasRir ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30' : 'text-slate-600 border border-neutral-700'
+        }`}
+      >
+        {hasRir ? `RIR${set.rir}` : 'RIR'}
+      </button>
 
-        <button onClick={onRemove} aria-label="Eliminar serie" className="shrink-0 p-1.5 rounded-full hover:bg-neutral-700">
+      <button
+        onClick={onComplete}
+        aria-label="Marcar serie completa"
+        className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center focus-visible:ring-2 focus-visible:ring-orange-400 ${
+          set.completed ? 'bg-orange-500 text-neutral-900' : 'bg-neutral-700 text-slate-400 hover:bg-neutral-600'
+        }`}
+      >
+        <Check className="w-4 h-4" />
+      </button>
+
+      {/* Una serie ya completada queda protegida: hay que descompletarla (tocar el check) para poder borrarla */}
+      {!set.completed && (
+        <button onClick={onRemove} aria-label="Eliminar serie" className="shrink-0 p-1 rounded-full hover:bg-neutral-700">
           <Trash2 className="w-3.5 h-3.5 text-slate-600" />
         </button>
-      </div>
-
-      <div className="flex items-center gap-1.5 pl-7">
-        <span className="text-[10px] text-slate-500 font-semibold shrink-0">RIR</span>
-        <div className="flex items-center gap-1 flex-1">
-          {[0, 1, 2, 3, '4+'].map((v) => (
-            <button
-              key={v}
-              onClick={() => onUpdate({ rir: v })}
-              className={`flex-1 h-7 rounded text-[11px] font-bold ${
-                String(set.rir) === String(v) ? 'bg-orange-500 text-neutral-900' : 'bg-neutral-900 text-slate-500 border border-neutral-700'
-              }`}
-            >
-              {v}
-            </button>
-          ))}
-        </div>
-      </div>
+      )}
     </div>
   );
 }
