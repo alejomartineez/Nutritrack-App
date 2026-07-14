@@ -3,10 +3,11 @@ import {
   Home, PlusCircle, TrendingUp, Settings, Droplet, Droplets, Trash2, X, Check,
   ChevronRight, ChevronLeft, Sparkles, Lightbulb, Award, Plus, Minus,
   Save, RotateCcw, Info, Utensils, Coffee, Pencil, Flame, Dumbbell, MoonStar,
-  Download, Share, SquarePlus,
+  Download, Share, SquarePlus, Upload, ShieldCheck,
 } from 'lucide-react';
 import WorkoutModule from './workout/WorkoutModule';
 import SleepModule from './sleep/SleepModule';
+import { requestPersistentStorage, downloadFullBackup, restoreFullBackup, readBackupFile } from './backupStorage';
 
 // ---------------------------------------------------------------------------
 // DATOS BASE DEL PLAN
@@ -172,6 +173,7 @@ export default function NutriTrackApp() {
       // Si falla la lectura, se conservan los valores predeterminados
     }
     setLoaded(true);
+    requestPersistentStorage();
   }, []);
 
   // Cargar el registro correspondiente al día seleccionado cada vez que cambia
@@ -1639,6 +1641,40 @@ function SettingsModal({ tempGoals, setTempGoals, onSave, onCancel, onReset }) {
     { key: 'water', label: 'Agua (ml)', step: '50' },
   ];
 
+  const fileInputRef = useRef(null);
+  const [backupMsg, setBackupMsg] = useState(null); // { type: 'ok' | 'error', text }
+
+  const handleExport = () => {
+    try {
+      downloadFullBackup();
+      setBackupMsg({ type: 'ok', text: 'Copia de seguridad descargada ✓' });
+    } catch (e) {
+      setBackupMsg({ type: 'error', text: 'No se pudo generar el archivo.' });
+    }
+  };
+
+  const handleImportClick = () => fileInputRef.current?.click();
+
+  const handleFileSelected = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // permite volver a elegir el mismo archivo después
+    if (!file) return;
+
+    const confirmed = window.confirm(
+      'Esto va a reemplazar tus datos actuales (nutrición, entreno y sueño) por los del archivo de backup. ¿Continuar?'
+    );
+    if (!confirmed) return;
+
+    try {
+      const data = await readBackupFile(file);
+      restoreFullBackup(data);
+      setBackupMsg({ type: 'ok', text: 'Datos restaurados. Recargando...' });
+      setTimeout(() => window.location.reload(), 800);
+    } catch (err) {
+      setBackupMsg({ type: 'error', text: err.message || 'No se pudo restaurar el archivo.' });
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 px-0 sm:px-4">
       <div className="w-full max-w-md bg-slate-800 border border-slate-700 rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto">
@@ -1677,6 +1713,35 @@ function SettingsModal({ tempGoals, setTempGoals, onSave, onCancel, onReset }) {
           >
             <Save className="w-4 h-4" /> Guardar
           </button>
+        </div>
+
+        <div className="mt-6 pt-5 border-t border-slate-700">
+          <div className="flex items-center gap-2 mb-1">
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <h3 className="text-sm font-bold text-slate-100">Copia de seguridad</h3>
+          </div>
+          <p className="text-xs text-slate-500 mb-3">
+            Guarda o restaura todos tus datos (nutrición, entreno y sueño) en un solo archivo. Útil antes de cambiar de
+            teléfono o desinstalar la app.
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={handleExport}
+              className="flex-1 rounded-xl border border-slate-600 text-slate-300 py-2.5 text-sm font-semibold flex items-center justify-center gap-2 hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-slate-400"
+            >
+              <Download className="w-4 h-4" /> Exportar todo
+            </button>
+            <button
+              onClick={handleImportClick}
+              className="flex-1 rounded-xl border border-slate-600 text-slate-300 py-2.5 text-sm font-semibold flex items-center justify-center gap-2 hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-slate-400"
+            >
+              <Upload className="w-4 h-4" /> Restaurar copia
+            </button>
+          </div>
+          <input ref={fileInputRef} type="file" accept="application/json" onChange={handleFileSelected} className="hidden" />
+          {backupMsg && (
+            <p className={`text-xs mt-2.5 ${backupMsg.type === 'ok' ? 'text-emerald-400' : 'text-rose-400'}`}>{backupMsg.text}</p>
+          )}
         </div>
       </div>
     </div>
