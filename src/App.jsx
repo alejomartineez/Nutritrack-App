@@ -578,7 +578,10 @@ export default function NutriTrackApp() {
     <div className="min-h-screen w-full bg-slate-900 text-slate-100 flex justify-center">
       <div className="w-full max-w-md flex flex-col min-h-screen relative">
         {/* HEADER */}
-        <header className="px-5 pt-6 pb-4 flex items-center justify-between">
+        <header
+          className="px-5 pb-4 flex items-center justify-between"
+          style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.5rem)' }}
+        >
           <div>
             <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold">
               {activeTab === 'entreno' ? 'Seguimiento semanal' : activeTab === 'sueno' ? 'Sueño y recuperación' : formatDisplayDate(selectedDate)}
@@ -699,7 +702,10 @@ export default function NutriTrackApp() {
 
         {/* NAV INFERIOR */}
         <nav className="fixed bottom-0 inset-x-0 flex justify-center pointer-events-none">
-          <div className="w-full max-w-md bg-slate-800/95 backdrop-blur border-t border-slate-700 px-2 pt-2 pb-5 flex justify-around pointer-events-auto">
+          <div
+            className="w-full max-w-md bg-slate-800/95 backdrop-blur border-t border-slate-700 px-2 pt-2 flex justify-around pointer-events-auto"
+            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.25rem)' }}
+          >
             <NavButton icon={Home} label="Mi Día" active={activeTab === 'dia'} onClick={() => setActiveTab('dia')} />
             <NavButton icon={PlusCircle} label="Registrar" active={activeTab === 'registrar'} onClick={() => setActiveTab('registrar')} />
             <NavButton icon={TrendingUp} label="Progreso" active={activeTab === 'progreso'} onClick={() => setActiveTab('progreso')} />
