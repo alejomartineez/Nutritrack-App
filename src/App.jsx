@@ -3,6 +3,7 @@ import {
   Home, PlusCircle, TrendingUp, Settings, Droplet, Droplets, Trash2, X, Check,
   ChevronRight, ChevronLeft, Sparkles, Lightbulb, Award, Plus, Minus,
   Save, RotateCcw, Info, Utensils, Coffee, Pencil, Flame, Dumbbell, MoonStar,
+  Download, Share, SquarePlus,
 } from 'lucide-react';
 import WorkoutModule from './workout/WorkoutModule';
 import SleepModule from './sleep/SleepModule';
@@ -97,6 +98,10 @@ const round1 = (n) => Math.round(n * 10) / 10;
 export default function NutriTrackApp() {
   const [activeTab, setActiveTab] = useState('dia');
   const [showSettings, setShowSettings] = useState(false);
+  const [showInstallGuide, setShowInstallGuide] = useState(false);
+  const [isStandalone] = useState(
+    () => window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true
+  );
   const [loaded, setLoaded] = useState(false);
 
   const [goals, setGoals] = useState(DEFAULT_GOALS);
@@ -582,21 +587,32 @@ export default function NutriTrackApp() {
           className="px-5 pb-4 flex items-center justify-between"
           style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.5rem)' }}
         >
-          <div>
-            <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold">
-              {activeTab === 'entreno' ? 'Seguimiento semanal' : activeTab === 'sueno' ? 'Sueño y recuperación' : formatDisplayDate(selectedDate)}
-            </p>
-            <h1
-              className={`text-2xl font-black tracking-tight bg-clip-text text-transparent ${
-                activeTab === 'entreno'
-                  ? 'bg-gradient-to-r from-orange-400 to-amber-300'
-                  : activeTab === 'sueno'
-                  ? 'bg-gradient-to-r from-indigo-400 to-violet-300'
-                  : 'bg-gradient-to-r from-emerald-400 to-teal-300'
-              }`}
-            >
-              {activeTab === 'entreno' ? 'Mis Entrenamientos' : activeTab === 'sueno' ? 'Mi Descanso' : 'Mi Plan Nutricional'}
-            </h1>
+          <div className="flex items-center gap-3 min-w-0">
+            {!isStandalone && (
+              <button
+                onClick={() => setShowInstallGuide(true)}
+                aria-label="Instalar la app en tu iPhone"
+                className="p-2.5 rounded-full bg-slate-800 border border-slate-700 hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-emerald-400 transition-colors shrink-0"
+              >
+                <Download className="w-5 h-5 text-slate-300" />
+              </button>
+            )}
+            <div className="min-w-0">
+              <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold truncate">
+                {activeTab === 'entreno' ? 'Seguimiento semanal' : activeTab === 'sueno' ? 'Sueño y recuperación' : formatDisplayDate(selectedDate)}
+              </p>
+              <h1
+                className={`text-2xl font-black tracking-tight bg-clip-text text-transparent truncate ${
+                  activeTab === 'entreno'
+                    ? 'bg-gradient-to-r from-orange-400 to-amber-300'
+                    : activeTab === 'sueno'
+                    ? 'bg-gradient-to-r from-indigo-400 to-violet-300'
+                    : 'bg-gradient-to-r from-emerald-400 to-teal-300'
+                }`}
+              >
+                {activeTab === 'entreno' ? 'Mis Entrenamientos' : activeTab === 'sueno' ? 'Mi Descanso' : 'Mi Plan Nutricional'}
+              </h1>
+            </div>
           </div>
           {activeTab !== 'entreno' && activeTab !== 'sueno' && (
             <button
@@ -725,6 +741,9 @@ export default function NutriTrackApp() {
             />
           </div>
         </nav>
+
+        {/* MODAL DE INSTALACIÓN EN INICIO (iPhone/Safari) */}
+        {showInstallGuide && <InstallGuideModal onClose={() => setShowInstallGuide(false)} />}
 
         {/* MODAL DE AJUSTES */}
         {showSettings && (
@@ -1540,6 +1559,67 @@ function CatalogItemModal({ isNew, name, setName, kcal, setKcal, p, setP, c, set
             <Save className="w-4 h-4" /> Guardar
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function InstallGuideModal({ onClose }) {
+  const steps = [
+    {
+      icon: Share,
+      title: 'Tocá el ícono Compartir',
+      text: 'Es el cuadrado con una flecha hacia arriba, en la barra inferior (o superior) de Safari.',
+    },
+    {
+      icon: SquarePlus,
+      title: 'Elegí "Agregar a inicio"',
+      text: 'Deslizá hacia abajo en la lista de opciones que aparece hasta encontrarla.',
+    },
+    {
+      icon: Check,
+      title: 'Confirmá con "Agregar"',
+      text: 'Va a aparecer un ícono nuevo en tu pantalla de inicio para abrir la app como si fuera nativa.',
+    },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 px-0 sm:px-4">
+      <div className="w-full max-w-md bg-slate-800 border border-slate-700 rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="text-lg font-bold text-slate-100">Instalar en tu iPhone</h2>
+          <button onClick={onClose} aria-label="Cerrar" className="p-2 rounded-full hover:bg-slate-700">
+            <X className="w-5 h-5 text-slate-400" />
+          </button>
+        </div>
+        <p className="text-sm text-slate-400 mb-1">
+          Agregá esta app a tu pantalla de inicio para abrirla como una app nativa, con ícono propio y sin la barra de
+          direcciones.
+        </p>
+        <p className="text-xs font-semibold text-emerald-400 mb-5">Funciona desde Safari (no desde Chrome u otros navegadores).</p>
+
+        <div className="space-y-4">
+          {steps.map((step, i) => (
+            <div key={i} className="flex items-start gap-3">
+              <div className="shrink-0 w-9 h-9 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
+                <step.icon className="w-4 h-4 text-emerald-400" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-slate-200">
+                  {i + 1}. {step.title}
+                </p>
+                <p className="text-xs text-slate-400 mt-0.5 leading-snug">{step.text}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <button
+          onClick={onClose}
+          className="w-full mt-6 rounded-xl bg-emerald-500 text-slate-900 py-2.5 text-sm font-bold hover:bg-emerald-400 focus-visible:ring-2 focus-visible:ring-emerald-300"
+        >
+          Entendido
+        </button>
       </div>
     </div>
   );
