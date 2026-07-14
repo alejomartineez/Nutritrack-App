@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Home, PlusCircle, TrendingUp, Settings, Droplet, Droplets, Trash2, X, Check,
   ChevronRight, ChevronLeft, Sparkles, Lightbulb, Award, Plus, Minus,
-  Save, RotateCcw, Info, Utensils, Coffee, Pencil, Flame, Camera, Loader2,
+  Save, RotateCcw, Info, Utensils, Coffee, Pencil, Flame,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -89,43 +89,6 @@ const nowHM = () =>
 const round1 = (n) => Math.round(n * 10) / 10;
 
 // ---------------------------------------------------------------------------
-// LECTURA DE TABLAS NUTRICIONALES CON IA (Gemini, vía función serverless)
-// ---------------------------------------------------------------------------
-
-// Redimensiona/comprime la foto antes de mandarla a la IA: payload más chico,
-// respuesta más rápida y más barata, sin perder legibilidad de la tabla.
-const resizeImageForApi = (file) =>
-  new Promise((resolve) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      const maxDim = 1280;
-      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      URL.revokeObjectURL(url);
-      canvas.toBlob((blob) => resolve(blob || file), 'image/jpeg', 0.85);
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      resolve(file);
-    };
-    img.src = url;
-  });
-
-// Convierte un Blob/File a base64 puro (sin el prefijo "data:...;base64,")
-const blobToBase64 = (blob) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-
-// ---------------------------------------------------------------------------
 // COMPONENTE PRINCIPAL
 // ---------------------------------------------------------------------------
 
@@ -183,19 +146,6 @@ export default function NutriTrackApp() {
 
   const [pendingDelete, setPendingDelete] = useState(null); // { entry, isPlan }
   const undoTimeoutRef = useRef(null);
-
-  // ------------------------- Escáner de tabla nutricional -------------------
-  const [showScanModal, setShowScanModal] = useState(false);
-  const [scanImage, setScanImage] = useState(null);
-  const [scanName, setScanName] = useState('');
-  const [scanGBase, setScanGBase] = useState('');
-  const [scanGReal, setScanGReal] = useState('');
-  const [scanKcalBase, setScanKcalBase] = useState('');
-  const [scanPBase, setScanPBase] = useState('');
-  const [scanCBase, setScanCBase] = useState('');
-  const [scanFBase, setScanFBase] = useState('');
-  const [scanLoading, setScanLoading] = useState(false);
-  const [scanOcrError, setScanOcrError] = useState('');
 
   // Cargar metas guardadas al iniciar
   useEffect(() => {
@@ -455,120 +405,6 @@ export default function NutriTrackApp() {
     flashConfirm('Se restauraron las opciones originales del plan');
   };
 
-  // ------------------------- Escáner de tabla nutricional ------------------
-  const openScanModal = () => {
-    setScanImage(null);
-    setScanName('');
-    setScanGBase('');
-    setScanGReal('');
-    setScanKcalBase('');
-    setScanPBase('');
-    setScanCBase('');
-    setScanFBase('');
-    setScanLoading(false);
-    setScanOcrError('');
-    setShowScanModal(true);
-  };
-
-  const closeScanModal = () => setShowScanModal(false);
-
-  // Manda la foto de la etiqueta a la función serverless (que a su vez le
-  // pregunta a la IA) y precarga los campos detectados; el usuario los revisa
-  // y corrige antes de guardar.
-  const runLabelOcr = async (file) => {
-    setScanLoading(true);
-    setScanOcrError('');
-    try {
-      const resized = await resizeImageForApi(file);
-      const base64 = await blobToBase64(resized);
-      const response = await fetch('/api/parse-label', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: base64, mimeType: 'image/jpeg' }),
-      });
-      if (!response.ok) throw new Error('parse-label request failed');
-      const parsed = await response.json();
-
-      if (parsed.name) setScanName(parsed.name);
-      if (parsed.gBase != null) {
-        const gBaseStr = String(parsed.gBase);
-        setScanGBase(gBaseStr);
-        setScanGReal((prev) => prev || gBaseStr);
-      }
-      if (parsed.kcal != null) setScanKcalBase(String(parsed.kcal));
-      if (parsed.protein != null) setScanPBase(String(parsed.protein));
-      if (parsed.carbs != null) setScanCBase(String(parsed.carbs));
-      if (parsed.fat != null) setScanFBase(String(parsed.fat));
-
-      if (
-        parsed.gBase == null &&
-        parsed.kcal == null &&
-        parsed.protein == null &&
-        parsed.carbs == null &&
-        parsed.fat == null
-      ) {
-        setScanOcrError('La IA no pudo detectar los valores en esta foto. Completalos a mano.');
-      }
-    } catch (e) {
-      setScanOcrError('No pudimos leer la imagen con la IA. Completá los datos manualmente.');
-    } finally {
-      setScanLoading(false);
-    }
-  };
-
-  const handleScanImageFile = (file) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setScanImage(reader.result);
-    reader.readAsDataURL(file);
-    runLabelOcr(file);
-  };
-
-  const scanGBaseNum = parseFloat(scanGBase) || 0;
-  const scanGRealNum = parseFloat(scanGReal) || 0;
-  const scanFactor = scanGBaseNum > 0 && scanGRealNum > 0 ? scanGRealNum / scanGBaseNum : 0;
-  const scanKcalBaseNum = parseFloat(scanKcalBase) || 0;
-  const scanPBaseNum = parseFloat(scanPBase) || 0;
-  const scanCBaseNum = parseFloat(scanCBase) || 0;
-  const scanFBaseNum = parseFloat(scanFBase) || 0;
-
-  // Valor Final = Valor Base × (Greal / Gbase), recalculado en tiempo real
-  const scanFinal = {
-    kcal: scanKcalBaseNum * scanFactor,
-    p: scanPBaseNum * scanFactor,
-    c: scanCBaseNum * scanFactor,
-    f: scanFBaseNum * scanFactor,
-  };
-
-  const confirmScan = () => {
-    if (!scanName.trim() || scanGBaseNum <= 0 || scanGRealNum <= 0) return;
-    const finalValues = {
-      kcal: Math.round(scanFinal.kcal),
-      p: round1(scanFinal.p),
-      c: round1(scanFinal.c),
-      f: round1(scanFinal.f),
-    };
-    // Se guarda en el día seleccionado
-    const entry = {
-      id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-      name: `${scanName.trim()} (${scanGRealNum} g)`,
-      ...finalValues,
-      time: nowHM(),
-    };
-    setLog((prev) => ({ ...prev, planMeals: [...prev.planMeals, entry] }));
-
-    // Se guarda también en el catálogo global de alimentos
-    const catalogItem = {
-      id: `scan_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-      name: scanName.trim(),
-      ...finalValues,
-    };
-    setPlanCatalog((prev) => [...prev, catalogItem]);
-
-    setShowScanModal(false);
-    flashConfirm('Alimento escaneado y guardado ✓');
-  };
-
   const openSettings = () => {
     setTempGoals(goals);
     setShowSettings(true);
@@ -813,7 +649,6 @@ export default function NutriTrackApp() {
               onAddCatalogItem={openAddCatalogItem}
               onEditCatalogItem={openEditCatalogItem}
               onResetCatalog={resetCatalog}
-              onOpenScan={openScanModal}
               addPlanMeal={addPlanMeal}
               addFreeMeal={addFreeMeal}
               showCustomForm={showCustomForm}
@@ -903,33 +738,6 @@ export default function NutriTrackApp() {
           />
         )}
 
-        {/* MODAL DE ESCÁNER DE TABLA NUTRICIONAL */}
-        {showScanModal && (
-          <ScannerModal
-            image={scanImage}
-            onImageFile={handleScanImageFile}
-            onRemoveImage={() => setScanImage(null)}
-            name={scanName}
-            setName={setScanName}
-            gBase={scanGBase}
-            setGBase={setScanGBase}
-            gReal={scanGReal}
-            setGReal={setScanGReal}
-            kcalBase={scanKcalBase}
-            setKcalBase={setScanKcalBase}
-            pBase={scanPBase}
-            setPBase={setScanPBase}
-            cBase={scanCBase}
-            setCBase={setScanCBase}
-            fBase={scanFBase}
-            setFBase={setScanFBase}
-            final={scanFinal}
-            loading={scanLoading}
-            ocrError={scanOcrError}
-            onSave={confirmScan}
-            onCancel={closeScanModal}
-          />
-        )}
       </div>
     </div>
   );
@@ -1226,7 +1034,6 @@ function TabRegistrar({
   onAddCatalogItem,
   onEditCatalogItem,
   onResetCatalog,
-  onOpenScan,
   addPlanMeal,
   addFreeMeal,
   showCustomForm,
@@ -1245,14 +1052,6 @@ function TabRegistrar({
 }) {
   return (
     <div className="space-y-5">
-      {/* ESCÁNER DE TABLA NUTRICIONAL */}
-      <button
-        onClick={onOpenScan}
-        className="w-full rounded-2xl border border-sky-500/40 bg-sky-500/10 text-sky-300 py-3.5 text-sm font-semibold flex items-center justify-center gap-2 hover:bg-sky-500/20 focus-visible:ring-2 focus-visible:ring-sky-400"
-      >
-        <Camera className="w-4 h-4" /> Escanear tabla nutricional (gramaje dinámico)
-      </button>
-
       <div className="grid grid-cols-2 gap-2 bg-slate-800 border border-slate-700 rounded-2xl p-1">
         <button
           onClick={() => setRegisterMode('plan')}
@@ -1699,202 +1498,6 @@ function CatalogItemModal({ isNew, name, setName, kcal, setKcal, p, setP, c, set
           <button
             onClick={onSave}
             className="flex-1 rounded-xl bg-emerald-500 text-slate-900 py-2.5 text-sm font-bold flex items-center justify-center gap-2 hover:bg-emerald-400 focus-visible:ring-2 focus-visible:ring-emerald-300"
-          >
-            <Save className="w-4 h-4" /> Guardar
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ScannerModal({
-  image,
-  onImageFile,
-  onRemoveImage,
-  name,
-  setName,
-  gBase,
-  setGBase,
-  gReal,
-  setGReal,
-  kcalBase,
-  setKcalBase,
-  pBase,
-  setPBase,
-  cBase,
-  setCBase,
-  fBase,
-  setFBase,
-  final,
-  loading,
-  ocrError,
-  onSave,
-  onCancel,
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 px-0 sm:px-4">
-      <div className="w-full max-w-md bg-slate-800 border border-sky-500/30 rounded-t-3xl sm:rounded-3xl p-6 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-1">
-          <h2 className="text-lg font-bold text-slate-100">Escanear tabla nutricional</h2>
-          <button onClick={onCancel} aria-label="Cerrar escáner" className="p-2 rounded-full hover:bg-slate-700">
-            <X className="w-5 h-5 text-slate-400" />
-          </button>
-        </div>
-        <p className="text-xs font-semibold mb-1 text-sky-300">
-          Subí la foto de la etiqueta: una IA la lee y completa los campos automáticamente. Revisalos y corregilos antes de guardar.
-        </p>
-        <p className="text-xs text-slate-500 mb-5">
-          Tip: mejor lectura con foto bien enfocada y sin reflejos.
-        </p>
-
-        <div className="space-y-4">
-          {/* IMAGEN DE LA ETIQUETA */}
-          <div>
-            <label className="text-xs font-semibold text-slate-400 mb-1 block">Foto de la tabla nutricional</label>
-            {image ? (
-              <div className="relative">
-                <img
-                  src={image}
-                  alt="Tabla nutricional escaneada"
-                  className="w-full max-h-48 object-cover rounded-xl border border-slate-700"
-                />
-                <button
-                  onClick={onRemoveImage}
-                  aria-label="Quitar imagen"
-                  className="absolute top-2 right-2 p-1.5 rounded-full bg-slate-900/80 hover:bg-slate-900"
-                >
-                  <X className="w-4 h-4 text-slate-200" />
-                </button>
-              </div>
-            ) : (
-              <label className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-sky-500/40 py-6 text-sky-300 text-sm font-semibold cursor-pointer hover:bg-sky-500/5">
-                <Camera className="w-6 h-6" />
-                Tomar o subir foto
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  className="hidden"
-                  onChange={(e) => onImageFile(e.target.files && e.target.files[0])}
-                />
-              </label>
-            )}
-            {loading && (
-              <p className="text-xs text-sky-300 flex items-center gap-2 mt-2">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Analizando la etiqueta con IA...
-              </p>
-            )}
-            {!loading && ocrError && (
-              <p className="text-xs text-amber-400 mt-2">{ocrError}</p>
-            )}
-            {!loading && !ocrError && image && (
-              <p className="text-xs text-slate-500 mt-2">
-                Revisá los valores detectados y corregilos si hace falta antes de guardar.
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-slate-400 mb-1 block">Nombre del alimento</label>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Ej: Yogur natural"
-              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-400"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-slate-400 mb-1 block">Porción base (g/ml)</label>
-              <input
-                type="number"
-                inputMode="decimal"
-                value={gBase}
-                onChange={(e) => setGBase(e.target.value)}
-                placeholder="Ej: 100"
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-sky-400"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-sky-300 mb-1 block">Gramos reales a consumir</label>
-              <input
-                type="number"
-                inputMode="decimal"
-                value={gReal}
-                onChange={(e) => setGReal(e.target.value)}
-                placeholder="Ej: 150"
-                className="w-full bg-slate-900 border border-sky-500/50 rounded-xl px-3 py-2.5 text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-sky-400"
-              />
-            </div>
-          </div>
-
-          <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold pt-1">Nutrientes por porción base</p>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-slate-400 mb-1 block">Calorías (kcal)</label>
-              <input
-                type="number"
-                inputMode="decimal"
-                value={kcalBase}
-                onChange={(e) => setKcalBase(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-sky-400"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-400 mb-1 block">Proteínas (g)</label>
-              <input
-                type="number"
-                inputMode="decimal"
-                value={pBase}
-                onChange={(e) => setPBase(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-sky-400"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-400 mb-1 block">Carbohidratos (g)</label>
-              <input
-                type="number"
-                inputMode="decimal"
-                value={cBase}
-                onChange={(e) => setCBase(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-sky-400"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-400 mb-1 block">Grasas (g)</label>
-              <input
-                type="number"
-                inputMode="decimal"
-                value={fBase}
-                onChange={(e) => setFBase(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-sky-400"
-              />
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-sky-500/10 border border-sky-500/30 p-4">
-            <p className="text-xs font-semibold text-sky-300 mb-2">Valores finales para {gReal || 0} g/ml</p>
-            <p className="text-sm text-slate-100 font-mono">
-              {Math.round(final.kcal)} kcal · P {round1(final.p)}g · C {round1(final.c)}g · G {round1(final.f)}g
-            </p>
-          </div>
-        </div>
-
-        <div className="flex gap-3 mt-6">
-          <button
-            onClick={onCancel}
-            className="flex-1 rounded-xl border border-slate-600 text-slate-300 py-2.5 text-sm font-semibold hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-slate-400"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={onSave}
-            disabled={loading}
-            className={`flex-1 rounded-xl bg-sky-500 text-slate-900 py-2.5 text-sm font-bold flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-sky-300 ${
-              loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-sky-400'
-            }`}
           >
             <Save className="w-4 h-4" /> Guardar
           </button>
