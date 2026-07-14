@@ -2,9 +2,10 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Home, PlusCircle, TrendingUp, Settings, Droplet, Droplets, Trash2, X, Check,
   ChevronRight, ChevronLeft, Sparkles, Lightbulb, Award, Plus, Minus,
-  Save, RotateCcw, Info, Utensils, Coffee, Pencil, Flame, Dumbbell,
+  Save, RotateCcw, Info, Utensils, Coffee, Pencil, Flame, Dumbbell, MoonStar,
 } from 'lucide-react';
 import WorkoutModule from './workout/WorkoutModule';
+import SleepModule from './sleep/SleepModule';
 
 // ---------------------------------------------------------------------------
 // DATOS BASE DEL PLAN
@@ -580,17 +581,21 @@ export default function NutriTrackApp() {
         <header className="px-5 pt-6 pb-4 flex items-center justify-between">
           <div>
             <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold">
-              {activeTab === 'entreno' ? 'Seguimiento semanal' : formatDisplayDate(selectedDate)}
+              {activeTab === 'entreno' ? 'Seguimiento semanal' : activeTab === 'sueno' ? 'Sueño y recuperación' : formatDisplayDate(selectedDate)}
             </p>
             <h1
               className={`text-2xl font-black tracking-tight bg-clip-text text-transparent ${
-                activeTab === 'entreno' ? 'bg-gradient-to-r from-orange-400 to-amber-300' : 'bg-gradient-to-r from-emerald-400 to-teal-300'
+                activeTab === 'entreno'
+                  ? 'bg-gradient-to-r from-orange-400 to-amber-300'
+                  : activeTab === 'sueno'
+                  ? 'bg-gradient-to-r from-indigo-400 to-violet-300'
+                  : 'bg-gradient-to-r from-emerald-400 to-teal-300'
               }`}
             >
-              {activeTab === 'entreno' ? 'Mis Entrenamientos' : 'Mi Plan Nutricional'}
+              {activeTab === 'entreno' ? 'Mis Entrenamientos' : activeTab === 'sueno' ? 'Mi Descanso' : 'Mi Plan Nutricional'}
             </h1>
           </div>
-          {activeTab !== 'entreno' && (
+          {activeTab !== 'entreno' && activeTab !== 'sueno' && (
             <button
               onClick={openSettings}
               aria-label="Ajustes del plan"
@@ -688,11 +693,13 @@ export default function NutriTrackApp() {
           )}
 
           {activeTab === 'entreno' && <WorkoutModule />}
+
+          {activeTab === 'sueno' && <SleepModule />}
         </main>
 
         {/* NAV INFERIOR */}
         <nav className="fixed bottom-0 inset-x-0 flex justify-center pointer-events-none">
-          <div className="w-full max-w-md bg-slate-800/95 backdrop-blur border-t border-slate-700 px-4 pt-2 pb-5 flex justify-around pointer-events-auto">
+          <div className="w-full max-w-md bg-slate-800/95 backdrop-blur border-t border-slate-700 px-2 pt-2 pb-5 flex justify-around pointer-events-auto">
             <NavButton icon={Home} label="Mi Día" active={activeTab === 'dia'} onClick={() => setActiveTab('dia')} />
             <NavButton icon={PlusCircle} label="Registrar" active={activeTab === 'registrar'} onClick={() => setActiveTab('registrar')} />
             <NavButton icon={TrendingUp} label="Progreso" active={activeTab === 'progreso'} onClick={() => setActiveTab('progreso')} />
@@ -702,6 +709,13 @@ export default function NutriTrackApp() {
               active={activeTab === 'entreno'}
               onClick={() => setActiveTab('entreno')}
               activeColorClass="text-orange-400"
+            />
+            <NavButton
+              icon={MoonStar}
+              label="Sueño"
+              active={activeTab === 'sueno'}
+              onClick={() => setActiveTab('sueno')}
+              activeColorClass="text-violet-400"
             />
           </div>
         </nav>
@@ -804,7 +818,7 @@ function NavButton({ icon: Icon, label, active, onClick, activeColorClass = 'tex
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center gap-1 px-4 py-1 rounded-xl focus-visible:ring-2 focus-visible:ring-emerald-400 transition-colors ${
+      className={`flex flex-col items-center gap-1 px-2 py-1 rounded-xl focus-visible:ring-2 focus-visible:ring-emerald-400 transition-colors ${
         active ? activeColorClass : 'text-slate-500'
       }`}
     >
