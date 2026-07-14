@@ -86,7 +86,7 @@ export default function SleepLogForm({ existingLog, onSave, defaultBedtime, defa
 
       <div className="rounded-3xl bg-indigo-950/60 border border-indigo-500/20 p-5">
         <div className="grid grid-cols-2 gap-3">
-          <div>
+          <div className="min-w-0">
             <label className="text-xs font-semibold text-indigo-300 mb-1.5 flex items-center gap-1.5">
               <BedDouble className="w-3.5 h-3.5" /> Me acosté
             </label>
@@ -94,10 +94,11 @@ export default function SleepLogForm({ existingLog, onSave, defaultBedtime, defa
               type="time"
               value={bedtime}
               onChange={(e) => setBedtime(e.target.value)}
-              className="w-full bg-indigo-900/40 border border-indigo-500/30 rounded-xl px-3 py-2.5 text-white font-mono text-lg focus:outline-none focus:ring-2 focus:ring-violet-400"
+              style={{ colorScheme: 'dark' }}
+              className="w-full min-w-0 bg-indigo-900/40 border border-indigo-500/30 rounded-xl px-3 py-2.5 text-white font-mono text-lg text-center tabular-nums focus:outline-none focus:ring-2 focus:ring-violet-400"
             />
           </div>
-          <div>
+          <div className="min-w-0">
             <label className="text-xs font-semibold text-indigo-300 mb-1.5 flex items-center gap-1.5">
               <Sunrise className="w-3.5 h-3.5" /> Me desperté
             </label>
@@ -105,7 +106,8 @@ export default function SleepLogForm({ existingLog, onSave, defaultBedtime, defa
               type="time"
               value={wakeTime}
               onChange={(e) => setWakeTime(e.target.value)}
-              className="w-full bg-indigo-900/40 border border-indigo-500/30 rounded-xl px-3 py-2.5 text-white font-mono text-lg focus:outline-none focus:ring-2 focus:ring-violet-400"
+              style={{ colorScheme: 'dark' }}
+              className="w-full min-w-0 bg-indigo-900/40 border border-indigo-500/30 rounded-xl px-3 py-2.5 text-white font-mono text-lg text-center tabular-nums focus:outline-none focus:ring-2 focus:ring-violet-400"
             />
           </div>
         </div>
