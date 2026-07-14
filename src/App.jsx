@@ -89,140 +89,40 @@ const nowHM = () =>
 const round1 = (n) => Math.round(n * 10) / 10;
 
 // ---------------------------------------------------------------------------
-// LECTURA DE TABLAS NUTRICIONALES (OCR)
+// LECTURA DE TABLAS NUTRICIONALES CON IA (Gemini, vía función serverless)
 // ---------------------------------------------------------------------------
 
-const NUM_RE = '(\\d+(?:[.,]\\d+)?)';
-
-// Hueco entre la etiqueta y su valor: tolera un "(g)" (a veces el OCR lo lee
-// mal como "(9)", por eso no puede filtrarse solo con "no dígitos") y algo de
-// ruido alrededor, pero nunca deja que ese hueco cruce el número real.
-const GAP = '\\s*(?:\\([^)]{0,8}\\))?[^\\d]{0,25}';
-
-// Busca el primer número que aparezca después de alguna de las etiquetas dadas
-const extractFirstNumber = (text, regexes) => {
-  for (const re of regexes) {
-    const m = text.match(re);
-    if (m && m[1] != null) {
-      const n = parseFloat(m[1].replace(',', '.'));
-      if (!isNaN(n)) return n;
-    }
-  }
-  return null;
-};
-
-// Prueba primero línea por línea (una fila de la tabla suele mantener juntos
-// la etiqueta y su número aunque el OCR desordene el resto de la página) y,
-// si no encuentra nada, busca en todo el texto como respaldo.
-const searchLinesThenWhole = (lines, text, regexes) => {
-  for (const line of lines) {
-    const v = extractFirstNumber(line, regexes);
-    if (v != null) return v;
-  }
-  return extractFirstNumber(text, regexes);
-};
-
-// Etiquetas argentinas/Mercosur suelen mostrar la unidad una sola vez, junto
-// al nombre del nutriente ("Proteínas (g)"), y no repetida después del valor.
-// Por eso probamos primero con la unidad pegada al número (más confiable) y,
-// si no aparece, con el primer número que siga a la etiqueta sin exigirla.
-const buildNutrientRegexes = (labelAlt, unit) => [
-  new RegExp(`(?:${labelAlt})${GAP}${NUM_RE}\\s*${unit}\\b`, 'i'),
-  new RegExp(`(?:${labelAlt})${GAP}${NUM_RE}`, 'i'),
-];
-
-// Descarta candidatos a nombre que sean mayormente ruido de OCR (símbolos,
-// letras sueltas, fragmentos de palabras) en vez de una palabra o frase real.
-const cleanNameCandidate = (line) => {
-  const cleaned = line.replace(/^[^\p{L}0-9]+|[^\p{L}0-9]+$/gu, '').trim();
-  const letters = (cleaned.match(/\p{L}/gu) || []).length;
-  if (cleaned.length < 6 || letters / cleaned.length < 0.75) return null;
-  return cleaned;
-};
-
-// Interpreta el texto crudo devuelto por el OCR de una etiqueta nutricional
-// y extrae nombre, porción base y nutrientes. Cualquier valor no detectado
-// queda en null/vacío y el usuario lo completa/corrige a mano antes de guardar:
-// fotos reales (ángulo, brillo, empaques curvos, texto de fondo) suelen dar
-// un OCR imperfecto, así que el parseo es tolerante mejor que exacto.
-function parseNutritionLabelText(rawText) {
-  const text = (rawText || '').replace(/\r/g, ' ').replace(/[ \t]+/g, ' ');
-  const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
-
-  const gBase = searchLinesThenWhole(lines, text, [
-    new RegExp(`tama[ñn]o de (?:la )?porci[oó]n${GAP}${NUM_RE}\\s*(?:g|gr|ml)`, 'i'),
-    new RegExp(`porci[oó]n${GAP}${NUM_RE}\\s*(?:g|gr|ml)`, 'i'),
-    new RegExp(`serving\\s*size${GAP}${NUM_RE}\\s*(?:g|ml)`, 'i'),
-    new RegExp(`contenido neto${GAP}${NUM_RE}\\s*(?:g|gr|ml)`, 'i'),
-  ]);
-
-  const kcal = searchLinesThenWhole(lines, text, [
-    new RegExp(`valor energ[eé]tico${GAP}${NUM_RE}\\s*kcal`, 'i'),
-    new RegExp(`(?:calor[ií]as|energy|calories)${GAP}${NUM_RE}\\s*kcal`, 'i'),
-    new RegExp(`(?:valor energ[eé]tico|calor[ií]as|energy|calories)${GAP}${NUM_RE}`, 'i'),
-  ]);
-
-  const p = searchLinesThenWhole(
-    lines,
-    text,
-    buildNutrientRegexes('prote[ií]nas?|protein', 'g')
-  );
-
-  const c = searchLinesThenWhole(
-    lines,
-    text,
-    buildNutrientRegexes('hidratos de carbono|carbohidratos(?:\\s*totales)?|(?:total\\s*)?carbohydrate', 'g')
-  );
-
-  const f = searchLinesThenWhole(
-    lines,
-    text,
-    buildNutrientRegexes('grasas?\\s*totales?|total\\s*fat', 'g')
-  );
-
-  const name = (() => {
-    const skip = /informaci[oó]n nutricional|nutrition facts|porci[oó]n|valor energ[eé]tico|prote[ií]nas|carbohidratos|hidratos de carbono|grasas|calor[ií]as|serving size|calories|protein|carbohydrate|fat|sodio|sodium|az[uú]cares|sugars|fibra|fiber|cantidad por|valores? diarios?|%\s*vd/i;
-    for (const line of lines) {
-      if (line.length > 60 || /^\d/.test(line) || skip.test(line)) continue;
-      const cleaned = cleanNameCandidate(line);
-      if (cleaned) return cleaned;
-    }
-    return '';
-  })();
-
-  return { name, gBase, kcal, p, c, f };
-}
-
-// Convierte la foto a escala de grises con más contraste (y la agranda si es
-// chica) antes de mandarla al OCR: mejora bastante la lectura en fotos reales
-// con brillo/reflejos, comparado con mandar la imagen tal cual salió de la cámara.
-const preprocessImageForOcr = (file) =>
+// Redimensiona/comprime la foto antes de mandarla a la IA: payload más chico,
+// respuesta más rápida y más barata, sin perder legibilidad de la tabla.
+const resizeImageForApi = (file) =>
   new Promise((resolve) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => {
-      const scale = img.width < 900 ? 900 / img.width : 1;
+      const maxDim = 1280;
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
       const canvas = document.createElement('canvas');
       canvas.width = Math.round(img.width * scale);
       canvas.height = Math.round(img.height * scale);
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const d = imageData.data;
-      for (let i = 0; i < d.length; i += 4) {
-        const gray = d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
-        const contrasted = Math.min(255, Math.max(0, (gray - 128) * 1.6 + 128));
-        d[i] = d[i + 1] = d[i + 2] = contrasted;
-      }
-      ctx.putImageData(imageData, 0, 0);
       URL.revokeObjectURL(url);
-      canvas.toBlob((blob) => resolve(blob || file), 'image/png');
+      canvas.toBlob((blob) => resolve(blob || file), 'image/jpeg', 0.85);
     };
     img.onerror = () => {
       URL.revokeObjectURL(url);
       resolve(file);
     };
     img.src = url;
+  });
+
+// Convierte un Blob/File a base64 puro (sin el prefijo "data:...;base64,")
+const blobToBase64 = (blob) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
   });
 
 // ---------------------------------------------------------------------------
@@ -572,23 +472,22 @@ export default function NutriTrackApp() {
 
   const closeScanModal = () => setShowScanModal(false);
 
-  // Corre OCR sobre la foto de la etiqueta y precarga los campos detectados;
-  // el usuario los revisa y corrige antes de guardar.
+  // Manda la foto de la etiqueta a la función serverless (que a su vez le
+  // pregunta a la IA) y precarga los campos detectados; el usuario los revisa
+  // y corrige antes de guardar.
   const runLabelOcr = async (file) => {
     setScanLoading(true);
     setScanOcrError('');
     try {
-      const [{ createWorker }, processedImage] = await Promise.all([
-        import('tesseract.js'),
-        preprocessImageForOcr(file),
-      ]);
-      const worker = await createWorker('spa');
-      // PSM 6: "bloque uniforme de texto" — para una tabla angosta como la de
-      // una etiqueta nutricional lee mejor fila por fila que el modo automático.
-      await worker.setParameters({ tessedit_pageseg_mode: '6' });
-      const { data: { text } } = await worker.recognize(processedImage);
-      await worker.terminate();
-      const parsed = parseNutritionLabelText(text);
+      const resized = await resizeImageForApi(file);
+      const base64 = await blobToBase64(resized);
+      const response = await fetch('/api/parse-label', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: base64, mimeType: 'image/jpeg' }),
+      });
+      if (!response.ok) throw new Error('parse-label request failed');
+      const parsed = await response.json();
 
       if (parsed.name) setScanName(parsed.name);
       if (parsed.gBase != null) {
@@ -597,15 +496,21 @@ export default function NutriTrackApp() {
         setScanGReal((prev) => prev || gBaseStr);
       }
       if (parsed.kcal != null) setScanKcalBase(String(parsed.kcal));
-      if (parsed.p != null) setScanPBase(String(parsed.p));
-      if (parsed.c != null) setScanCBase(String(parsed.c));
-      if (parsed.f != null) setScanFBase(String(parsed.f));
+      if (parsed.protein != null) setScanPBase(String(parsed.protein));
+      if (parsed.carbs != null) setScanCBase(String(parsed.carbs));
+      if (parsed.fat != null) setScanFBase(String(parsed.fat));
 
-      if (parsed.gBase == null && parsed.kcal == null && parsed.p == null && parsed.c == null && parsed.f == null) {
-        setScanOcrError('No pudimos detectar los valores automáticamente. Completalos a mano.');
+      if (
+        parsed.gBase == null &&
+        parsed.kcal == null &&
+        parsed.protein == null &&
+        parsed.carbs == null &&
+        parsed.fat == null
+      ) {
+        setScanOcrError('La IA no pudo detectar los valores en esta foto. Completalos a mano.');
       }
     } catch (e) {
-      setScanOcrError('No pudimos leer la imagen. Completá los datos manualmente.');
+      setScanOcrError('No pudimos leer la imagen con la IA. Completá los datos manualmente.');
     } finally {
       setScanLoading(false);
     }
@@ -1837,10 +1742,10 @@ function ScannerModal({
           </button>
         </div>
         <p className="text-xs font-semibold mb-1 text-sky-300">
-          Subí la foto de la etiqueta: leemos el texto automáticamente y completamos los campos. Revisalos y corregilos antes de guardar.
+          Subí la foto de la etiqueta: una IA la lee y completa los campos automáticamente. Revisalos y corregilos antes de guardar.
         </p>
         <p className="text-xs text-slate-500 mb-5">
-          Tip: mejor lectura con foto derecha, bien enfocada, sin reflejos y encuadrando solo la tabla nutricional.
+          Tip: mejor lectura con foto bien enfocada y sin reflejos.
         </p>
 
         <div className="space-y-4">
@@ -1877,7 +1782,7 @@ function ScannerModal({
             )}
             {loading && (
               <p className="text-xs text-sky-300 flex items-center gap-2 mt-2">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Leyendo la etiqueta...
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Analizando la etiqueta con IA...
               </p>
             )}
             {!loading && ocrError && (
