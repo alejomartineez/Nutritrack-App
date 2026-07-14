@@ -95,7 +95,7 @@ export default function SleepLogForm({ existingLog, onSave, defaultBedtime, defa
               value={bedtime}
               onChange={(e) => setBedtime(e.target.value)}
               style={{ colorScheme: 'dark' }}
-              className="w-full bg-indigo-900/40 border border-indigo-500/30 rounded-xl px-3 py-2.5 text-white font-mono text-lg focus:outline-none focus:ring-2 focus:ring-violet-400"
+              className="block w-[calc(100%-6px)] mx-auto bg-indigo-900/40 border border-indigo-500/30 rounded-xl px-3 py-2.5 text-white font-mono text-lg focus:outline-none focus:ring-2 focus:ring-violet-400"
             />
           </div>
           <div>
@@ -107,7 +107,7 @@ export default function SleepLogForm({ existingLog, onSave, defaultBedtime, defa
               value={wakeTime}
               onChange={(e) => setWakeTime(e.target.value)}
               style={{ colorScheme: 'dark' }}
-              className="w-full bg-indigo-900/40 border border-indigo-500/30 rounded-xl px-3 py-2.5 text-white font-mono text-lg focus:outline-none focus:ring-2 focus:ring-violet-400"
+              className="block w-[calc(100%-6px)] mx-auto bg-indigo-900/40 border border-indigo-500/30 rounded-xl px-3 py-2.5 text-white font-mono text-lg focus:outline-none focus:ring-2 focus:ring-violet-400"
             />
           </div>
         </div>
