@@ -85,6 +85,18 @@ export default function WorkoutModule() {
     setActiveRoutineId(routine.id);
   };
 
+  const handleRenameRoutine = (routineId, name) => {
+    const clean = name.trim();
+    if (!clean) return;
+    setRoutines((prev) => prev.map((r) => (r.id === routineId ? { ...r, name: clean } : r)));
+  };
+
+  const handleDeleteRoutine = (routineId) => {
+    const next = routines.filter((r) => r.id !== routineId);
+    setRoutines(next);
+    if (activeRoutineId === routineId) setActiveRoutineId(next[0]?.id || null);
+  };
+
   const handleCreateCustomExercise = (data) => {
     const newExercise = createCustomExercise(data);
     setExercises((prev) => [...prev, newExercise]);
@@ -189,6 +201,8 @@ export default function WorkoutModule() {
           setActiveRoutineId={setActiveRoutineId}
           exercises={exercises}
           onCreateRoutine={handleCreateRoutine}
+          onRenameRoutine={handleRenameRoutine}
+          onDeleteRoutine={handleDeleteRoutine}
           onAddExercise={handleAddExercise}
           onRemoveExercise={handleRemoveExercise}
           onUpdateTarget={handleUpdateTarget}

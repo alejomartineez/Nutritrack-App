@@ -1,7 +1,122 @@
 import React, { useMemo, useState } from 'react';
-import { Dumbbell, Plus, Play, Trash2, ChevronDown, Moon, Settings2, X } from 'lucide-react';
+import { Dumbbell, Plus, Play, Trash2, ChevronDown, Moon, Settings2, X, Check, Pencil } from 'lucide-react';
 import { ROUTINE_TEMPLATES } from './workoutData';
 import ExercisePickerModal from './ExercisePickerModal';
+
+function RoutineManagerModal({ routines, activeRoutineId, onSelect, onRename, onDelete, onNew, onClose }) {
+  const [renamingId, setRenamingId] = useState(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+
+  const startRename = (r) => {
+    setConfirmDeleteId(null);
+    setRenamingId(r.id);
+    setRenameValue(r.name);
+  };
+
+  const commitRename = () => {
+    if (renameValue.trim()) onRename(renamingId, renameValue);
+    setRenamingId(null);
+  };
+
+  const trainingDays = (r) => r.days.filter((d) => !d.isRest).length;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 px-0 sm:px-4">
+      <div className="w-full max-w-md bg-neutral-900 border border-orange-500/30 rounded-t-3xl sm:rounded-3xl p-5 max-h-[85vh] flex flex-col">
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="text-lg font-bold text-slate-100">Mis rutinas</h2>
+          <button onClick={onClose} aria-label="Cerrar" className="p-2 rounded-full hover:bg-neutral-800">
+            <X className="w-5 h-5 text-slate-400" />
+          </button>
+        </div>
+        <p className="text-xs text-slate-500 mb-4">Tocá una rutina para activarla. La activa es la que ves en la semana.</p>
+
+        <div className="flex-1 overflow-y-auto space-y-2">
+          {routines.map((r) => {
+            const active = r.id === activeRoutineId;
+
+            if (renamingId === r.id) {
+              return (
+                <div key={r.id} className="rounded-2xl border border-orange-500/40 bg-neutral-800/60 p-2.5 flex items-center gap-2">
+                  <input
+                    autoFocus
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && commitRename()}
+                    className="flex-1 min-w-0 bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                  />
+                  <button onClick={commitRename} className="px-3 py-2 rounded-lg bg-orange-500 text-neutral-900 text-xs font-bold shrink-0">
+                    Guardar
+                  </button>
+                  <button onClick={() => setRenamingId(null)} aria-label="Cancelar" className="p-2 rounded-lg hover:bg-neutral-700 shrink-0">
+                    <X className="w-4 h-4 text-slate-400" />
+                  </button>
+                </div>
+              );
+            }
+
+            if (confirmDeleteId === r.id) {
+              return (
+                <div key={r.id} className="rounded-2xl border border-rose-500/40 bg-rose-500/5 p-3.5 flex items-center justify-between gap-2">
+                  <p className="text-sm text-slate-200 min-w-0 truncate">¿Eliminar “{r.name}”?</p>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button onClick={() => setConfirmDeleteId(null)} className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:bg-neutral-700">
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={() => {
+                        onDelete(r.id);
+                        setConfirmDeleteId(null);
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-rose-500 text-white text-xs font-bold hover:bg-rose-400"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+
+            return (
+              <div
+                key={r.id}
+                className={`rounded-2xl border flex items-center gap-1 pr-1.5 ${
+                  active ? 'bg-orange-500/10 border-orange-500/40' : 'bg-neutral-800/60 border-neutral-700'
+                }`}
+              >
+                <button onClick={() => onSelect(r.id)} className="flex-1 min-w-0 text-left p-3.5 flex items-center gap-2.5">
+                  <span className={`w-5 shrink-0 flex justify-center ${active ? 'text-orange-400' : 'text-transparent'}`}>
+                    <Check className="w-4 h-4" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className={`block text-sm font-semibold truncate ${active ? 'text-orange-200' : 'text-slate-200'}`}>{r.name}</span>
+                    <span className="block text-xs text-slate-500 mt-0.5">{trainingDays(r)} días de entreno por semana</span>
+                  </span>
+                </button>
+                <button onClick={() => startRename(r)} aria-label="Renombrar rutina" className="p-2 rounded-full hover:bg-neutral-700 shrink-0">
+                  <Pencil className="w-4 h-4 text-slate-500" />
+                </button>
+                {routines.length > 1 && (
+                  <button onClick={() => setConfirmDeleteId(r.id)} aria-label="Eliminar rutina" className="p-2 rounded-full hover:bg-neutral-700 shrink-0">
+                    <Trash2 className="w-4 h-4 text-slate-500" />
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <button
+          onClick={onNew}
+          className="w-full mt-3 rounded-2xl border border-dashed border-orange-500/40 text-orange-300 py-3 text-sm font-semibold hover:bg-orange-500/5 focus-visible:ring-2 focus-visible:ring-orange-400 flex items-center justify-center gap-2"
+        >
+          <Plus className="w-4 h-4" /> Nueva rutina
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function NewRoutineModal({ onCreate, onClose }) {
   const [templateId, setTemplateId] = useState(ROUTINE_TEMPLATES[0].id);
@@ -154,6 +269,8 @@ export default function WeekView({
   setActiveRoutineId,
   exercises,
   onCreateRoutine,
+  onRenameRoutine,
+  onDeleteRoutine,
   onAddExercise,
   onRemoveExercise,
   onUpdateTarget,
@@ -163,7 +280,7 @@ export default function WeekView({
 }) {
   const [showNewRoutine, setShowNewRoutine] = useState(false);
   const [editingDayId, setEditingDayId] = useState(null);
-  const [showRoutineSwitcher, setShowRoutineSwitcher] = useState(false);
+  const [showRoutineManager, setShowRoutineManager] = useState(false);
 
   const exercisesById = useMemo(() => Object.fromEntries(exercises.map((e) => [e.id, e])), [exercises]);
 
@@ -201,39 +318,26 @@ export default function WeekView({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl bg-neutral-900/60 border border-orange-500/20 p-3 flex items-center justify-between">
-        <button
-          onClick={() => setShowRoutineSwitcher((v) => !v)}
-          className="flex items-center gap-1.5 text-sm font-semibold text-slate-200"
-        >
-          {activeRoutine.name} <ChevronDown className="w-4 h-4 text-slate-500" />
-        </button>
-        <button
-          onClick={() => setShowNewRoutine(true)}
-          className="text-xs font-semibold text-orange-400 hover:text-orange-300"
-        >
-          + Nueva rutina
-        </button>
-      </div>
-
-      {showRoutineSwitcher && routines.length > 1 && (
-        <div className="rounded-2xl bg-neutral-800/60 border border-neutral-700 p-2 space-y-1">
-          {routines.map((r) => (
-            <button
-              key={r.id}
-              onClick={() => {
-                setActiveRoutineId(r.id);
-                setShowRoutineSwitcher(false);
-              }}
-              className={`w-full text-left px-3 py-2 rounded-xl text-sm ${
-                r.id === activeRoutineId ? 'bg-orange-500/20 text-orange-300 font-semibold' : 'text-slate-300 hover:bg-neutral-700'
-              }`}
-            >
-              {r.name}
-            </button>
-          ))}
+      <button
+        onClick={() => setShowRoutineManager(true)}
+        className="w-full rounded-2xl bg-neutral-900/60 border border-orange-500/20 p-3 flex items-center justify-between gap-3 hover:border-orange-500/40 transition-colors"
+      >
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-9 h-9 rounded-xl bg-orange-500/15 flex items-center justify-center shrink-0">
+            <Dumbbell className="w-4 h-4 text-orange-400" />
+          </div>
+          <div className="min-w-0 text-left">
+            <p className="text-[10px] uppercase tracking-wide text-slate-500 font-semibold">Rutina activa</p>
+            <p className="text-sm font-bold text-slate-100 truncate">{activeRoutine.name}</p>
+          </div>
         </div>
-      )}
+        <div className="flex items-center gap-1 text-orange-400 shrink-0">
+          <span className="text-xs font-semibold">
+            {routines.length > 1 ? 'Cambiar' : 'Rutinas'}
+          </span>
+          <ChevronDown className="w-4 h-4" />
+        </div>
+      </button>
 
       <div className="space-y-2.5">
         {activeRoutine.days.map((day) => {
@@ -300,6 +404,24 @@ export default function WeekView({
           onRemoveExercise={(rexId) => onRemoveExercise(editingDay.id, rexId)}
           onUpdateTarget={(rexId, patch) => onUpdateTarget(editingDay.id, rexId, patch)}
           onClose={() => setEditingDayId(null)}
+        />
+      )}
+
+      {showRoutineManager && (
+        <RoutineManagerModal
+          routines={routines}
+          activeRoutineId={activeRoutineId}
+          onSelect={(id) => {
+            setActiveRoutineId(id);
+            setShowRoutineManager(false);
+          }}
+          onRename={onRenameRoutine}
+          onDelete={onDeleteRoutine}
+          onNew={() => {
+            setShowRoutineManager(false);
+            setShowNewRoutine(true);
+          }}
+          onClose={() => setShowRoutineManager(false)}
         />
       )}
 
