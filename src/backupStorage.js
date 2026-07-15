@@ -72,6 +72,12 @@ export const buildFullBackup = () => ({
     logs: readJSON('sleep_logs', null),
     goalHours: readJSON('sleep_goal_hours', null),
   },
+  body: {
+    weightLogs: readJSON('weight_logs', null),
+  },
+  settings: {
+    reminders: readJSON('reminder_settings', null),
+  },
 });
 
 export const downloadFullBackup = () => {
@@ -114,6 +120,14 @@ export const restoreFullBackup = (data) => {
   if (data.sleep) {
     writeJSON('sleep_logs', data.sleep.logs);
     writeJSON('sleep_goal_hours', data.sleep.goalHours);
+  }
+
+  if (data.body) {
+    writeJSON('weight_logs', data.body.weightLogs);
+  }
+
+  if (data.settings) {
+    writeJSON('reminder_settings', data.settings.reminders);
   }
 };
 

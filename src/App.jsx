@@ -3,11 +3,21 @@ import {
   Home, PlusCircle, TrendingUp, Settings, Droplet, Droplets, Trash2, X, Check,
   ChevronRight, ChevronLeft, Sparkles, Lightbulb, Award, Plus, Minus,
   Save, RotateCcw, Info, Utensils, Coffee, Pencil, Flame, Dumbbell, MoonStar,
-  Download, Share, SquarePlus, Upload, ShieldCheck,
+  Download, Share, SquarePlus, Upload, ShieldCheck, Search, Bell,
 } from 'lucide-react';
 import WorkoutModule from './workout/WorkoutModule';
 import SleepModule from './sleep/SleepModule';
+import TodayDashboard from './TodayDashboard';
+import WeightTracker from './WeightTracker';
+import { searchFoods } from './foodDatabase';
 import { requestPersistentStorage, downloadFullBackup, restoreFullBackup, readBackupFile } from './backupStorage';
+import {
+  loadReminderSettings,
+  saveReminderSettings,
+  requestNotificationPermission,
+  buildReminderMessage,
+  notifyInBackground,
+} from './reminders';
 
 // ---------------------------------------------------------------------------
 // DATOS BASE DEL PLAN
@@ -108,6 +118,7 @@ export default function NutriTrackApp() {
   const [isStandalone] = useState(
     () => window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true
   );
+  const [remindersEnabled, setRemindersEnabled] = useState(() => loadReminderSettings().enabled);
   const [loaded, setLoaded] = useState(false);
 
   const [goals, setGoals] = useState(DEFAULT_GOALS);
@@ -175,6 +186,25 @@ export default function NutriTrackApp() {
     setLoaded(true);
     requestPersistentStorage();
   }, []);
+
+  const toggleReminders = async () => {
+    const next = !remindersEnabled;
+    if (next) await requestNotificationPermission();
+    setRemindersEnabled(next);
+    saveReminderSettings({ enabled: next });
+  };
+
+  // Chequeo periódico de recordatorios mientras la app esté abierta: si quedó
+  // en segundo plano (Android/desktop) sale como notificación del sistema.
+  useEffect(() => {
+    if (!remindersEnabled || !isToday) return;
+    const check = () => {
+      const msg = buildReminderMessage(log);
+      if (msg) notifyInBackground(msg);
+    };
+    const id = setInterval(check, 30 * 60 * 1000);
+    return () => clearInterval(id);
+  }, [remindersEnabled, isToday, log]);
 
   // Cargar el registro correspondiente al día seleccionado cada vez que cambia
   useEffect(() => {
@@ -484,8 +514,15 @@ export default function NutriTrackApp() {
         text: 'Registrá comidas en este día para ver el progreso y recibir feedback personalizado.',
       });
     }
+
+    // Recordatorio activo: nudge visible al abrir la app (funciona también en iPhone,
+    // donde las notificaciones en segundo plano no están disponibles sin push server)
+    if (remindersEnabled && isToday && hasAny) {
+      const reminderText = buildReminderMessage(log, new Date(), { includeWater: false });
+      if (reminderText) msgs.unshift({ type: 'reminder', text: reminderText });
+    }
     return msgs;
-  }, [totals, goals, log]);
+  }, [totals, goals, log, remindersEnabled, isToday]);
 
   // ------------------------- Anillo de composición ------------------------
   const ring = useMemo(() => {
@@ -665,6 +702,8 @@ export default function NutriTrackApp() {
             />
           )}
 
+          {activeTab === 'dia' && isToday && <TodayDashboard onGoToTab={setActiveTab} />}
+
           {activeTab === 'dia' && (
             <TabMiDia
               ring={ring}
@@ -760,6 +799,8 @@ export default function NutriTrackApp() {
             onSave={saveSettings}
             onCancel={() => setShowSettings(false)}
             onReset={resetSettings}
+            remindersEnabled={remindersEnabled}
+            onToggleReminders={toggleReminders}
           />
         )}
 
@@ -1114,6 +1155,16 @@ function TabRegistrar({
   setCustomF,
   submitCustomFree,
 }) {
+  const [foodQuery, setFoodQuery] = useState('');
+  const foodResults = useMemo(() => searchFoods(foodQuery), [foodQuery]);
+
+  const addFoodFromDb = (food) => {
+    const item = { name: food.name, kcal: food.kcal, p: food.p, c: food.c, f: food.f };
+    if (registerMode === 'plan') addPlanMeal(item);
+    else addFreeMeal(item);
+    setFoodQuery('');
+  };
+
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 gap-2 bg-slate-800 border border-slate-700 rounded-2xl p-1">
@@ -1133,6 +1184,47 @@ function TabRegistrar({
         >
           <Coffee className="w-4 h-4" /> Fuera de Plan
         </button>
+      </div>
+
+      {/* BÚSQUEDA EN LA BASE DE ALIMENTOS: registro rápido sin tipear macros */}
+      <div>
+        <div className="relative">
+          <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            value={foodQuery}
+            onChange={(e) => setFoodQuery(e.target.value)}
+            placeholder="Buscar alimento (banana, milanesa, arroz...)"
+            className="w-full bg-slate-800/60 border border-slate-700 rounded-2xl pl-9 pr-3 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+          />
+        </div>
+        {foodQuery.trim().length >= 2 && (
+          <div className="mt-2 space-y-1.5">
+            {foodResults.map((food) => (
+              <button
+                key={food.id}
+                onClick={() => addFoodFromDb(food)}
+                className={`w-full text-left rounded-xl bg-slate-800/60 border border-slate-700 px-3.5 py-2.5 flex items-center justify-between gap-3 transition-colors ${
+                  registerMode === 'plan' ? 'hover:border-emerald-500/50' : 'hover:border-amber-500/50'
+                }`}
+              >
+                <div className="min-w-0">
+                  <p className="text-sm text-slate-200 truncate">{food.name}</p>
+                  <p className="text-xs text-slate-500 font-mono mt-0.5">
+                    {food.kcal} kcal · P {food.p}g · C {food.c}g · G {food.f}g
+                  </p>
+                </div>
+                <PlusCircle
+                  className={`w-5 h-5 shrink-0 ${registerMode === 'plan' ? 'text-emerald-400' : 'text-amber-400'}`}
+                />
+              </button>
+            ))}
+            {foodResults.length === 0 && (
+              <p className="text-xs text-slate-500 text-center py-2">
+                Sin resultados. Podés cargarlo manualmente más abajo.
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {registerMode === 'plan' && (
@@ -1282,6 +1374,7 @@ function TabProgreso({ weekStats, goals, tipIndex, setTipIndex, streak, weeklyFr
 
   return (
     <div className="space-y-5">
+      <WeightTracker />
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-2xl bg-slate-800/60 border border-slate-700 p-4 flex flex-col items-center justify-center text-center">
           <div className="flex items-center gap-1.5 text-emerald-400">
@@ -1632,7 +1725,7 @@ function InstallGuideModal({ onClose }) {
   );
 }
 
-function SettingsModal({ tempGoals, setTempGoals, onSave, onCancel, onReset }) {
+function SettingsModal({ tempGoals, setTempGoals, onSave, onCancel, onReset, remindersEnabled, onToggleReminders }) {
   const fields = [
     { key: 'calories', label: 'Calorías (kcal)', step: '10' },
     { key: 'protein', label: 'Proteínas (g)', step: '0.5' },
@@ -1713,6 +1806,35 @@ function SettingsModal({ tempGoals, setTempGoals, onSave, onCancel, onReset }) {
           >
             <Save className="w-4 h-4" /> Guardar
           </button>
+        </div>
+
+        <div className="mt-6 pt-5 border-t border-slate-700">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <Bell className="w-4 h-4 text-emerald-400" />
+                <h3 className="text-sm font-bold text-slate-100">Recordatorios</h3>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                Te avisamos si pasan varias horas sin registrar comidas o agua.
+              </p>
+            </div>
+            <button
+              onClick={onToggleReminders}
+              role="switch"
+              aria-checked={remindersEnabled}
+              aria-label="Activar recordatorios"
+              className={`shrink-0 w-12 h-7 rounded-full p-0.5 transition-colors ${
+                remindersEnabled ? 'bg-emerald-500' : 'bg-slate-600'
+              }`}
+            >
+              <span
+                className={`block w-6 h-6 rounded-full bg-white transition-transform ${
+                  remindersEnabled ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
         </div>
 
         <div className="mt-6 pt-5 border-t border-slate-700">
