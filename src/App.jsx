@@ -585,12 +585,6 @@ export default function NutriTrackApp() {
   // RENDER
   // ---------------------------------------------------------------------
 
-  const macroRows = [
-    { label: 'Proteínas', value: totals.p, goal: goals.protein, unit: 'g', tol: TOLERANCE.protein, color: 'bg-emerald-500' },
-    { label: 'Carbohidratos', value: totals.c, goal: goals.carbs, unit: 'g', tol: TOLERANCE.carbs, color: 'bg-teal-400' },
-    { label: 'Grasas', value: totals.f, goal: goals.fat, unit: 'g', tol: TOLERANCE.fat, color: 'bg-slate-400' },
-  ];
-
   return (
     <div className="min-h-screen w-full bg-slate-900 text-slate-100 flex justify-center">
       <div className="w-full max-w-md flex flex-col min-h-screen relative">
@@ -670,16 +664,11 @@ export default function NutriTrackApp() {
             />
           )}
 
-          {activeTab === 'dia' && isToday && <DailyRings log={log} />}
-
-          {activeTab === 'dia' && isToday && <TodayDashboard onGoToTab={setActiveTab} />}
-
           {activeTab === 'dia' && (
             <TabMiDia
               ring={ring}
               totals={totals}
               goals={goals}
-              macroRows={macroRows}
               feedback={feedback}
               waterGlasses={waterGlasses}
               waterGoalGlasses={waterGoalGlasses}
@@ -687,6 +676,9 @@ export default function NutriTrackApp() {
               log={log}
               removeEntry={removeEntry}
               onEdit={openEditEntry}
+              onRegister={() => setActiveTab('registrar')}
+              habitStrip={isToday ? <DailyRings log={log} /> : null}
+              moduleCards={isToday ? <TodayDashboard onGoToTab={setActiveTab} /> : null}
             />
           )}
 
@@ -870,15 +862,6 @@ function NavButton({ icon: Icon, label, active, onClick, activeColorClass = 'tex
   );
 }
 
-function ProgressBar({ pct, colorClass }) {
-  const width = Math.min(100, Math.max(0, pct * 100));
-  return (
-    <div className="h-2 w-full rounded-full bg-slate-700 overflow-hidden">
-      <div className={`h-full rounded-full ${colorClass} transition-all duration-500`} style={{ width: `${width}%` }} />
-    </div>
-  );
-}
-
 function FeedbackBanner({ feedback }) {
   const styleFor = (type) => {
     switch (type) {
@@ -915,7 +898,6 @@ function TabMiDia({
   ring,
   totals,
   goals,
-  macroRows,
   feedback,
   waterGlasses,
   waterGoalGlasses,
@@ -923,6 +905,9 @@ function TabMiDia({
   log,
   removeEntry,
   onEdit,
+  onRegister,
+  habitStrip,
+  moduleCards,
 }) {
   const kcalColor = ring.overshoot ? '#f59e0b' : '#10b981';
   const statusText = ring.overshoot
@@ -931,6 +916,9 @@ function TabMiDia({
     ? 'Dentro de tu rango objetivo'
     : 'Por debajo de la meta';
 
+  // Composición de macros por aporte calórico, para la tira fina bajo el anillo.
+  const macroSegments = computeMacroSegments(totals);
+
   // Listado general único: todas las comidas del día juntas, sin clasificación por momento
   const allEntries = [
     ...log.planMeals.map((m) => ({ ...m, kind: 'plan' })),
@@ -938,8 +926,8 @@ function TabMiDia({
   ].sort((a, b) => (a.time > b.time ? 1 : -1));
 
   return (
-    <div className="space-y-5">
-      {/* ANILLO DE COMPOSICIÓN */}
+    <div className="space-y-4">
+      {/* HÉROE: anillo de calorías + acción principal */}
       <div className="rounded-3xl bg-slate-800/60 border border-slate-700 p-5 flex flex-col items-center">
         <svg width={ring.size} height={ring.size} viewBox={`0 0 ${ring.size} ${ring.size}`}>
           {/* track exterior */}
@@ -964,80 +952,78 @@ function TabMiDia({
             transform={`rotate(-90 ${ring.center} ${ring.center})`}
             style={{ transition: 'stroke-dasharray 0.6s ease' }}
           />
-          {/* track interior */}
-          <circle cx={ring.center} cy={ring.center} r={ring.rInner} fill="none" stroke="#1e293b" strokeWidth={ring.swInner} />
-          {/* segmentos de composición (donut) */}
-          {ring.arcs.map((seg, i) => (
-            <circle
-              key={i}
-              cx={ring.center}
-              cy={ring.center}
-              r={ring.rInner}
-              fill="none"
-              stroke={seg.color}
-              strokeWidth={ring.swInner}
-              strokeDasharray={seg.dasharray}
-              strokeDashoffset={seg.dashoffset}
-              transform={`rotate(-90 ${ring.center} ${ring.center})`}
-            />
-          ))}
-          <text x={ring.center} y={ring.center - 6} textAnchor="middle" className="fill-slate-100" style={{ fontSize: 30, fontWeight: 800, fontFamily: 'ui-monospace, monospace' }}>
+          <text x={ring.center} y={ring.center - 4} textAnchor="middle" className="fill-slate-100" style={{ fontSize: 34, fontWeight: 800, fontFamily: 'ui-monospace, monospace' }}>
             {Math.round(totals.kcal)}
           </text>
-          <text x={ring.center} y={ring.center + 18} textAnchor="middle" className="fill-slate-400" style={{ fontSize: 12, fontWeight: 600 }}>
+          <text x={ring.center} y={ring.center + 20} textAnchor="middle" className="fill-slate-400" style={{ fontSize: 12, fontWeight: 600 }}>
             de {Math.round(goals.calories)} kcal
           </text>
         </svg>
         <p className={`mt-1 text-xs font-semibold ${ring.overshoot ? 'text-amber-400' : 'text-emerald-400'}`}>{statusText}</p>
 
-        <div className="w-full mt-4 space-y-3">
-          {macroRows.map((m) => (
-            <div key={m.label}>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-slate-400 font-medium">{m.label}</span>
-                <span className="font-mono text-slate-300">
-                  {round1(m.value)} / {round1(m.goal)} {m.unit}
-                </span>
-              </div>
-              <ProgressBar pct={m.value / (m.goal || 1)} colorClass={m.color} />
-            </div>
-          ))}
+        {/* Tira fina de composición de macros */}
+        <div className="w-full mt-4">
+          <div className="flex h-2 rounded-full overflow-hidden bg-slate-700">
+            {macroSegments.map((seg, i) => (
+              <div key={i} style={{ width: `${seg.pct * 100}%`, backgroundColor: seg.color }} />
+            ))}
+          </div>
+          <div className="flex justify-center gap-4 mt-2 text-[11px] text-slate-400">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#10b981' }} />Proteína
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#2dd4bf' }} />Carbos
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#94a3b8' }} />Grasa
+            </span>
+          </div>
         </div>
+
+        {/* Acción principal: el corazón de la dinámica diaria */}
+        <button
+          onClick={onRegister}
+          className="w-full mt-4 flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold py-3 focus-visible:ring-2 focus-visible:ring-emerald-300 transition-colors"
+        >
+          <PlusCircle className="w-5 h-5" />
+          Registrar comida
+        </button>
       </div>
 
-      {/* AGUA */}
-      <div className="rounded-3xl bg-slate-800/60 border border-slate-700 p-5">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Droplets className="w-5 h-5 text-cyan-300" />
-            <span className="font-semibold text-slate-200">Agua registrada</span>
-          </div>
-          <span className="font-mono text-sm text-cyan-200">
+      {/* TIRA DE HÁBITOS (comida / movimiento / sueño + racha) */}
+      {habitStrip}
+
+      {/* AGUA (compacta) */}
+      <div className="rounded-2xl bg-slate-800/60 border border-slate-700 px-4 py-3 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <Droplets className="w-5 h-5 text-cyan-300 shrink-0" />
+          <span className="text-sm font-semibold text-slate-200">Agua</span>
+          <span className="font-mono text-xs text-cyan-200/80 truncate">
             {waterGlasses}/{waterGoalGlasses} vasos
           </span>
         </div>
-        <ProgressBar pct={log.water / (goals.water || 1)} colorClass="bg-cyan-400" />
-        <div className="flex items-center justify-center gap-4 mt-4">
+        <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => addWater(-1)}
             aria-label="Quitar un vaso de agua"
-            className="p-3 rounded-full bg-slate-700 hover:bg-slate-600 focus-visible:ring-2 focus-visible:ring-cyan-400"
+            className="p-2 rounded-full bg-slate-700 hover:bg-slate-600 focus-visible:ring-2 focus-visible:ring-cyan-400"
           >
-            <Minus className="w-5 h-5 text-slate-200" />
+            <Minus className="w-4 h-4 text-slate-200" />
           </button>
-          <div className="flex items-center gap-1 text-cyan-300">
-            <Droplet className="w-6 h-6" />
-            <span className="font-mono text-lg font-bold">{log.water} ml</span>
-          </div>
+          <span className="font-mono text-sm text-cyan-200 w-16 text-center">{log.water} ml</span>
           <button
             onClick={() => addWater(1)}
             aria-label="Agregar un vaso de agua"
-            className="p-3 rounded-full bg-cyan-500/20 border border-cyan-400/40 hover:bg-cyan-500/30 focus-visible:ring-2 focus-visible:ring-cyan-400"
+            className="p-2 rounded-full bg-cyan-500/20 border border-cyan-400/40 hover:bg-cyan-500/30 focus-visible:ring-2 focus-visible:ring-cyan-400"
           >
-            <Plus className="w-5 h-5 text-cyan-300" />
+            <Plus className="w-4 h-4 text-cyan-300" />
           </button>
         </div>
       </div>
+
+      {/* ACCESOS A ENTRENO Y SUEÑO */}
+      {moduleCards}
 
       {/* FEEDBACK */}
       <FeedbackBanner feedback={feedback} />
@@ -1046,9 +1032,14 @@ function TabMiDia({
       <div>
         <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wide mb-2">Registro del día</h2>
         {allEntries.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-700 p-6 text-center text-slate-500 text-sm">
-            Todavía no hay comidas registradas para este día. Andá a la pestaña "Registrar" para cargarlas.
-          </div>
+          <button
+            onClick={onRegister}
+            className="w-full rounded-2xl border border-dashed border-slate-700 p-6 text-center hover:border-emerald-500/50 hover:bg-emerald-500/5 focus-visible:ring-2 focus-visible:ring-emerald-400 transition-colors"
+          >
+            <Utensils className="w-6 h-6 text-slate-500 mx-auto mb-2" />
+            <p className="text-sm font-semibold text-slate-300">Empezá tu día</p>
+            <p className="text-xs text-slate-500 mt-1">Registrá tu primera comida para ver el anillo llenarse.</p>
+          </button>
         ) : (
           <ul className="space-y-2">
             {allEntries.map((entry) => (

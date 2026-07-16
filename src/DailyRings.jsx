@@ -94,33 +94,30 @@ export const computeLoggingStreak = () => {
 };
 
 function Ring({ label, icon: Icon, done, color }) {
-  const size = 58;
-  const sw = 5;
+  const size = 42;
+  const sw = 4;
   const r = (size - sw) / 2;
   const c = 2 * Math.PI * r;
   return (
-    <div className="flex flex-col items-center gap-2">
-      <div className="relative" style={{ width: size, height: size }}>
-        <svg width={size} height={size} className="-rotate-90">
-          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#334155" strokeWidth={sw} />
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={r}
-            fill="none"
-            stroke={color}
-            strokeWidth={sw}
-            strokeLinecap="round"
-            strokeDasharray={c}
-            strokeDashoffset={done ? 0 : c}
-            style={{ transition: 'stroke-dashoffset 0.6s ease' }}
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Icon className="w-5 h-5" style={{ color: done ? color : '#64748b' }} />
-        </div>
+    <div className="relative shrink-0" style={{ width: size, height: size }} title={label} aria-label={label}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#334155" strokeWidth={sw} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke={color}
+          strokeWidth={sw}
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={done ? 0 : c}
+          style={{ transition: 'stroke-dashoffset 0.6s ease' }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <Icon className="w-4 h-4" style={{ color: done ? color : '#64748b' }} />
       </div>
-      <span className={`text-[11px] font-medium ${done ? 'text-slate-200' : 'text-slate-500'}`}>{label}</span>
     </div>
   );
 }
@@ -136,17 +133,19 @@ export default function DailyRings({ log }) {
   ];
 
   return (
-    <div className="rounded-3xl bg-slate-800/60 border border-slate-700 p-5">
-      <div className="flex items-center justify-around">
+    <div className="rounded-2xl bg-slate-800/60 border border-slate-700 px-4 py-3 flex items-center justify-between gap-3">
+      <div className="flex items-center gap-4">
         {items.map(({ key, ...it }) => (
           <Ring key={key} {...it} />
         ))}
       </div>
-      <div className="mt-4 pt-4 border-t border-slate-700 flex items-center justify-center gap-2 text-sm">
+      <div
+        className="flex items-center gap-1.5 text-sm shrink-0"
+        title={freezeAvailable && streak > 0 ? '1 día libre disponible' : undefined}
+      >
         <Flame className={`w-4 h-4 ${streak > 0 ? 'text-orange-400' : 'text-slate-500'}`} />
         <span className="font-mono font-bold text-slate-100">{streak}</span>
-        <span className="text-slate-400">{streak === 1 ? 'día seguido' : 'días seguidos'}</span>
-        {freezeAvailable && streak > 0 && <span className="text-[11px] text-slate-500">· 1 día libre disponible</span>}
+        <span className="text-slate-400 text-xs">{streak === 1 ? 'día' : 'días'}</span>
       </div>
     </div>
   );
