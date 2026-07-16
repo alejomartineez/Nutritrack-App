@@ -782,16 +782,6 @@ export default function NutriTrackApp() {
           >
             <NavButton icon={Home} label="Mi Día" active={activeTab === 'dia'} onClick={() => setActiveTab('dia')} />
             <NavButton icon={PlusCircle} label="Registrar" active={activeTab === 'registrar'} onClick={() => setActiveTab('registrar')} />
-            <NavButton icon={TrendingUp} label="Progreso" active={activeTab === 'progreso'} onClick={() => setActiveTab('progreso')} />
-            {modules.entreno && (
-              <NavButton
-                icon={Dumbbell}
-                label="Entreno"
-                active={activeTab === 'entreno'}
-                onClick={() => setActiveTab('entreno')}
-                activeColorClass="text-orange-400"
-              />
-            )}
             {modules.sueno && (
               <NavButton
                 icon={MoonStar}
@@ -801,6 +791,16 @@ export default function NutriTrackApp() {
                 activeColorClass="text-violet-400"
               />
             )}
+            {modules.entreno && (
+              <NavButton
+                icon={Dumbbell}
+                label="Entreno"
+                active={activeTab === 'entreno'}
+                onClick={() => setActiveTab('entreno')}
+                activeColorClass="text-orange-400"
+              />
+            )}
+            <NavButton icon={TrendingUp} label="Progreso" active={activeTab === 'progreso'} onClick={() => setActiveTab('progreso')} />
           </div>
         </nav>
 
