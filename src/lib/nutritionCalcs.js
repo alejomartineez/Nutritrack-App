@@ -85,7 +85,7 @@ export const computeMacroSegments = (totals) => {
   if (macroTotal <= 0) return [];
   return [
     { color: '#10b981', pct: pKcal / macroTotal }, // proteína - emerald-500
-    { color: '#2dd4bf', pct: cKcal / macroTotal }, // carbohidratos - teal-400
+    { color: '#fbbf24', pct: cKcal / macroTotal }, // carbohidratos - amber-400
     { color: '#94a3b8', pct: fKcal / macroTotal }, // grasas - slate-400
   ];
 };

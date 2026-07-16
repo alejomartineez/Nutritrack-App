@@ -973,7 +973,7 @@ function TabMiDia({
               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#10b981' }} />Proteína
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#2dd4bf' }} />Carbos
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#fbbf24' }} />Carbos
             </span>
             <span className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#94a3b8' }} />Grasa
