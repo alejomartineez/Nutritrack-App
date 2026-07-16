@@ -10,7 +10,7 @@ const consistencyLabel = (stdevMin) => {
   return { label: 'Irregular', color: 'text-amber-300' };
 };
 
-export default function SleepDashboard({ sleepLogs, goalHours }) {
+export default function SleepDashboard({ sleepLogs, goalHours, onSelectDay }) {
   const week = useMemo(() => getLast7DaysSleep(sleepLogs), [sleepLogs]);
   const stats = useMemo(() => computeWeeklyStats(sleepLogs, goalHours), [sleepLogs, goalHours]);
   const maxHours = Math.max(goalHours, ...week.map((d) => d.hours), 1);
@@ -38,13 +38,25 @@ export default function SleepDashboard({ sleepLogs, goalHours }) {
       </div>
 
       <div className="rounded-3xl bg-indigo-950/60 border border-indigo-500/20 p-5">
-        <h2 className="text-sm font-bold text-indigo-200 uppercase tracking-wide mb-4">Últimos 7 días</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-bold text-indigo-200 uppercase tracking-wide">Últimos 7 días</h2>
+          {onSelectDay && <span className="text-[10px] text-indigo-400">Tocá un día para editarlo</span>}
+        </div>
         <div className="flex items-end justify-between gap-2 h-36">
           {week.map((d) => {
             const h = Math.max(4, (d.hours / maxHours) * 100);
             const metGoal = d.hours >= goalHours;
+            const Cell = onSelectDay ? 'button' : 'div';
             return (
-              <div key={d.key} className="flex-1 flex flex-col items-center gap-1.5">
+              <Cell
+                key={d.key}
+                type={onSelectDay ? 'button' : undefined}
+                onClick={onSelectDay ? () => onSelectDay(d.key) : undefined}
+                aria-label={onSelectDay ? `Editar ${d.label} (${d.hours}h)` : undefined}
+                className={`flex-1 flex flex-col items-center gap-1.5 ${
+                  onSelectDay ? 'rounded-lg hover:bg-indigo-900/40 focus-visible:ring-2 focus-visible:ring-violet-400 py-1 -my-1' : ''
+                }`}
+              >
                 <div className="w-full h-28 flex items-end">
                   <div
                     className={`w-full rounded-t-md ${d.hours === 0 ? 'bg-indigo-900/40' : metGoal ? 'bg-violet-500' : 'bg-indigo-500'}`}
@@ -54,7 +66,7 @@ export default function SleepDashboard({ sleepLogs, goalHours }) {
                 </div>
                 <span className="text-sm">{d.log ? ENERGY_LEVELS.find((e) => e.value === d.log.quality)?.emoji : '·'}</span>
                 <span className="text-[10px] text-indigo-400 uppercase font-medium">{d.label}</span>
-              </div>
+              </Cell>
             );
           })}
         </div>

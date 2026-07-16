@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CalendarClock, LayoutDashboard, Sparkles } from 'lucide-react';
+import { CalendarClock, LayoutDashboard, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
 import SleepLogForm from './SleepLogForm';
 import SleepDashboard from './SleepDashboard';
 import SleepInsights from './SleepInsights';
@@ -18,6 +18,39 @@ const TABS = [
   { id: 'insights', label: 'Insights', icon: Sparkles },
 ];
 
+const dayLabelFor = (key, todayKey) => {
+  if (key === todayKey) return 'Hoy';
+  if (key === addDaysToKey(todayKey, -1)) return 'Ayer';
+  const d = new Date(`${key}T00:00:00`);
+  const text = d.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' });
+  return text.charAt(0).toUpperCase() + text.slice(1);
+};
+
+function SleepDayNav({ label, isToday, onPrev, onNext }) {
+  return (
+    <div className="flex items-center justify-between bg-indigo-950/60 border border-indigo-500/20 rounded-2xl px-2 py-1.5">
+      <button
+        onClick={onPrev}
+        aria-label="Día anterior"
+        className="p-2 rounded-xl text-indigo-300 hover:bg-indigo-900/60 focus-visible:ring-2 focus-visible:ring-violet-400"
+      >
+        <ChevronLeft className="w-5 h-5" />
+      </button>
+      <span className="text-sm font-bold text-indigo-100">{label}</span>
+      <button
+        onClick={onNext}
+        disabled={isToday}
+        aria-label="Día siguiente"
+        className={`p-2 rounded-xl focus-visible:ring-2 focus-visible:ring-violet-400 ${
+          isToday ? 'text-indigo-700 cursor-not-allowed' : 'text-indigo-300 hover:bg-indigo-900/60'
+        }`}
+      >
+        <ChevronRight className="w-5 h-5" />
+      </button>
+    </div>
+  );
+}
+
 export default function SleepModule() {
   const [loaded, setLoaded] = useState(false);
   const [sleepLogs, setSleepLogs] = useState({});
@@ -25,7 +58,10 @@ export default function SleepModule() {
   const [subTab, setSubTab] = useState('registro');
 
   const todayKey = localDateKey();
-  const todayLog = sleepLogs[todayKey] || null;
+  // Día que se está registrando/editando (por defecto hoy; se puede retroceder).
+  const [selectedKey, setSelectedKey] = useState(todayKey);
+  const selectedLog = sleepLogs[selectedKey] || null;
+  const isToday = selectedKey === todayKey;
 
   useEffect(() => {
     const logs = loadSleepLogs();
@@ -39,11 +75,25 @@ export default function SleepModule() {
     if (loaded) saveSleepLogs(sleepLogs);
   }, [sleepLogs, loaded]);
 
-  const yesterdayLog = useMemo(() => sleepLogs[addDaysToKey(todayKey, -1)] || null, [sleepLogs, todayKey]);
+  // Valores por defecto para pre-cargar el form: la noche anterior al día elegido.
+  const prevDayLog = useMemo(
+    () => sleepLogs[addDaysToKey(selectedKey, -1)] || null,
+    [sleepLogs, selectedKey]
+  );
 
   const handleSave = (patch) => {
-    setSleepLogs((prev) => upsertSleepLog(prev, todayKey, patch));
+    setSleepLogs((prev) => upsertSleepLog(prev, selectedKey, patch));
     setSubTab('semana');
+  };
+
+  const openDayInForm = (key) => {
+    setSelectedKey(key);
+    setSubTab('registro');
+  };
+
+  const goToTab = (id) => {
+    if (id === 'registro') setSelectedKey(todayKey); // la pestaña "Registro" siempre abre hoy
+    setSubTab(id);
   };
 
   if (!loaded) return null;
@@ -54,7 +104,7 @@ export default function SleepModule() {
         {TABS.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setSubTab(tab.id)}
+            onClick={() => goToTab(tab.id)}
             className={`py-2.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 transition-colors ${
               subTab === tab.id ? 'bg-violet-500 text-white' : 'text-indigo-400'
             }`}
@@ -65,15 +115,27 @@ export default function SleepModule() {
       </div>
 
       {subTab === 'registro' && (
-        <SleepLogForm
-          existingLog={todayLog}
-          onSave={handleSave}
-          defaultBedtime={yesterdayLog?.bedtime || '23:00'}
-          defaultWakeTime={yesterdayLog?.wakeTime || '07:00'}
-        />
+        <>
+          <SleepDayNav
+            label={dayLabelFor(selectedKey, todayKey)}
+            isToday={isToday}
+            onPrev={() => setSelectedKey((k) => addDaysToKey(k, -1))}
+            onNext={() => setSelectedKey((k) => (k === todayKey ? k : addDaysToKey(k, 1)))}
+          />
+          <SleepLogForm
+            key={selectedKey}
+            existingLog={selectedLog}
+            isToday={isToday}
+            onSave={handleSave}
+            defaultBedtime={prevDayLog?.bedtime || '23:00'}
+            defaultWakeTime={prevDayLog?.wakeTime || '07:00'}
+          />
+        </>
       )}
 
-      {subTab === 'semana' && <SleepDashboard sleepLogs={sleepLogs} goalHours={goalHours} />}
+      {subTab === 'semana' && (
+        <SleepDashboard sleepLogs={sleepLogs} goalHours={goalHours} onSelectDay={openDayInForm} />
+      )}
 
       {subTab === 'insights' && <SleepInsights sleepLogs={sleepLogs} />}
     </div>

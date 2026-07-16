@@ -14,11 +14,13 @@ const formatMinutes = (mins) => {
   return `${h}h ${m}m`;
 };
 
-function SummaryCard({ log, onEdit }) {
+function SummaryCard({ log, onEdit, isToday }) {
   return (
     <div className="rounded-3xl bg-gradient-to-br from-violet-500/15 to-indigo-950 border border-violet-500/30 p-5 text-center">
       <Check className="w-8 h-8 text-violet-300 mx-auto mb-2" />
-      <p className="text-sm text-indigo-200 mb-1">Ya registraste tu descanso de hoy</p>
+      <p className="text-sm text-indigo-200 mb-1">
+        {isToday ? 'Ya registraste tu descanso de hoy' : 'Descanso registrado'}
+      </p>
       <p className="text-3xl font-black text-white font-mono">{formatMinutes(log.totalSleepMinutes)}</p>
       <p className="text-xs text-indigo-300 mt-1">
         {log.bedtime} → {log.wakeTime} · {ENERGY_LEVELS.find((e) => e.value === log.quality)?.emoji}{' '}
@@ -34,7 +36,7 @@ function SummaryCard({ log, onEdit }) {
   );
 }
 
-export default function SleepLogForm({ existingLog, onSave, defaultBedtime, defaultWakeTime }) {
+export default function SleepLogForm({ existingLog, onSave, defaultBedtime, defaultWakeTime, isToday = true }) {
   const [editing, setEditing] = useState(!existingLog);
   const [bedtime, setBedtime] = useState(existingLog?.bedtime || defaultBedtime || '23:00');
   const [wakeTime, setWakeTime] = useState(existingLog?.wakeTime || defaultWakeTime || '07:00');
@@ -74,13 +76,13 @@ export default function SleepLogForm({ existingLog, onSave, defaultBedtime, defa
   };
 
   if (existingLog && !editing) {
-    return <SummaryCard log={existingLog} onEdit={() => setEditing(true)} />;
+    return <SummaryCard log={existingLog} onEdit={() => setEditing(true)} isToday={isToday} />;
   }
 
   return (
     <div className="space-y-4">
       <div className="text-center">
-        <h2 className="text-lg font-bold text-white">¿Cómo dormiste anoche?</h2>
+        <h2 className="text-lg font-bold text-white">{isToday ? '¿Cómo dormiste anoche?' : '¿Cómo dormiste?'}</h2>
         <p className="text-xs text-indigo-300 mt-0.5">Registro rápido — ajustá lo justo y necesario</p>
       </div>
 
