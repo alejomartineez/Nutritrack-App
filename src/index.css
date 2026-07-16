@@ -1,3 +1,39 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ---------------------------------------------------------------------------
+   Animaciones. Todas dentro de prefers-reduced-motion: no-preference, así que
+   quien pide menos movimiento en su sistema ve la UI estática (sin saltos).
+--------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes meal-in {
+    from { opacity: 0; transform: translateY(10px) scale(0.98); }
+    to   { opacity: 1; transform: none; }
+  }
+  @keyframes meal-out {
+    from { opacity: 1; transform: none; }
+    to   { opacity: 0; transform: translateX(16px); }
+  }
+  @keyframes confetti-fall {
+    0%   { opacity: 1; transform: translate(0, 0) rotate(0deg); }
+    100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); }
+  }
+  @keyframes celebrate-glow {
+    0%   { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    35%  { box-shadow: 0 0 24px 4px rgba(16, 185, 129, 0.35); }
+    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+  }
+
+  .anim-meal-in  { animation: meal-in 0.28s ease-out both; }
+  .anim-meal-out { animation: meal-out 0.22s ease-in both; }
+  .anim-glow     { animation: celebrate-glow 1.1s ease-out; }
+  .confetti-piece { animation: confetti-fall 1s ease-out forwards; }
+
+  /* Feedback táctil: mini "hundido" al presionar cualquier control. */
+  button:active { transform: scale(0.97); }
+}
+
+/* La transición del transform vive fuera del media query para que el retorno
+   sea suave, pero el scale del :active solo se aplica arriba. */
+button { transition: transform 0.08s ease; }

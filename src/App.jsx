@@ -31,6 +31,7 @@ import {
   computeStreak,
   computeMacroSegments,
 } from './lib/nutritionCalcs';
+import { useCountUp, prefersReducedMotion } from './lib/motion';
 
 // ---------------------------------------------------------------------------
 // DATOS BASE DEL PLAN
@@ -186,6 +187,8 @@ export default function NutriTrackApp() {
 
   const [pendingDelete, setPendingDelete] = useState(null); // { entry, isPlan }
   const undoTimeoutRef = useRef(null);
+  const [celebrate, setCelebrate] = useState(false); // confeti al entrar en rango de calorías
+  const celebrateTimeoutRef = useRef(null);
 
   // Cargar metas guardadas al iniciar
   useEffect(() => {
@@ -290,7 +293,8 @@ export default function NutriTrackApp() {
       time: nowHM(),
     };
     setLog((prev) => ({ ...prev, planMeals: [...prev.planMeals, entry] }));
-    flashConfirm('Comida agregada a tu registro ✓');
+    const entered = celebrateIfEnteringRange(totals.kcal + item.kcal);
+    flashConfirm(entered ? '¡Entraste en tu rango de hoy! 🎯' : 'Comida agregada a tu registro ✓');
   };
 
   const addFreeMeal = (item) => {
@@ -304,7 +308,8 @@ export default function NutriTrackApp() {
       time: nowHM(),
     };
     setLog((prev) => ({ ...prev, freeMeals: [...prev.freeMeals, entry] }));
-    flashConfirm('Registrado fuera de plan, ¡disfrutalo con calma!');
+    const entered = celebrateIfEnteringRange(totals.kcal + item.kcal);
+    flashConfirm(entered ? '¡Entraste en tu rango de hoy! 🎯' : 'Registrado fuera de plan, ¡disfrutalo con calma!');
   };
 
   const removeEntry = (id, isPlan) => {
@@ -380,6 +385,22 @@ export default function NutriTrackApp() {
   const flashConfirm = (text) => {
     setConfirmMsg(text);
     setTimeout(() => setConfirmMsg(''), 2200);
+  };
+
+  // Celebra (confeti) si esta comida cruza las calorías de fuera a dentro del
+  // rango objetivo. Devuelve true si fue un ingreso al rango.
+  const celebrateIfEnteringRange = (nextKcal) => {
+    const goal = goals.calories;
+    const tol = TOLERANCE.calories;
+    const wasIn = totals.kcal > 0 && Math.abs(totals.kcal - goal) <= tol;
+    const nowIn = Math.abs(nextKcal - goal) <= tol;
+    if (wasIn || !nowIn) return false;
+    if (!prefersReducedMotion()) {
+      setCelebrate(true);
+      clearTimeout(celebrateTimeoutRef.current);
+      celebrateTimeoutRef.current = setTimeout(() => setCelebrate(false), 1300);
+    }
+    return true;
   };
 
   const submitCustomFree = () => {
@@ -588,6 +609,7 @@ export default function NutriTrackApp() {
   return (
     <div className="min-h-screen w-full bg-slate-900 text-slate-100 flex justify-center">
       <div className="w-full max-w-md flex flex-col min-h-screen relative">
+        <Confetti active={celebrate} />
         {/* HEADER */}
         <header
           className="px-5 pb-4 flex items-center justify-between"
@@ -894,6 +916,53 @@ function FeedbackBanner({ feedback }) {
   );
 }
 
+// Confeti breve al entrar en el rango de calorías. Estalla en abanico desde la
+// zona del anillo y se desvanece; puramente decorativo (aria-hidden).
+const CONFETTI_COLORS = ['#10b981', '#fbbf24', '#22d3ee', '#a78bfa'];
+
+function Confetti({ active }) {
+  const pieces = useMemo(() => {
+    if (!active) return [];
+    return Array.from({ length: 16 }, (_, i) => {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 70 + Math.random() * 110;
+      return {
+        id: i,
+        left: 46 + Math.random() * 8,
+        color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+        dx: `${Math.cos(angle) * dist}px`,
+        dy: `${Math.sin(angle) * dist + 60}px`, // sesgo hacia abajo (gravedad)
+        rot: `${Math.random() * 720 - 360}deg`,
+        delay: `${Math.random() * 0.12}s`,
+      };
+    });
+  }, [active]);
+
+  if (!active) return null;
+
+  return (
+    <div className="absolute inset-0 z-40 overflow-hidden pointer-events-none" aria-hidden="true">
+      {pieces.map((p) => (
+        <span
+          key={p.id}
+          className="confetti-piece absolute rounded-sm"
+          style={{
+            left: `${p.left}%`,
+            top: '32%',
+            width: 9,
+            height: 9,
+            backgroundColor: p.color,
+            animationDelay: p.delay,
+            '--dx': p.dx,
+            '--dy': p.dy,
+            '--rot': p.rot,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 function TabMiDia({
   ring,
   totals,
@@ -915,6 +984,26 @@ function TabMiDia({
     : Math.abs(totals.kcal - goals.calories) <= TOLERANCE_CAL
     ? 'Dentro de tu rango objetivo'
     : 'Por debajo de la meta';
+
+  // El anillo "cuenta" desde 0 al abrir Mi Día y se rellena; el número y el arco
+  // comparten el mismo valor animado para ir en sincronía.
+  const animatedKcal = useCountUp(Math.round(totals.kcal), 650, 0);
+  const animatedPct = Math.min(animatedKcal / (goals.calories || 1), 1);
+
+  // Salida animada de comidas: marca la que se borra, espera el fade y recién
+  // ahí avisa al padre (que dispara el undo).
+  const [removingId, setRemovingId] = useState(null);
+  const handleRemove = (id, isPlan) => {
+    if (prefersReducedMotion()) {
+      removeEntry(id, isPlan);
+      return;
+    }
+    setRemovingId(id);
+    setTimeout(() => {
+      removeEntry(id, isPlan);
+      setRemovingId(null);
+    }, 220);
+  };
 
   // Composición de macros por aporte calórico, para la tira fina bajo el anillo.
   const macroSegments = computeMacroSegments(totals);
@@ -947,13 +1036,12 @@ function TabMiDia({
             fill="none"
             stroke={kcalColor}
             strokeWidth={ring.swOuter}
-            strokeDasharray={`${ring.cOuter * ring.pctCalories} ${ring.cOuter}`}
+            strokeDasharray={`${ring.cOuter * animatedPct} ${ring.cOuter}`}
             strokeLinecap="round"
             transform={`rotate(-90 ${ring.center} ${ring.center})`}
-            style={{ transition: 'stroke-dasharray 0.6s ease' }}
           />
           <text x={ring.center} y={ring.center - 4} textAnchor="middle" className="fill-slate-100" style={{ fontSize: 34, fontWeight: 800, fontFamily: 'ui-monospace, monospace' }}>
-            {Math.round(totals.kcal)}
+            {Math.round(animatedKcal)}
           </text>
           <text x={ring.center} y={ring.center + 20} textAnchor="middle" className="fill-slate-400" style={{ fontSize: 12, fontWeight: 600 }}>
             de {Math.round(goals.calories)} kcal
@@ -1047,7 +1135,7 @@ function TabMiDia({
                 key={entry.id}
                 className={`rounded-2xl border p-3 flex items-center justify-between gap-3 ${
                   entry.kind === 'plan' ? 'bg-emerald-500/5 border-emerald-500/25' : 'bg-amber-500/5 border-amber-500/25'
-                }`}
+                } ${removingId === entry.id ? 'anim-meal-out' : 'anim-meal-in'}`}
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
@@ -1074,7 +1162,7 @@ function TabMiDia({
                     <Pencil className="w-4 h-4 text-slate-500" />
                   </button>
                   <button
-                    onClick={() => removeEntry(entry.id, entry.kind === 'plan')}
+                    onClick={() => handleRemove(entry.id, entry.kind === 'plan')}
                     aria-label="Eliminar registro"
                     className="p-2 rounded-full hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-slate-400"
                   >
