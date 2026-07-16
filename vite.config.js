@@ -6,4 +6,8 @@ export default defineConfig({
   server: {
     port: process.env.PORT ? Number(process.env.PORT) : 5173,
   },
+  test: {
+    environment: 'node',
+    include: ['src/**/*.{test,spec}.{js,jsx}'],
+  },
 });

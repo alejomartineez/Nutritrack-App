@@ -21,38 +21,22 @@ import {
   buildReminderMessage,
   notifyInBackground,
 } from './reminders';
+import {
+  dateKeyOf,
+  startOfDay,
+  addDays,
+  formatDisplayDate,
+  round1,
+  computeTotals,
+  computeStreak,
+  computeMacroSegments,
+} from './lib/nutritionCalcs';
 
 // ---------------------------------------------------------------------------
 // DATOS BASE DEL PLAN
 // ---------------------------------------------------------------------------
 
-const dateKeyOf = (d) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
-    d.getDate()
-  ).padStart(2, '0')}`;
-
 const TODAY_KEY = dateKeyOf(new Date());
-
-const startOfDay = (d) => {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  return x;
-};
-
-const addDays = (d, amount) => {
-  const x = new Date(d);
-  x.setDate(x.getDate() + amount);
-  return x;
-};
-
-const formatDisplayDate = (date) => {
-  const today = startOfDay(new Date());
-  const yesterday = addDays(today, -1);
-  if (dateKeyOf(date) === dateKeyOf(today)) return 'Hoy';
-  if (dateKeyOf(date) === dateKeyOf(yesterday)) return 'Ayer';
-  const text = date.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' });
-  return text.charAt(0).toUpperCase() + text.slice(1);
-};
 
 const DEFAULT_GOALS = { calories: 1610, protein: 116.5, carbs: 159, fat: 56.5, water: 2000 };
 const TOLERANCE = { calories: 100, protein: 10, carbs: 10, fat: 10 };
@@ -130,8 +114,6 @@ const emptyLog = () => ({ water: 0, planMeals: [], freeMeals: [] });
 
 const nowHM = () =>
   new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-
-const round1 = (n) => Math.round(n * 10) / 10;
 
 // ---------------------------------------------------------------------------
 // COMPONENTE PRINCIPAL
@@ -283,18 +265,10 @@ export default function NutriTrackApp() {
   }, [planCatalog, loaded]);
 
   // Totales del día
-  const totals = useMemo(() => {
-    const all = [...log.planMeals, ...log.freeMeals];
-    return all.reduce(
-      (acc, m) => ({
-        kcal: acc.kcal + m.kcal,
-        p: acc.p + m.p,
-        c: acc.c + m.c,
-        f: acc.f + m.f,
-      }),
-      { kcal: 0, p: 0, c: 0, f: 0 }
-    );
-  }, [log]);
+  const totals = useMemo(
+    () => computeTotals([...log.planMeals, ...log.freeMeals]),
+    [log]
+  );
 
   const waterGlasses = Math.round(log.water / GLASS_ML);
   const waterGoalGlasses = Math.max(1, Math.round(goals.water / GLASS_ML));
@@ -552,19 +526,7 @@ export default function NutriTrackApp() {
     const pctCalories = Math.min(totals.kcal / (goals.calories || 1), 1);
     const overshoot = totals.kcal > goals.calories + TOLERANCE.calories;
 
-    const pKcal = totals.p * 4;
-    const cKcal = totals.c * 4;
-    const fKcal = totals.f * 9;
-    const macroTotal = pKcal + cKcal + fKcal;
-
-    const segments =
-      macroTotal > 0
-        ? [
-            { color: '#10b981', pct: pKcal / macroTotal }, // proteína - emerald-500
-            { color: '#2dd4bf', pct: cKcal / macroTotal }, // carbohidratos - teal-400
-            { color: '#94a3b8', pct: fKcal / macroTotal }, // grasas - slate-400
-          ]
-        : [];
+    const segments = computeMacroSegments(totals);
 
     let cumulative = 0;
     const arcs = segments.map((seg) => {
@@ -609,18 +571,10 @@ export default function NutriTrackApp() {
   }, [log, loaded]);
 
   // Racha de días consecutivos (terminando hoy) dentro del rango de calorías
-  const streak = useMemo(() => {
-    let count = 0;
-    for (let i = weekStats.length - 1; i >= 0; i--) {
-      const d = weekStats[i];
-      if (d.hasData && Math.abs(d.kcal - goals.calories) <= TOLERANCE.calories) {
-        count++;
-      } else {
-        break;
-      }
-    }
-    return count;
-  }, [weekStats, goals]);
+  const streak = useMemo(
+    () => computeStreak(weekStats, goals.calories, TOLERANCE.calories),
+    [weekStats, goals]
+  );
 
   const weeklyFreeCount = useMemo(
     () => weekStats.reduce((sum, d) => sum + d.freeCount, 0),
