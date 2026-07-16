@@ -85,6 +85,46 @@ const TIPS = [
   'Llevá siempre una botella de agua a mano para llegar más fácil a tu meta diaria.',
 ];
 
+// Frases de feedback: varias por situación, se elige una al azar por sesión para
+// que la app no se sienta repetitiva. (Ver `motivation` en el componente.)
+const MOTIVATION = {
+  positive: [
+    '¡Excelente adherencia! Vas por muy buen camino para tus metas de composición corporal.',
+    '¡Día redondo! Tus macros quedaron justo donde tienen que estar.',
+    'Impecable. Esta constancia es la que mueve la aguja de verdad.',
+    '¡Lo estás clavando! Cerrar el día así de prolijo no es casualidad. 💪',
+    '¡Buenísimo! Tu yo de dentro de unas semanas te lo va a agradecer.',
+    'Comiste alineado a tu objetivo. Así se construye el progreso.',
+  ],
+  free: [
+    '¡Disfrutalo! El balance y el control de la porción son la clave de la sostenibilidad a largo plazo.',
+    'Date el gusto sin culpa: un antojo bien puesto también es parte del plan.',
+    'Comer algo rico de vez en cuando no borra tu progreso. Disfrutá y seguí.',
+    'La sostenibilidad se construye con flexibilidad, no con perfección. ¡A disfrutar!',
+    'Un gusto no arruina la semana; lo que suma es lo que hacés la mayoría de las veces.',
+  ],
+  protein: [
+    'Estás un poco abajo en tus proteínas, ¿sumamos un huevo o yogur en la próxima comida?',
+    'Te faltan algunas proteínas para llegar a la meta. Pollo o un puñado de frutos secos ayudan.',
+    'Ojo con la proteína de hoy: viene baja. Un yogur o unas claras te acercan.',
+    'Para cuidar tus músculos, sumá un poco más de proteína en lo que queda del día.',
+  ],
+  water: [
+    'Todavía faltan varios vasos de agua para llegar a la meta diaria.',
+    'La hidratación viene floja hoy. Un vaso de agua ahora mismo suma. 💧',
+    '¿Cuándo fue tu último vaso de agua? Vas por debajo de la meta.',
+    'Tu cuerpo te va a agradecer unos vasos más de agua antes de que termine el día.',
+  ],
+  empty: [
+    'Registrá comidas en este día para ver el progreso y recibir feedback personalizado.',
+    'Todo empieza con el primer registro. Anotá tu primera comida del día.',
+    'Cuando cargues lo que comés, vas a ver tus macros y tu progreso acá.',
+    'Arrancá el día registrando tu primera comida y seguí tu progreso al instante.',
+  ],
+};
+
+const sample = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
 const emptyLog = () => ({ water: 0, planMeals: [], freeMeals: [] });
 
 const nowHM = () =>
@@ -109,6 +149,14 @@ export default function NutriTrackApp() {
   const [goals, setGoals] = useState(DEFAULT_GOALS);
   const [log, setLog] = useState(emptyLog());
   const [tipIndex, setTipIndex] = useState(0);
+  // Una frase al azar por tipo, fijada al abrir la app (no parpadea al registrar).
+  const [motivation] = useState(() => ({
+    positive: sample(MOTIVATION.positive),
+    free: sample(MOTIVATION.free),
+    protein: sample(MOTIVATION.protein),
+    water: sample(MOTIVATION.water),
+    empty: sample(MOTIVATION.empty),
+  }));
 
   const [planCatalog, setPlanCatalog] = useState(() => {
     try {
@@ -461,38 +509,23 @@ export default function NutriTrackApp() {
     const withinF = Math.abs(totals.f - goals.fat) <= TOLERANCE.fat;
 
     if (hasAny && withinKcal && withinP && withinC && withinF) {
-      msgs.push({
-        type: 'positive',
-        text: '¡Excelente adherencia! Vas por muy buen camino para tus metas de composición corporal.',
-      });
+      msgs.push({ type: 'positive', text: motivation.positive });
     }
 
     if (log.freeMeals.length > 0) {
-      msgs.push({
-        type: 'free',
-        text: '¡Disfrutalo! Recordá que el balance y el control de la porción son la clave de la sostenibilidad a largo plazo.',
-      });
+      msgs.push({ type: 'free', text: motivation.free });
     }
 
     if (totals.p < goals.protein - TOLERANCE.protein) {
-      msgs.push({
-        type: 'reminder',
-        text: 'Estás un poco abajo en tus proteínas, ¿sumamos un huevo o yogur en la próxima comida?',
-      });
+      msgs.push({ type: 'reminder', text: motivation.protein });
     }
 
     if (log.water < goals.water - GLASS_ML * 2) {
-      msgs.push({
-        type: 'water',
-        text: 'Todavía faltan varios vasos de agua para llegar a la meta diaria.',
-      });
+      msgs.push({ type: 'water', text: motivation.water });
     }
 
     if (!hasAny) {
-      msgs.push({
-        type: 'neutral',
-        text: 'Registrá comidas en este día para ver el progreso y recibir feedback personalizado.',
-      });
+      msgs.push({ type: 'neutral', text: motivation.empty });
     }
 
     // Recordatorio activo: nudge visible al abrir la app (funciona también en iPhone,
@@ -502,7 +535,7 @@ export default function NutriTrackApp() {
       if (reminderText) msgs.unshift({ type: 'reminder', text: reminderText });
     }
     return msgs;
-  }, [totals, goals, log, remindersEnabled, isToday]);
+  }, [totals, goals, log, remindersEnabled, isToday, motivation]);
 
   // ------------------------- Anillo de composición ------------------------
   const ring = useMemo(() => {
