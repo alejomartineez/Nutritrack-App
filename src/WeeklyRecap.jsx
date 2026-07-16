@@ -44,10 +44,10 @@ const buildInsight = (sleepLogs, nutrition, workout) => {
   if (nutrition.daysLogged >= 5) return `Tu punto fuerte: constancia. Registraste ${nutrition.daysLogged} de 7 días.`;
   if (workout.sessions >= 3) return `Semana sólida de entreno: ${workout.sessions} sesiones completadas.`;
   if (nutrition.daysLogged > 0) return 'Seguí registrando: cuantos más días cargues, mejores insights vas a ver.';
-  return 'Registrá tu semana en los 3 pilares para desbloquear insights automáticos.';
+  return 'Seguí registrando tu semana para desbloquear insights automáticos.';
 };
 
-export default function WeeklyRecap({ weekStats, goals }) {
+export default function WeeklyRecap({ weekStats, goals, modules = { entreno: true, sueno: true } }) {
   const data = useMemo(() => {
     // Nutrición: reutiliza lo ya calculado en Progreso (últimos 7 días).
     const daysLogged = weekStats.filter((d) => d.hasData).length;
@@ -80,19 +80,19 @@ export default function WeeklyRecap({ weekStats, goals }) {
       value: `${data.nutrition.daysLogged}/7`,
       label: data.nutrition.daysLogged === 1 ? 'día registrado' : 'días registrados',
     },
-    {
+    modules.entreno && {
       icon: Dumbbell,
       color: 'text-orange-400',
       value: `${data.workout.sessions}`,
       label: data.workout.sessions === 1 ? 'entreno' : 'entrenos',
     },
-    {
+    modules.sueno && {
       icon: Moon,
       color: 'text-violet-400',
       value: data.sleepStats.nightsLogged > 0 ? `${data.sleepStats.avgHours}h` : '—',
       label: 'sueño prom.',
     },
-  ];
+  ].filter(Boolean);
 
   return (
     <div className="rounded-3xl bg-gradient-to-br from-emerald-500/10 via-slate-800/60 to-violet-500/10 border border-slate-700 p-5">
@@ -108,7 +108,7 @@ export default function WeeklyRecap({ weekStats, goals }) {
         )}
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className={`grid gap-3 ${stats.length === 1 ? 'grid-cols-1' : stats.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
         {stats.map((s) => (
           <div key={s.label} className="rounded-2xl bg-slate-900/40 border border-slate-700/60 p-3 flex flex-col items-center text-center">
             <s.icon className={`w-4 h-4 ${s.color} mb-1`} />

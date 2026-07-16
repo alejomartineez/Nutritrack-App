@@ -3,7 +3,7 @@ import {
   Home, PlusCircle, TrendingUp, Settings, Droplet, Droplets, Trash2, X, Check,
   ChevronRight, ChevronLeft, Sparkles, Lightbulb, Award, Plus, Minus,
   Save, RotateCcw, Info, Utensils, Coffee, Pencil, Flame, Dumbbell, MoonStar,
-  Download, Share, SquarePlus, Upload, ShieldCheck, Search, Bell, Clock,
+  Download, Share, SquarePlus, Upload, ShieldCheck, Search, Bell, Clock, LayoutGrid,
 } from 'lucide-react';
 import WorkoutModule from './workout/WorkoutModule';
 import SleepModule from './sleep/SleepModule';
@@ -129,6 +129,18 @@ export default function NutriTrackApp() {
   );
   const [remindersEnabled, setRemindersEnabled] = useState(() => loadReminderSettings().enabled);
   const [loaded, setLoaded] = useState(false);
+
+  // Módulos opcionales (nutrición siempre activa). Por defecto todo encendido,
+  // así los usuarios existentes no notan cambios.
+  const [modules, setModules] = useState(() => {
+    try {
+      const raw = localStorage.getItem('nutri_modules');
+      return raw ? { entreno: true, sueno: true, ...JSON.parse(raw) } : { entreno: true, sueno: true };
+    } catch (e) {
+      return { entreno: true, sueno: true };
+    }
+  });
+  const toggleModule = (key) => setModules((m) => ({ ...m, [key]: !m[key] }));
 
   const [goals, setGoals] = useState(DEFAULT_GOALS);
   const [log, setLog] = useState(emptyLog());
@@ -266,6 +278,22 @@ export default function NutriTrackApp() {
       // almacenamiento no disponible, se continúa sin persistir
     }
   }, [planCatalog, loaded]);
+
+  // Persistir módulos activos
+  useEffect(() => {
+    if (!loaded) return;
+    try {
+      localStorage.setItem('nutri_modules', JSON.stringify(modules));
+    } catch (e) {
+      // almacenamiento no disponible, se continúa sin persistir
+    }
+  }, [modules, loaded]);
+
+  // Si se desactiva el módulo de la pestaña actual, volver a Mi Día
+  useEffect(() => {
+    if (activeTab === 'entreno' && !modules.entreno) setActiveTab('dia');
+    if (activeTab === 'sueno' && !modules.sueno) setActiveTab('dia');
+  }, [modules, activeTab]);
 
   // Totales del día
   const totals = useMemo(
@@ -699,8 +727,8 @@ export default function NutriTrackApp() {
               removeEntry={removeEntry}
               onEdit={openEditEntry}
               onRegister={() => setActiveTab('registrar')}
-              habitStrip={isToday ? <DailyRings log={log} /> : null}
-              moduleCards={isToday ? <TodayDashboard onGoToTab={setActiveTab} /> : null}
+              habitStrip={isToday ? <DailyRings log={log} modules={modules} /> : null}
+              moduleCards={isToday ? <TodayDashboard onGoToTab={setActiveTab} modules={modules} /> : null}
             />
           )}
 
@@ -737,12 +765,13 @@ export default function NutriTrackApp() {
               setTipIndex={setTipIndex}
               streak={streak}
               weeklyFreeCount={weeklyFreeCount}
+              modules={modules}
             />
           )}
 
-          {activeTab === 'entreno' && <WorkoutModule />}
+          {activeTab === 'entreno' && modules.entreno && <WorkoutModule />}
 
-          {activeTab === 'sueno' && <SleepModule />}
+          {activeTab === 'sueno' && modules.sueno && <SleepModule />}
         </main>
 
         {/* NAV INFERIOR */}
@@ -754,20 +783,24 @@ export default function NutriTrackApp() {
             <NavButton icon={Home} label="Mi Día" active={activeTab === 'dia'} onClick={() => setActiveTab('dia')} />
             <NavButton icon={PlusCircle} label="Registrar" active={activeTab === 'registrar'} onClick={() => setActiveTab('registrar')} />
             <NavButton icon={TrendingUp} label="Progreso" active={activeTab === 'progreso'} onClick={() => setActiveTab('progreso')} />
-            <NavButton
-              icon={Dumbbell}
-              label="Entreno"
-              active={activeTab === 'entreno'}
-              onClick={() => setActiveTab('entreno')}
-              activeColorClass="text-orange-400"
-            />
-            <NavButton
-              icon={MoonStar}
-              label="Sueño"
-              active={activeTab === 'sueno'}
-              onClick={() => setActiveTab('sueno')}
-              activeColorClass="text-violet-400"
-            />
+            {modules.entreno && (
+              <NavButton
+                icon={Dumbbell}
+                label="Entreno"
+                active={activeTab === 'entreno'}
+                onClick={() => setActiveTab('entreno')}
+                activeColorClass="text-orange-400"
+              />
+            )}
+            {modules.sueno && (
+              <NavButton
+                icon={MoonStar}
+                label="Sueño"
+                active={activeTab === 'sueno'}
+                onClick={() => setActiveTab('sueno')}
+                activeColorClass="text-violet-400"
+              />
+            )}
           </div>
         </nav>
 
@@ -784,6 +817,8 @@ export default function NutriTrackApp() {
             onReset={resetSettings}
             remindersEnabled={remindersEnabled}
             onToggleReminders={toggleReminders}
+            modules={modules}
+            onToggleModule={toggleModule}
           />
         )}
 
@@ -1435,7 +1470,7 @@ function TabRegistrar({
   );
 }
 
-function TabProgreso({ weekStats, goals, tipIndex, setTipIndex, streak, weeklyFreeCount }) {
+function TabProgreso({ weekStats, goals, tipIndex, setTipIndex, streak, weeklyFreeCount, modules }) {
   const maxKcal = Math.max(goals.calories, ...weekStats.map((d) => d.kcal), 1);
 
   const nextTip = () => setTipIndex((i) => (i + 1) % TIPS.length);
@@ -1443,7 +1478,7 @@ function TabProgreso({ weekStats, goals, tipIndex, setTipIndex, streak, weeklyFr
 
   return (
     <div className="space-y-5">
-      <WeeklyRecap weekStats={weekStats} goals={goals} />
+      <WeeklyRecap weekStats={weekStats} goals={goals} modules={modules} />
       <WeightTracker />
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-2xl bg-slate-800/60 border border-slate-700 p-4 flex flex-col items-center justify-center text-center">
@@ -1795,7 +1830,7 @@ function InstallGuideModal({ onClose }) {
   );
 }
 
-function SettingsModal({ tempGoals, setTempGoals, onSave, onCancel, onReset, remindersEnabled, onToggleReminders }) {
+function SettingsModal({ tempGoals, setTempGoals, onSave, onCancel, onReset, remindersEnabled, onToggleReminders, modules, onToggleModule }) {
   const fields = [
     { key: 'calories', label: 'Calorías (kcal)', step: '10' },
     { key: 'protein', label: 'Proteínas (g)', step: '0.5' },
@@ -1876,6 +1911,47 @@ function SettingsModal({ tempGoals, setTempGoals, onSave, onCancel, onReset, rem
           >
             <Save className="w-4 h-4" /> Guardar
           </button>
+        </div>
+
+        <div className="mt-6 pt-5 border-t border-slate-700">
+          <div className="flex items-center gap-2 mb-1">
+            <LayoutGrid className="w-4 h-4 text-emerald-400" />
+            <h3 className="text-sm font-bold text-slate-100">Módulos</h3>
+          </div>
+          <p className="text-xs text-slate-500 mb-3">
+            Activá solo lo que quieras trackear. La nutrición siempre está activa.
+          </p>
+          <div className="space-y-3">
+            {[
+              { key: 'entreno', icon: Dumbbell, label: 'Entreno', desc: 'Rutinas y seguimiento de fuerza' },
+              { key: 'sueno', icon: MoonStar, label: 'Sueño', desc: 'Registro y análisis del descanso' },
+            ].map((mod) => {
+              const on = modules?.[mod.key] ?? true;
+              const Icon = mod.icon;
+              return (
+                <div key={mod.key} className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Icon className="w-4 h-4 text-slate-300 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-200">{mod.label}</p>
+                      <p className="text-xs text-slate-500 leading-tight">{mod.desc}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => onToggleModule(mod.key)}
+                    role="switch"
+                    aria-checked={on}
+                    aria-label={`Activar ${mod.label}`}
+                    className={`shrink-0 w-12 h-7 rounded-full p-0.5 transition-colors ${on ? 'bg-emerald-500' : 'bg-slate-600'}`}
+                  >
+                    <span
+                      className={`block w-6 h-6 rounded-full bg-white transition-transform ${on ? 'translate-x-5' : 'translate-x-0'}`}
+                    />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         <div className="mt-6 pt-5 border-t border-slate-700">

@@ -60,7 +60,7 @@ function SummaryCard({ onClick, accentClasses, icon, title, main, sub }) {
   );
 }
 
-export default function TodayDashboard({ onGoToTab }) {
+export default function TodayDashboard({ onGoToTab, modules = { entreno: true, sueno: true } }) {
   const workout = useMemo(todayWorkoutSummary, []);
   const sleep = useMemo(todaySleepSummary, []);
 
@@ -107,9 +107,10 @@ export default function TodayDashboard({ onGoToTab }) {
           sub: 'Registrá tu descanso de anoche',
         };
 
-  return (
-    <div className="grid grid-cols-2 gap-3">
+  const cards = [
+    modules.entreno && (
       <SummaryCard
+        key="entreno"
         onClick={() => onGoToTab('entreno')}
         accentClasses="bg-orange-500/5 border-orange-500/25 text-orange-300 hover:bg-orange-500/10"
         icon={workoutCard.icon}
@@ -117,7 +118,10 @@ export default function TodayDashboard({ onGoToTab }) {
         main={workoutCard.main}
         sub={workoutCard.sub}
       />
+    ),
+    modules.sueno && (
       <SummaryCard
+        key="sueno"
         onClick={() => onGoToTab('sueno')}
         accentClasses="bg-violet-500/5 border-violet-500/25 text-violet-300 hover:bg-violet-500/10"
         icon={<MoonStar className="w-3.5 h-3.5 text-violet-400 shrink-0" />}
@@ -125,6 +129,10 @@ export default function TodayDashboard({ onGoToTab }) {
         main={sleepCard.main}
         sub={sleepCard.sub}
       />
-    </div>
-  );
+    ),
+  ].filter(Boolean);
+
+  if (cards.length === 0) return null;
+
+  return <div className={`grid gap-3 ${cards.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>{cards}</div>;
 }

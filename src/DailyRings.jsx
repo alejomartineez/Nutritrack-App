@@ -31,17 +31,20 @@ const getTodayRings = (todayLog) => {
   const mealsDone = hasMeals(todayLog);
   const sleepDone = Boolean(loadSleepLogs()[today]);
 
-  // Movimiento (indulgente): entrenó hoy, o hoy es día de descanso en la rutina
-  // activa, o todavía no tiene rutina (no lo penalizamos por no entrenar).
+  // Movimiento: entrenó hoy, o hoy es día de descanso en la rutina activa.
+  // Sin rutina el anillo queda vacío (antes se marcaba como hecho, lo cual
+  // confundía: aparecía completo sin haber hecho nada ni tener rutina).
   const trainedToday = Object.values(loadSessions()).some((s) => s.date === today && s.endedAt);
   const activeRoutine = loadRoutines().find((r) => r.id === loadActiveRoutineId()) || null;
   let movementDone;
-  if (trainedToday || !activeRoutine) {
+  if (trainedToday) {
     movementDone = true;
-  } else {
+  } else if (activeRoutine) {
     const idx = (new Date().getDay() + 6) % 7; // lunes = 0, como se arma la rutina
     const day = activeRoutine.days[idx];
     movementDone = Boolean(day && day.isRest);
+  } else {
+    movementDone = false;
   }
 
   return { mealsDone, movementDone, sleepDone };
@@ -122,15 +125,15 @@ function Ring({ label, icon: Icon, done, color }) {
   );
 }
 
-export default function DailyRings({ log }) {
+export default function DailyRings({ log, modules = { entreno: true, sueno: true } }) {
   const rings = useMemo(() => getTodayRings(log), [log]);
   const { streak, freezeAvailable } = useMemo(() => computeLoggingStreak(), [log]);
 
   const items = [
     { key: 'comida', label: 'Comida', icon: Utensils, done: rings.mealsDone, color: '#10b981' },
-    { key: 'movimiento', label: 'Movimiento', icon: Dumbbell, done: rings.movementDone, color: '#f97316' },
-    { key: 'sueno', label: 'Sueño', icon: Moon, done: rings.sleepDone, color: '#8b5cf6' },
-  ];
+    modules.entreno && { key: 'movimiento', label: 'Movimiento', icon: Dumbbell, done: rings.movementDone, color: '#f97316' },
+    modules.sueno && { key: 'sueno', label: 'Sueño', icon: Moon, done: rings.sleepDone, color: '#8b5cf6' },
+  ].filter(Boolean);
 
   return (
     <div className="rounded-2xl bg-slate-800/60 border border-slate-700 px-4 py-3 flex items-center justify-between gap-3">
