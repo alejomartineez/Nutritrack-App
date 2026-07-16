@@ -3,13 +3,15 @@ import {
   Home, PlusCircle, TrendingUp, Settings, Droplet, Droplets, Trash2, X, Check,
   ChevronRight, ChevronLeft, Sparkles, Lightbulb, Award, Plus, Minus,
   Save, RotateCcw, Info, Utensils, Coffee, Pencil, Flame, Dumbbell, MoonStar,
-  Download, Share, SquarePlus, Upload, ShieldCheck, Search, Bell,
+  Download, Share, SquarePlus, Upload, ShieldCheck, Search, Bell, Clock,
 } from 'lucide-react';
 import WorkoutModule from './workout/WorkoutModule';
 import SleepModule from './sleep/SleepModule';
 import TodayDashboard from './TodayDashboard';
+import DailyRings from './DailyRings';
 import WeightTracker from './WeightTracker';
 import { searchFoods } from './foodDatabase';
+import { getFrequentFoods } from './foodHistory';
 import { requestPersistentStorage, downloadFullBackup, restoreFullBackup, readBackupFile } from './backupStorage';
 import {
   loadReminderSettings,
@@ -680,6 +682,8 @@ export default function NutriTrackApp() {
             />
           )}
 
+          {activeTab === 'dia' && isToday && <DailyRings log={log} />}
+
           {activeTab === 'dia' && isToday && <TodayDashboard onGoToTab={setActiveTab} />}
 
           {activeTab === 'dia' && (
@@ -1133,6 +1137,9 @@ function TabRegistrar({
 }) {
   const [foodQuery, setFoodQuery] = useState('');
   const foodResults = useMemo(() => searchFoods(foodQuery), [foodQuery]);
+  // Se calcula al entrar a la pestaña (el tab se desmonta al navegar): tus
+  // alimentos más registrados, para sumarlos de un toque sin buscar.
+  const frequents = useMemo(() => getFrequentFoods(), []);
 
   const addFoodFromDb = (food) => {
     const item = { name: food.name, kcal: food.kcal, p: food.p, c: food.c, f: food.f };
@@ -1161,6 +1168,32 @@ function TabRegistrar({
           <Coffee className="w-4 h-4" /> Fuera de Plan
         </button>
       </div>
+
+      {/* FRECUENTES: tus alimentos más registrados, a un toque. Se ocultan mientras buscás. */}
+      {frequents.length > 0 && foodQuery.trim().length < 2 && (
+        <div>
+          <p className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold mb-2 flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5" /> Frecuentes
+          </p>
+          <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+            {frequents.map((food) => (
+              <button
+                key={food.name}
+                onClick={() => addFoodFromDb(food)}
+                aria-label={`Agregar ${food.name}`}
+                className={`shrink-0 max-w-[75%] rounded-full border pl-3.5 pr-2.5 py-2 text-sm text-slate-200 flex items-center gap-1.5 transition-colors ${
+                  registerMode === 'plan'
+                    ? 'border-emerald-500/30 bg-emerald-500/5 hover:border-emerald-500/60'
+                    : 'border-amber-500/30 bg-amber-500/5 hover:border-amber-500/60'
+                }`}
+              >
+                <span className="truncate">{food.name}</span>
+                <Plus className={`w-3.5 h-3.5 shrink-0 ${registerMode === 'plan' ? 'text-emerald-400' : 'text-amber-400'}`} />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* BÚSQUEDA EN LA BASE DE ALIMENTOS: registro rápido sin tipear macros */}
       <div>
