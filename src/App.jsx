@@ -1389,7 +1389,7 @@ function TabProgreso({ weekStats, goals, tipIndex, setTipIndex, streak, weeklyFr
                 <div className="w-full h-28 flex items-end">
                   <div
                     className={`w-full rounded-t-md ${
-                      d.kcal === 0 ? 'bg-slate-700' : withinTol ? 'bg-emerald-500' : 'bg-teal-600'
+                      d.kcal === 0 ? 'bg-slate-700' : withinTol ? 'bg-emerald-500' : 'bg-amber-500'
                     }`}
                     style={{ height: `${h}%` }}
                   />
@@ -1401,7 +1401,7 @@ function TabProgreso({ weekStats, goals, tipIndex, setTipIndex, streak, weeklyFr
         </div>
         <div className="flex items-center gap-2 mt-3 text-[11px] text-slate-500">
           <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block" /> Dentro de rango
-          <span className="w-2.5 h-2.5 rounded-sm bg-teal-600 inline-block ml-3" /> Fuera de rango
+          <span className="w-2.5 h-2.5 rounded-sm bg-amber-500 inline-block ml-3" /> Fuera de rango
         </div>
       </div>
 
