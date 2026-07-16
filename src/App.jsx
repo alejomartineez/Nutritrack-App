@@ -789,6 +789,7 @@ export default function NutriTrackApp() {
                 active={activeTab === 'sueno'}
                 onClick={() => setActiveTab('sueno')}
                 activeColorClass="text-violet-400"
+                activeBgClass="bg-violet-500/15"
               />
             )}
             {modules.entreno && (
@@ -798,6 +799,7 @@ export default function NutriTrackApp() {
                 active={activeTab === 'entreno'}
                 onClick={() => setActiveTab('entreno')}
                 activeColorClass="text-orange-400"
+                activeBgClass="bg-orange-500/15"
               />
             )}
             <NavButton icon={TrendingUp} label="Progreso" active={activeTab === 'progreso'} onClick={() => setActiveTab('progreso')} />
@@ -905,16 +907,28 @@ function DateNav({ isToday, label, onPrev, onNext, onToday }) {
   );
 }
 
-function NavButton({ icon: Icon, label, active, onClick, activeColorClass = 'text-emerald-400' }) {
+function NavButton({
+  icon: Icon,
+  label,
+  active,
+  onClick,
+  activeColorClass = 'text-emerald-400',
+  activeBgClass = 'bg-emerald-500/15',
+}) {
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center gap-1 px-2 py-1 rounded-xl focus-visible:ring-2 focus-visible:ring-emerald-400 transition-colors ${
-        active ? activeColorClass : 'text-slate-500'
+      aria-current={active ? 'page' : undefined}
+      className={`flex flex-col items-center gap-0.5 px-1 pt-1 pb-0.5 rounded-xl focus-visible:ring-2 focus-visible:ring-emerald-400 transition-colors ${
+        active ? activeColorClass : 'text-slate-500 hover:text-slate-400'
       }`}
     >
-      <Icon className="w-5 h-5" />
-      <span className="text-[11px] font-medium">{label}</span>
+      {/* Pastilla tenue detrás del ícono: marca sutil de "estás acá". Mantiene el
+          mismo padding activa/inactiva para no mover el layout, solo cambia el fondo. */}
+      <span className={`flex items-center justify-center rounded-full px-4 py-1 transition-colors ${active ? activeBgClass : 'bg-transparent'}`}>
+        <Icon className="w-5 h-5" />
+      </span>
+      <span className={`text-[11px] transition-all ${active ? 'font-semibold' : 'font-medium'}`}>{label}</span>
     </button>
   );
 }
