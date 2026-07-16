@@ -9,6 +9,7 @@ import WorkoutModule from './workout/WorkoutModule';
 import SleepModule from './sleep/SleepModule';
 import TodayDashboard from './TodayDashboard';
 import DailyRings from './DailyRings';
+import WeeklyRecap from './WeeklyRecap';
 import WeightTracker from './WeightTracker';
 import { searchFoods } from './foodDatabase';
 import { getFrequentFoods } from './foodHistory';
@@ -1409,6 +1410,7 @@ function TabProgreso({ weekStats, goals, tipIndex, setTipIndex, streak, weeklyFr
 
   return (
     <div className="space-y-5">
+      <WeeklyRecap weekStats={weekStats} goals={goals} />
       <WeightTracker />
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-2xl bg-slate-800/60 border border-slate-700 p-4 flex flex-col items-center justify-center text-center">
