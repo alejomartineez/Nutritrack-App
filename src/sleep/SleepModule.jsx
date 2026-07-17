@@ -19,6 +19,38 @@ const TABS = [
   { id: 'insights', label: 'Insights', icon: Sparkles },
 ];
 
+const VIOLET = 'from-violet-400 to-indigo-300';
+
+const sleepBadge = (Icon) => (
+  <div className="flex items-center justify-center w-28 h-28 rounded-full bg-violet-500/10 border border-violet-500/30">
+    <Icon className="w-12 h-12 text-violet-400" />
+  </div>
+);
+
+const SLEEP_INTRO_SLIDES = [
+  {
+    key: 'intro',
+    titleClass: VIOLET,
+    visual: sleepBadge(MoonStar),
+    title: 'Tu descanso, en un lugar',
+    text: 'Registrá cuánto y cómo dormís para entender tu energía día a día.',
+  },
+  {
+    key: 'registro',
+    titleClass: VIOLET,
+    visual: sleepBadge(CalendarClock),
+    title: 'Registrá tu noche',
+    text: 'Anotá a qué hora te acostaste, cuándo te despertaste y cómo amaneciste. Toma segundos.',
+  },
+  {
+    key: 'insights',
+    titleClass: VIOLET,
+    visual: sleepBadge(Sparkles),
+    title: 'Descubrí tus patrones',
+    text: 'En "Semana" ves tus horas de sueño de un vistazo, y en "Insights", consejos según lo que vas registrando.',
+  },
+];
+
 const dayLabelFor = (key, todayKey) => {
   if (key === todayKey) return 'Hoy';
   if (key === addDaysToKey(todayKey, -1)) return 'Ayer';
@@ -103,21 +135,10 @@ export default function SleepModule() {
     <div className="space-y-4">
       <ModuleIntro
         storageKey="sleep_intro_seen"
-        accent={{
-          card: 'border-violet-500/30 bg-indigo-950/50',
-          iconWrap: 'bg-violet-500/15 text-violet-300',
-          title: 'text-violet-200',
-          bullet: 'text-violet-400',
-          button: 'bg-violet-500 hover:bg-violet-400 text-white focus-visible:ring-violet-300',
-        }}
-        icon={<MoonStar className="w-5 h-5" />}
-        title="Tu descanso, en un lugar"
-        description="Registrá cuánto y cómo dormís para entender tu energía día a día."
-        points={[
-          { icon: CalendarClock, label: 'Registro', text: 'anotá a qué hora te acostaste, cuándo te despertaste y cómo amaneciste.' },
-          { icon: LayoutDashboard, label: 'Semana', text: 'mirá tus horas de sueño de los últimos días de un vistazo.' },
-          { icon: Sparkles, label: 'Insights', text: 'patrones y consejos según lo que vas registrando.' },
-        ]}
+        slides={SLEEP_INTRO_SLIDES}
+        dotActiveClass="bg-violet-400"
+        buttonClass="bg-violet-500 hover:bg-violet-400 text-white focus-visible:ring-violet-300"
+        finalLabel="Entendido"
       />
 
       <div className="grid grid-cols-3 gap-2 bg-indigo-950 border border-violet-500/20 rounded-2xl p-1">

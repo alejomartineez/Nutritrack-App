@@ -30,6 +30,38 @@ import {
   finishSession,
 } from './workoutStorage';
 
+const ORANGE = 'from-orange-400 to-amber-300';
+
+const workoutBadge = (Icon) => (
+  <div className="flex items-center justify-center w-28 h-28 rounded-full bg-orange-500/10 border border-orange-500/30">
+    <Icon className="w-12 h-12 text-orange-400" />
+  </div>
+);
+
+const WORKOUT_INTRO_SLIDES = [
+  {
+    key: 'intro',
+    titleClass: ORANGE,
+    visual: workoutBadge(Dumbbell),
+    title: 'Armá y seguí tus entrenamientos',
+    text: 'Creá una rutina semanal, registrá tus series y mirá cómo progresás con el tiempo.',
+  },
+  {
+    key: 'semana',
+    titleClass: ORANGE,
+    visual: workoutBadge(CalendarDays),
+    title: 'Tu semana de entreno',
+    text: 'Elegí una plantilla, armá tus días y empezá el entreno de hoy con un toque.',
+  },
+  {
+    key: 'analiticas',
+    titleClass: ORANGE,
+    visual: workoutBadge(BarChart3),
+    title: 'Mirá tu progreso',
+    text: 'Volumen, récords y evolución de cada ejercicio a medida que vas registrando sesiones.',
+  },
+];
+
 export default function WorkoutModule() {
   const [subTab, setSubTab] = useState('semana'); // 'semana' | 'analiticas'
   const [loaded, setLoaded] = useState(false);
@@ -177,20 +209,10 @@ export default function WorkoutModule() {
     <div className="space-y-4">
       <ModuleIntro
         storageKey="workout_intro_seen"
-        accent={{
-          card: 'border-orange-500/30 bg-neutral-900',
-          iconWrap: 'bg-orange-500/15 text-orange-300',
-          title: 'text-orange-200',
-          bullet: 'text-orange-400',
-          button: 'bg-orange-500 hover:bg-orange-400 text-neutral-900 focus-visible:ring-orange-300',
-        }}
-        icon={<Dumbbell className="w-5 h-5" />}
-        title="Armá y seguí tus entrenamientos"
-        description="Creá una rutina semanal, registrá tus series y mirá cómo progresás."
-        points={[
-          { icon: CalendarDays, label: 'Semana', text: 'elegí una plantilla, armá tus días y empezá el entreno de hoy.' },
-          { icon: BarChart3, label: 'Analíticas', text: 'volumen, progreso y récords a medida que vas registrando sesiones.' },
-        ]}
+        slides={WORKOUT_INTRO_SLIDES}
+        dotActiveClass="bg-orange-400"
+        buttonClass="bg-orange-500 hover:bg-orange-400 text-neutral-900 focus-visible:ring-orange-300"
+        finalLabel="Entendido"
       />
 
       <div className="grid grid-cols-2 gap-2 bg-neutral-900 border border-orange-500/20 rounded-2xl p-1">
