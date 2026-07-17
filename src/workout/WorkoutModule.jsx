@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, BarChart3 } from 'lucide-react';
+import { CalendarDays, BarChart3, Dumbbell } from 'lucide-react';
+import ModuleIntro from '../ModuleIntro';
 import WeekView from './WeekView';
 import InWorkoutSession from './InWorkoutSession';
 import Analytics from './Analytics';
@@ -174,6 +175,24 @@ export default function WorkoutModule() {
 
   return (
     <div className="space-y-4">
+      <ModuleIntro
+        storageKey="workout_intro_seen"
+        accent={{
+          card: 'border-orange-500/30 bg-neutral-900',
+          iconWrap: 'bg-orange-500/15 text-orange-300',
+          title: 'text-orange-200',
+          bullet: 'text-orange-400',
+          button: 'bg-orange-500 hover:bg-orange-400 text-neutral-900 focus-visible:ring-orange-300',
+        }}
+        icon={<Dumbbell className="w-5 h-5" />}
+        title="Armá y seguí tus entrenamientos"
+        description="Creá una rutina semanal, registrá tus series y mirá cómo progresás."
+        points={[
+          { icon: CalendarDays, label: 'Semana', text: 'elegí una plantilla, armá tus días y empezá el entreno de hoy.' },
+          { icon: BarChart3, label: 'Analíticas', text: 'volumen, progreso y récords a medida que vas registrando sesiones.' },
+        ]}
+      />
+
       <div className="grid grid-cols-2 gap-2 bg-neutral-900 border border-orange-500/20 rounded-2xl p-1">
         <button
           onClick={() => setSubTab('semana')}

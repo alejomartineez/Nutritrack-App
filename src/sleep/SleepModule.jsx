@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CalendarClock, LayoutDashboard, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CalendarClock, LayoutDashboard, Sparkles, ChevronLeft, ChevronRight, MoonStar } from 'lucide-react';
+import ModuleIntro from '../ModuleIntro';
 import SleepLogForm from './SleepLogForm';
 import SleepDashboard from './SleepDashboard';
 import SleepInsights from './SleepInsights';
@@ -100,6 +101,25 @@ export default function SleepModule() {
 
   return (
     <div className="space-y-4">
+      <ModuleIntro
+        storageKey="sleep_intro_seen"
+        accent={{
+          card: 'border-violet-500/30 bg-indigo-950/50',
+          iconWrap: 'bg-violet-500/15 text-violet-300',
+          title: 'text-violet-200',
+          bullet: 'text-violet-400',
+          button: 'bg-violet-500 hover:bg-violet-400 text-white focus-visible:ring-violet-300',
+        }}
+        icon={<MoonStar className="w-5 h-5" />}
+        title="Tu descanso, en un lugar"
+        description="Registrá cuánto y cómo dormís para entender tu energía día a día."
+        points={[
+          { icon: CalendarClock, label: 'Registro', text: 'anotá a qué hora te acostaste, cuándo te despertaste y cómo amaneciste.' },
+          { icon: LayoutDashboard, label: 'Semana', text: 'mirá tus horas de sueño de los últimos días de un vistazo.' },
+          { icon: Sparkles, label: 'Insights', text: 'patrones y consejos según lo que vas registrando.' },
+        ]}
+      />
+
       <div className="grid grid-cols-3 gap-2 bg-indigo-950 border border-violet-500/20 rounded-2xl p-1">
         {TABS.map((tab) => (
           <button
