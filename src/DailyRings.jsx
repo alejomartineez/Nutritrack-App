@@ -69,6 +69,10 @@ const buildActiveDays = () => {
   return active;
 };
 
+/** true si el usuario alguna vez registró algo (comida, sueño o entreno) en cualquier día.
+ *  Sirve para detectar al usuario recién llegado y calmar la pantalla inicial. */
+export const hasAnyActivity = () => buildActiveDays().size > 0;
+
 /** Racha de días activos consecutivos, tolerando un único día salteado (freeze). */
 export const computeLoggingStreak = () => {
   const active = buildActiveDays();

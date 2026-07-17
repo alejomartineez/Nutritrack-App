@@ -8,7 +8,8 @@ import {
 import WorkoutModule from './workout/WorkoutModule';
 import SleepModule from './sleep/SleepModule';
 import TodayDashboard from './TodayDashboard';
-import DailyRings from './DailyRings';
+import DailyRings, { hasAnyActivity } from './DailyRings';
+import Onboarding from './Onboarding';
 import WeeklyRecap from './WeeklyRecap';
 import WeightTracker from './WeightTracker';
 import { searchFoods } from './foodDatabase';
@@ -124,6 +125,14 @@ export default function NutriTrackApp() {
   const [activeTab, setActiveTab] = useState('dia');
   const [showSettings, setShowSettings] = useState(false);
   const [showInstallGuide, setShowInstallGuide] = useState(false);
+  // Intro de primera vez: se muestra una sola vez y deja un flag al cerrarse.
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    try {
+      return !localStorage.getItem('nutri_onboarded');
+    } catch {
+      return false;
+    }
+  });
   const [isStandalone] = useState(
     () => window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true
   );
@@ -303,6 +312,19 @@ export default function NutriTrackApp() {
 
   const waterGlasses = Math.round(log.water / GLASS_ML);
   const waterGoalGlasses = Math.max(1, Math.round(goals.water / GLASS_ML));
+
+  // Usuario recién llegado: hoy sin nada registrado y sin historial en ningún
+  // pilar. En ese caso "Mi Día" se muestra en modo calmo (solo héroe + CTA) para
+  // no abrumar; en cuanto registra su primera comida vuelve el detalle completo.
+  const isFreshStart = useMemo(
+    () =>
+      isToday &&
+      log.planMeals.length === 0 &&
+      log.freeMeals.length === 0 &&
+      log.water === 0 &&
+      !hasAnyActivity(),
+    [isToday, log.planMeals.length, log.freeMeals.length, log.water]
+  );
 
   // ------------------------- Navegación entre días -------------------------
   const goPrevDay = () => setSelectedDate((prev) => addDays(prev, -1));
@@ -504,6 +526,15 @@ export default function NutriTrackApp() {
   const openSettings = () => {
     setTempGoals(goals);
     setShowSettings(true);
+  };
+
+  const dismissOnboarding = () => {
+    try {
+      localStorage.setItem('nutri_onboarded', '1');
+    } catch {
+      // storage no disponible: se cierra igual, puede reaparecer, es aceptable
+    }
+    setShowOnboarding(false);
   };
 
   const saveSettings = () => {
@@ -727,6 +758,7 @@ export default function NutriTrackApp() {
               removeEntry={removeEntry}
               onEdit={openEditEntry}
               onRegister={() => setActiveTab('registrar')}
+              quietStart={isFreshStart}
               habitStrip={isToday ? <DailyRings log={log} modules={modules} /> : null}
               moduleCards={isToday ? <TodayDashboard onGoToTab={setActiveTab} modules={modules} /> : null}
             />
@@ -805,6 +837,9 @@ export default function NutriTrackApp() {
             <NavButton icon={TrendingUp} label="Progreso" active={activeTab === 'progreso'} onClick={() => setActiveTab('progreso')} />
           </div>
         </nav>
+
+        {/* INTRO DE PRIMERA VEZ */}
+        {showOnboarding && <Onboarding onDone={dismissOnboarding} />}
 
         {/* MODAL DE INSTALACIÓN EN INICIO (iPhone/Safari) */}
         {showInstallGuide && <InstallGuideModal onClose={() => setShowInstallGuide(false)} />}
@@ -1024,6 +1059,7 @@ function TabMiDia({
   removeEntry,
   onEdit,
   onRegister,
+  quietStart,
   habitStrip,
   moduleCards,
 }) {
@@ -1098,25 +1134,28 @@ function TabMiDia({
         </svg>
         <p className={`mt-1 text-xs font-semibold ${ring.overshoot ? 'text-amber-400' : 'text-emerald-400'}`}>{statusText}</p>
 
-        {/* Tira fina de composición de macros */}
-        <div className="w-full mt-4">
-          <div className="flex h-2 rounded-full overflow-hidden bg-slate-700">
-            {macroSegments.map((seg, i) => (
-              <div key={i} style={{ width: `${seg.pct * 100}%`, backgroundColor: seg.color }} />
-            ))}
+        {/* Tira fina de composición de macros (se omite en arranque calmo, donde
+            aún no hay datos y sería solo una barra gris) */}
+        {!quietStart && (
+          <div className="w-full mt-4">
+            <div className="flex h-2 rounded-full overflow-hidden bg-slate-700">
+              {macroSegments.map((seg, i) => (
+                <div key={i} style={{ width: `${seg.pct * 100}%`, backgroundColor: seg.color }} />
+              ))}
+            </div>
+            <div className="flex justify-center gap-4 mt-2 text-[11px] text-slate-400">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#10b981' }} />Proteína
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#fbbf24' }} />Carbos
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#94a3b8' }} />Grasa
+              </span>
+            </div>
           </div>
-          <div className="flex justify-center gap-4 mt-2 text-[11px] text-slate-400">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#10b981' }} />Proteína
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#fbbf24' }} />Carbos
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#94a3b8' }} />Grasa
-            </span>
-          </div>
-        </div>
+        )}
 
         {/* Acción principal: el corazón de la dinámica diaria */}
         <button
@@ -1128,42 +1167,48 @@ function TabMiDia({
         </button>
       </div>
 
-      {/* TIRA DE HÁBITOS (comida / movimiento / sueño + racha) */}
-      {habitStrip}
+      {/* Secundarios: se ocultan en arranque calmo (usuario nuevo, día vacío) y
+          reaparecen apenas hay actividad, para que el héroe no compita con nada. */}
+      {!quietStart && (
+        <>
+          {/* TIRA DE HÁBITOS (comida / movimiento / sueño + racha) */}
+          {habitStrip}
 
-      {/* AGUA (compacta) */}
-      <div className="rounded-2xl bg-slate-800/60 border border-slate-700 px-4 py-3 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <Droplets className="w-5 h-5 text-cyan-300 shrink-0" />
-          <span className="text-sm font-semibold text-slate-200">Agua</span>
-          <span className="font-mono text-xs text-cyan-200/80 truncate">
-            {waterGlasses}/{waterGoalGlasses} vasos
-          </span>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={() => addWater(-1)}
-            aria-label="Quitar un vaso de agua"
-            className="p-2 rounded-full bg-slate-700 hover:bg-slate-600 focus-visible:ring-2 focus-visible:ring-cyan-400"
-          >
-            <Minus className="w-4 h-4 text-slate-200" />
-          </button>
-          <span className="font-mono text-sm text-cyan-200 w-16 text-center">{log.water} ml</span>
-          <button
-            onClick={() => addWater(1)}
-            aria-label="Agregar un vaso de agua"
-            className="p-2 rounded-full bg-cyan-500/20 border border-cyan-400/40 hover:bg-cyan-500/30 focus-visible:ring-2 focus-visible:ring-cyan-400"
-          >
-            <Plus className="w-4 h-4 text-cyan-300" />
-          </button>
-        </div>
-      </div>
+          {/* AGUA (compacta) */}
+          <div className="rounded-2xl bg-slate-800/60 border border-slate-700 px-4 py-3 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <Droplets className="w-5 h-5 text-cyan-300 shrink-0" />
+              <span className="text-sm font-semibold text-slate-200">Agua</span>
+              <span className="font-mono text-xs text-cyan-200/80 truncate">
+                {waterGlasses}/{waterGoalGlasses} vasos
+              </span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => addWater(-1)}
+                aria-label="Quitar un vaso de agua"
+                className="p-2 rounded-full bg-slate-700 hover:bg-slate-600 focus-visible:ring-2 focus-visible:ring-cyan-400"
+              >
+                <Minus className="w-4 h-4 text-slate-200" />
+              </button>
+              <span className="font-mono text-sm text-cyan-200 w-16 text-center">{log.water} ml</span>
+              <button
+                onClick={() => addWater(1)}
+                aria-label="Agregar un vaso de agua"
+                className="p-2 rounded-full bg-cyan-500/20 border border-cyan-400/40 hover:bg-cyan-500/30 focus-visible:ring-2 focus-visible:ring-cyan-400"
+              >
+                <Plus className="w-4 h-4 text-cyan-300" />
+              </button>
+            </div>
+          </div>
 
-      {/* ACCESOS A ENTRENO Y SUEÑO */}
-      {moduleCards}
+          {/* ACCESOS A ENTRENO Y SUEÑO */}
+          {moduleCards}
 
-      {/* FEEDBACK */}
-      <FeedbackBanner feedback={feedback} />
+          {/* FEEDBACK */}
+          <FeedbackBanner feedback={feedback} />
+        </>
+      )}
 
       {/* HISTORIAL DEL DÍA — listado general único, sin momentos del día */}
       <div>
