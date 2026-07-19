@@ -7,6 +7,8 @@ import {
   computeTotals,
   computeStreak,
   computeMacroSegments,
+  mifflinStJeorBMR,
+  computePlanFromProfile,
 } from './nutritionCalcs';
 
 describe('dateKeyOf', () => {
@@ -129,5 +131,61 @@ describe('computeMacroSegments', () => {
   it('devuelve lista vacía sin macros', () => {
     expect(computeMacroSegments({ p: 0, c: 0, f: 0 })).toEqual([]);
     expect(computeMacroSegments({})).toEqual([]);
+  });
+});
+
+describe('mifflinStJeorBMR', () => {
+  it('calcula la BMR de un hombre (fórmula +5)', () => {
+    // 10·80 + 6.25·180 − 5·30 + 5 = 1780
+    expect(mifflinStJeorBMR({ sex: 'hombre', weightKg: 80, heightCm: 180, age: 30 })).toBe(1780);
+  });
+
+  it('calcula la BMR de una mujer (fórmula −161)', () => {
+    // 10·65 + 6.25·165 − 5·28 − 161 = 1380.25
+    expect(mifflinStJeorBMR({ sex: 'mujer', weightKg: 65, heightCm: 165, age: 28 })).toBe(1380.25);
+  });
+});
+
+describe('computePlanFromProfile', () => {
+  it('mantenimiento: hombre 80kg/180cm/30a, actividad moderada', () => {
+    const plan = computePlanFromProfile({
+      sex: 'hombre', weightKg: 80, heightCm: 180, age: 30,
+      activityLevel: 'moderado', objective: 'mantener',
+    });
+    // TDEE = 1780 · 1.55 = 2759 → 2760 kcal
+    expect(plan.calories).toBe(2760);
+    expect(plan.protein).toBe(144); // 80 · 1.8
+    expect(plan.fat).toBe(76.7); // 2760 · 0.25 / 9
+    expect(plan.carbs).toBe(373.4); // resto de calorías
+    expect(plan.water).toBe(2750); // 80 · 35 = 2800 → al vaso más cercano
+  });
+
+  it('déficit: mujer 65kg/165cm/28a, actividad ligera, objetivo perder', () => {
+    const plan = computePlanFromProfile({
+      sex: 'mujer', weightKg: 65, heightCm: 165, age: 28,
+      activityLevel: 'ligero', objective: 'perder',
+    });
+    // TDEE = 1380.25 · 1.375 · 0.8 = 1518.27 → 1520 kcal
+    expect(plan.calories).toBe(1520);
+    expect(plan.protein).toBe(130); // 65 · 2.0 (más alta en déficit)
+    expect(plan.fat).toBe(42.2);
+    expect(plan.carbs).toBe(155.1);
+    expect(plan.water).toBe(2250);
+  });
+
+  it('acota el agua a un mínimo de 1.5 L para pesos bajos', () => {
+    const plan = computePlanFromProfile({
+      sex: 'mujer', weightKg: 40, heightCm: 155, age: 25,
+      activityLevel: 'sedentario', objective: 'mantener',
+    });
+    expect(plan.water).toBe(1500); // 40 · 35 = 1400 → sube al mínimo
+  });
+
+  it('nunca devuelve carbohidratos negativos', () => {
+    const plan = computePlanFromProfile({
+      sex: 'hombre', weightKg: 120, heightCm: 165, age: 60,
+      activityLevel: 'sedentario', objective: 'perder',
+    });
+    expect(plan.carbs).toBeGreaterThanOrEqual(0);
   });
 });

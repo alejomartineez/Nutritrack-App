@@ -3,13 +3,14 @@ import {
   Home, PlusCircle, TrendingUp, Settings, Droplet, Droplets, Trash2, X, Check,
   ChevronRight, ChevronLeft, Sparkles, Lightbulb, Award, Plus, Minus,
   Save, RotateCcw, Info, Utensils, Coffee, Pencil, Flame, Dumbbell, MoonStar,
-  Download, Share, SquarePlus, Upload, ShieldCheck, Search, Bell, Clock, LayoutGrid,
+  Download, Share, SquarePlus, Upload, ShieldCheck, Search, Bell, Clock, LayoutGrid, Calculator,
 } from 'lucide-react';
 import WorkoutModule from './workout/WorkoutModule';
 import SleepModule from './sleep/SleepModule';
 import TodayDashboard from './TodayDashboard';
 import DailyRings, { hasAnyActivity } from './DailyRings';
 import Onboarding from './Onboarding';
+import ProfileSetup from './ProfileSetup';
 import WeeklyRecap from './WeeklyRecap';
 import WeightTracker from './WeightTracker';
 import { searchFoods } from './foodDatabase';
@@ -133,6 +134,13 @@ export default function NutriTrackApp() {
       return false;
     }
   });
+  // Paso de perfil (cálculo del plan). En onboarding aparece tras los slides
+  // (solo usuarios nuevos); desde Ajustes se abre para recalcular con los datos
+  // guardados. `profileContext` distingue ambos casos; `profileInitial` precarga
+  // el formulario al recalcular.
+  const [showProfileSetup, setShowProfileSetup] = useState(false);
+  const [profileContext, setProfileContext] = useState('onboarding'); // 'onboarding' | 'settings'
+  const [profileInitial, setProfileInitial] = useState(null);
   const [isStandalone] = useState(
     () => window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true
   );
@@ -535,6 +543,60 @@ export default function NutriTrackApp() {
       // storage no disponible: se cierra igual, puede reaparecer, es aceptable
     }
     setShowOnboarding(false);
+    // Encadenar el cálculo del plan salvo que el usuario ya tenga un perfil.
+    try {
+      if (!localStorage.getItem('nutri_profile')) {
+        setProfileContext('onboarding');
+        setProfileInitial(null);
+        setShowProfileSetup(true);
+      }
+    } catch {
+      // sin storage no encadenamos el paso; se sigue con las metas por defecto
+    }
+  };
+
+  // Abrir el cálculo desde Ajustes, precargando el perfil guardado si lo hay.
+  const openRecalculate = () => {
+    let initial = null;
+    try {
+      const raw = localStorage.getItem('nutri_profile');
+      if (raw && raw !== 'skipped') initial = JSON.parse(raw);
+    } catch {
+      // perfil corrupto o ausente: se abre el formulario vacío
+    }
+    setProfileInitial(initial);
+    setProfileContext('settings');
+    setShowSettings(false);
+    setShowProfileSetup(true);
+  };
+
+  // El usuario aceptó su plan calculado: se vuelve la meta activa y se guarda el
+  // perfil para poder recalcularlo más adelante. Sirve para ambos contextos.
+  const completeProfileSetup = (plan, profile) => {
+    setGoals(plan);
+    setTempGoals(plan);
+    try {
+      localStorage.setItem('nutri_profile', JSON.stringify(profile));
+    } catch {
+      // sin storage se aplica igual en esta sesión
+    }
+    setShowProfileSetup(false);
+    flashConfirm(
+      profileContext === 'settings' ? 'Plan recalculado ✓' : '¡Tu plan personalizado está listo! 🎯'
+    );
+  };
+
+  // Cerrar sin aplicar. En onboarding marca el paso como omitido para no volver
+  // a mostrarlo; desde Ajustes es un simple "Cancelar" que no toca nada.
+  const dismissProfileSetup = () => {
+    if (profileContext === 'onboarding') {
+      try {
+        localStorage.setItem('nutri_profile', 'skipped');
+      } catch {
+        // sin storage el paso puede reaparecer; es aceptable
+      }
+    }
+    setShowProfileSetup(false);
   };
 
   const saveSettings = () => {
@@ -841,6 +903,17 @@ export default function NutriTrackApp() {
         {/* INTRO DE PRIMERA VEZ */}
         {showOnboarding && <Onboarding onDone={dismissOnboarding} />}
 
+        {/* CÁLCULO DEL PLAN (tras los slides o al recalcular desde Ajustes) */}
+        {showProfileSetup && (
+          <ProfileSetup
+            onComplete={completeProfileSetup}
+            onSkip={dismissProfileSetup}
+            initialProfile={profileInitial}
+            submitLabel={profileContext === 'settings' ? 'Guardar plan' : 'Usar este plan'}
+            dismissLabel={profileContext === 'settings' ? 'Cancelar' : 'Omitir'}
+          />
+        )}
+
         {/* MODAL DE INSTALACIÓN EN INICIO (iPhone/Safari) */}
         {showInstallGuide && <InstallGuideModal onClose={() => setShowInstallGuide(false)} />}
 
@@ -852,6 +925,7 @@ export default function NutriTrackApp() {
             onSave={saveSettings}
             onCancel={() => setShowSettings(false)}
             onReset={resetSettings}
+            onRecalculate={openRecalculate}
             remindersEnabled={remindersEnabled}
             onToggleReminders={toggleReminders}
             modules={modules}
@@ -1889,7 +1963,7 @@ function InstallGuideModal({ onClose }) {
   );
 }
 
-function SettingsModal({ tempGoals, setTempGoals, onSave, onCancel, onReset, remindersEnabled, onToggleReminders, modules, onToggleModule }) {
+function SettingsModal({ tempGoals, setTempGoals, onSave, onCancel, onReset, onRecalculate, remindersEnabled, onToggleReminders, modules, onToggleModule }) {
   const fields = [
     { key: 'calories', label: 'Calorías (kcal)', step: '10' },
     { key: 'protein', label: 'Proteínas (g)', step: '0.5' },
@@ -1970,6 +2044,27 @@ function SettingsModal({ tempGoals, setTempGoals, onSave, onCancel, onReset, rem
           >
             <Save className="w-4 h-4" /> Guardar
           </button>
+        </div>
+
+        {/* Recalcular el plan a partir del perfil (fórmula Mifflin-St Jeor) */}
+        <div className="mt-6 pt-5 border-t border-slate-700">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <Calculator className="w-4 h-4 text-emerald-400" />
+                <h3 className="text-sm font-bold text-slate-100">Recalcular mi plan</h3>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                Estimá tus calorías y macros según tu peso, altura y objetivo actuales.
+              </p>
+            </div>
+            <button
+              onClick={onRecalculate}
+              className="shrink-0 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 px-3.5 py-2 text-sm font-semibold hover:bg-emerald-500/25 focus-visible:ring-2 focus-visible:ring-emerald-400"
+            >
+              Recalcular
+            </button>
+          </div>
         </div>
 
         <div className="mt-6 pt-5 border-t border-slate-700">
