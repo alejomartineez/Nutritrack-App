@@ -1208,8 +1208,14 @@ function TabMiDia({
     }, 220);
   };
 
-  // Composición de macros por aporte calórico, para la tira fina bajo el anillo.
-  const macroSegments = computeMacroSegments(totals);
+  // Progreso de cada macro contra su meta. La tira anterior solo mostraba la
+  // proporción entre macros (normalizada), así que se llenaba igual comieras
+  // 20g o 200g de proteína: no dejaba ver si ibas acorde a la dieta.
+  const macros = [
+    { key: 'p', label: 'Proteína', color: '#10b981', value: totals.p, goal: goals.protein, tol: TOLERANCE.protein },
+    { key: 'c', label: 'Carbos', color: '#fbbf24', value: totals.c, goal: goals.carbs, tol: TOLERANCE.carbs },
+    { key: 'f', label: 'Grasa', color: '#94a3b8', value: totals.f, goal: goals.fat, tol: TOLERANCE.fat },
+  ];
 
   // Listado general único: todas las comidas del día juntas, sin clasificación por momento
   const allEntries = [
@@ -1252,26 +1258,13 @@ function TabMiDia({
         </svg>
         <p className={`mt-1 text-xs font-semibold ${ring.overshoot ? 'text-amber-400' : 'text-emerald-400'}`}>{statusText}</p>
 
-        {/* Tira fina de composición de macros (se omite en arranque calmo, donde
-            aún no hay datos y sería solo una barra gris) */}
+        {/* Progreso por macro contra su meta (se omite en arranque calmo, donde
+            todo estaría en cero) */}
         {!quietStart && (
-          <div className="w-full mt-4">
-            <div className="flex h-2 rounded-full overflow-hidden bg-slate-700">
-              {macroSegments.map((seg, i) => (
-                <div key={i} style={{ width: `${seg.pct * 100}%`, backgroundColor: seg.color }} />
-              ))}
-            </div>
-            <div className="flex justify-center gap-4 mt-2 text-[11px] text-slate-400">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#10b981' }} />Proteína
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#fbbf24' }} />Carbos
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#94a3b8' }} />Grasa
-              </span>
-            </div>
+          <div className="w-full mt-4 grid grid-cols-3 gap-3">
+            {macros.map((m) => (
+              <MacroProgress key={m.key} {...m} />
+            ))}
           </div>
         )}
 
@@ -1385,6 +1378,47 @@ function TabMiDia({
             ))}
           </ul>
         )}
+      </div>
+    </div>
+  );
+}
+
+// Un macro contra su meta: gramos consumidos, objetivo y qué tan cerca estás.
+// La barra se llena respecto de la meta (no respecto de los otros macros), que
+// es lo que deja ver si vas acorde a la dieta. Si te pasás del margen, el número
+// se pone ámbar igual que el anillo de calorías; si estás dentro del rango, verde.
+function MacroProgress({ label, color, value = 0, goal = 0, tol = 0 }) {
+  const grams = Math.round(value);
+  const target = Math.round(goal);
+  const pct = goal > 0 ? Math.min(value / goal, 1) : 0;
+  const over = goal > 0 && value > goal + tol;
+  const inRange = goal > 0 && Math.abs(value - goal) <= tol;
+
+  return (
+    <div className="min-w-0">
+      <div className="flex items-center gap-1.5">
+        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+        <span className="text-[11px] text-slate-400 truncate">{label}</span>
+      </div>
+      <p className="mt-1 font-mono text-xs">
+        <span className={over ? 'text-amber-400 font-semibold' : inRange ? 'text-emerald-400 font-semibold' : 'text-slate-200'}>
+          {grams}
+        </span>
+        <span className="text-slate-500">/{target}g</span>
+      </p>
+      <div
+        className="mt-1 h-1.5 rounded-full bg-slate-700 overflow-hidden"
+        role="progressbar"
+        aria-label={label}
+        aria-valuenow={grams}
+        aria-valuemin={0}
+        aria-valuemax={target}
+        aria-valuetext={`${grams} de ${target} gramos`}
+      >
+        <div
+          className="h-full rounded-full transition-[width] duration-500"
+          style={{ width: `${pct * 100}%`, backgroundColor: over ? '#f59e0b' : color }}
+        />
       </div>
     </div>
   );
