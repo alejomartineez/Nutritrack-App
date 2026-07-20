@@ -4,10 +4,10 @@ import { correlateLateDinnerWithQuality, correlateSleepWithWorkoutVolume } from 
 
 function InsightCard({ icon: Icon, title, children }) {
   return (
-    <div className="rounded-3xl bg-gradient-to-br from-violet-500/10 to-indigo-950 border border-violet-500/25 p-5">
+    <div className="rounded-3xl surface-accent p-5">
       <div className="flex items-center gap-2 mb-2.5">
         <Icon className="w-4 h-4 text-violet-300" />
-        <h2 className="text-sm font-bold text-indigo-200 uppercase tracking-wide">{title}</h2>
+        <h2 className="label-section">{title}</h2>
       </div>
       {children}
     </div>
@@ -33,7 +33,7 @@ export default function SleepInsights({ sleepLogs }) {
     <div className="space-y-4">
       <div className="text-center mb-1">
         <Sparkles className="w-6 h-6 text-violet-300 mx-auto mb-1.5" />
-        <h2 className="text-base font-bold text-white">Insights automáticos</h2>
+        <h2 className="text-base font-bold text-slate-100">Insights automáticos</h2>
         <p className="text-xs text-indigo-400 mt-0.5">Cruzamos tu sueño con tu nutrición y tus entrenamientos</p>
       </div>
 

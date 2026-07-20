@@ -2,6 +2,8 @@
 // DATOS BASE DEL MÓDULO DE ENTRENAMIENTO
 // ---------------------------------------------------------------------------
 
+import { sequential } from '../lib/theme';
+
 export const MUSCLE_GROUPS = [
   'Pecho',
   'Espalda',
@@ -28,7 +30,7 @@ export const EQUIPMENT_TYPES = [
 
 export const SET_TYPES = [
   { id: 'warmup', label: 'Calentamiento', short: 'W', color: 'text-slate-400 bg-slate-700/60' },
-  { id: 'effective', label: 'Serie efectiva', short: 'E', color: 'text-orange-300 bg-orange-500/20' },
+  { id: 'effective', label: 'Serie efectiva', short: 'E', color: 'text-emerald-300 bg-emerald-500/20' },
   { id: 'dropset', label: 'Drop set', short: 'D', color: 'text-rose-300 bg-rose-500/20' },
   { id: 'myorep', label: 'Myo-rep', short: 'M', color: 'text-purple-300 bg-purple-500/20' },
   { id: 'superset', label: 'Superserie', short: 'S', color: 'text-cyan-300 bg-cyan-500/20' },
@@ -103,20 +105,26 @@ export const DEFAULT_EXERCISES = [
   { id: 'ex_rueda_abdominal', name: 'Rueda abdominal (ab wheel)', muscleGroup: 'Core', equipment: 'Peso corporal', isCustom: false },
 ];
 
-export const MUSCLE_GROUP_COLORS = {
-  Pecho: '#fb923c',
-  Espalda: '#f97316',
-  Hombro: '#fdba74',
-  Bíceps: '#ea580c',
-  Tríceps: '#c2410c',
-  Cuádriceps: '#f59e0b',
-  Isquiotibiales: '#d97706',
-  Glúteos: '#fb7185',
-  Pantorrillas: '#fbbf24',
-  Core: '#fcd34d',
-  Antebrazo: '#fdba74',
-  'Cardio / Full body': '#f97316',
-};
+// Rampa de un solo tono en vez de 12 naranjas distintos. En un ranking de
+// volumen por grupo el color no codifica categoría (ya está la etiqueta al
+// lado): codifica magnitud, así que una escala ordenada se lee de un vistazo
+// y no compite con el acento del resto de la app.
+export const MUSCLE_GROUP_COLORS = Object.fromEntries(
+  [
+    'Pecho',
+    'Espalda',
+    'Cuádriceps',
+    'Glúteos',
+    'Hombro',
+    'Isquiotibiales',
+    'Bíceps',
+    'Tríceps',
+    'Core',
+    'Pantorrillas',
+    'Antebrazo',
+    'Cardio / Full body',
+  ].map((group, i) => [group, sequential[i % sequential.length]]),
+);
 
 export const epley1RM = (weight, reps) => {
   const w = Number(weight) || 0;

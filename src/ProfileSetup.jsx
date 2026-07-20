@@ -115,7 +115,7 @@ export default function ProfileSetup({
             <div className="flex items-center justify-center w-20 h-20 rounded-full bg-emerald-500/10 border border-emerald-500/30">
               <Calculator className="w-9 h-9 text-emerald-400" />
             </div>
-            <h2 className="text-2xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-300">
+            <h2 className="text-2xl font-semibold tracking-tight text-slate-100">
               Calculemos tu plan
             </h2>
             <p className="text-sm text-slate-400 leading-relaxed max-w-xs">
@@ -293,7 +293,7 @@ function NumberField({ label, unit, value, onChange, invalid, placeholder }) {
 
 function MacroPill({ label, value, color }) {
   return (
-    <div className="rounded-xl bg-slate-800/60 border border-slate-700 px-2 py-2 text-center">
+    <div className="rounded-xl surface px-2 py-2 text-center">
       <p className={`font-mono text-base font-bold ${color}`}>{value}</p>
       <p className="text-[10px] uppercase tracking-wide text-slate-500 mt-0.5">{label}</p>
     </div>

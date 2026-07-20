@@ -16,12 +16,12 @@ const formatMinutes = (mins) => {
 
 function SummaryCard({ log, onEdit, isToday }) {
   return (
-    <div className="rounded-3xl bg-gradient-to-br from-violet-500/15 to-indigo-950 border border-violet-500/30 p-5 text-center">
+    <div className="rounded-3xl surface-accent p-5 text-center">
       <Check className="w-8 h-8 text-violet-300 mx-auto mb-2" />
       <p className="text-sm text-indigo-200 mb-1">
         {isToday ? 'Ya registraste tu descanso de hoy' : 'Descanso registrado'}
       </p>
-      <p className="text-3xl font-black text-white font-mono">{formatMinutes(log.totalSleepMinutes)}</p>
+      <p className="text-3xl font-black text-slate-100 font-mono">{formatMinutes(log.totalSleepMinutes)}</p>
       <p className="text-xs text-indigo-300 mt-1">
         {log.bedtime} → {log.wakeTime} · {ENERGY_LEVELS.find((e) => e.value === log.quality)?.emoji}{' '}
         {ENERGY_LEVELS.find((e) => e.value === log.quality)?.label}
@@ -82,11 +82,11 @@ export default function SleepLogForm({ existingLog, onSave, defaultBedtime, defa
   return (
     <div className="space-y-4">
       <div className="text-center">
-        <h2 className="text-lg font-bold text-white">{isToday ? '¿Cómo dormiste anoche?' : '¿Cómo dormiste?'}</h2>
+        <h2 className="text-lg font-bold text-slate-100">{isToday ? '¿Cómo dormiste anoche?' : '¿Cómo dormiste?'}</h2>
         <p className="text-xs text-indigo-300 mt-0.5">Registro rápido — ajustá lo justo y necesario</p>
       </div>
 
-      <div className="rounded-3xl bg-indigo-950/60 border border-indigo-500/20 p-5">
+      <div className="rounded-3xl surface p-5">
         <div className="space-y-3">
           <div>
             <label className="text-xs font-semibold text-indigo-300 mb-1.5 flex items-center gap-1.5">
@@ -97,7 +97,7 @@ export default function SleepLogForm({ existingLog, onSave, defaultBedtime, defa
               value={bedtime}
               onChange={(e) => setBedtime(e.target.value)}
               style={{ colorScheme: 'dark' }}
-              className="block w-[calc(100%-6px)] mx-auto bg-indigo-900/40 border border-indigo-500/30 rounded-xl px-3 py-2.5 text-white font-mono text-lg focus:outline-none focus:ring-2 focus:ring-violet-400"
+              className="block w-[calc(100%-6px)] mx-auto bg-indigo-900/40 border border-indigo-500/30 rounded-xl px-3 py-2.5 text-slate-100 font-mono text-lg focus:outline-none focus:ring-2 focus:ring-violet-400"
             />
           </div>
           <div>
@@ -109,7 +109,7 @@ export default function SleepLogForm({ existingLog, onSave, defaultBedtime, defa
               value={wakeTime}
               onChange={(e) => setWakeTime(e.target.value)}
               style={{ colorScheme: 'dark' }}
-              className="block w-[calc(100%-6px)] mx-auto bg-indigo-900/40 border border-indigo-500/30 rounded-xl px-3 py-2.5 text-white font-mono text-lg focus:outline-none focus:ring-2 focus:ring-violet-400"
+              className="block w-[calc(100%-6px)] mx-auto bg-indigo-900/40 border border-indigo-500/30 rounded-xl px-3 py-2.5 text-slate-100 font-mono text-lg focus:outline-none focus:ring-2 focus:ring-violet-400"
             />
           </div>
         </div>
@@ -122,7 +122,7 @@ export default function SleepLogForm({ existingLog, onSave, defaultBedtime, defa
               onClick={() => setMinutesToFallAsleep(mins)}
               className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${
                 minutesToFallAsleep === mins
-                  ? 'bg-violet-500 border-violet-400 text-white'
+                  ? 'bg-violet-500 border-violet-400 text-slate-900'
                   : 'bg-indigo-900/40 border-indigo-500/20 text-indigo-300'
               }`}
             >
@@ -133,11 +133,11 @@ export default function SleepLogForm({ existingLog, onSave, defaultBedtime, defa
 
         <div className="mt-4 pt-4 border-t border-indigo-500/20 text-center">
           <p className="text-[11px] uppercase tracking-wide text-indigo-400 font-semibold">Total dormido</p>
-          <p className="text-3xl font-black text-white font-mono">{formatMinutes(totalMinutes)}</p>
+          <p className="text-3xl font-black text-slate-100 font-mono">{formatMinutes(totalMinutes)}</p>
         </div>
       </div>
 
-      <div className="rounded-3xl bg-indigo-950/60 border border-indigo-500/20 p-5">
+      <div className="rounded-3xl surface p-5">
         <p className="text-sm font-semibold text-indigo-200 mb-3">¿Cómo te sentís al despertar?</p>
         <div className="flex justify-between gap-1.5">
           {ENERGY_LEVELS.map((level) => (
@@ -169,7 +169,7 @@ export default function SleepLogForm({ existingLog, onSave, defaultBedtime, defa
 
       {showMore && (
         <div className="space-y-4">
-          <div className="rounded-3xl bg-indigo-950/60 border border-indigo-500/20 p-5">
+          <div className="rounded-3xl surface p-5">
             <p className="text-sm font-semibold text-indigo-200 mb-2">Despertares nocturnos</p>
             <div className="flex gap-1.5 flex-wrap mb-3">
               {INTERRUPTION_COUNT_PRESETS.map((n) => (
@@ -178,7 +178,7 @@ export default function SleepLogForm({ existingLog, onSave, defaultBedtime, defa
                   onClick={() => setInterruptionCount(n)}
                   className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border ${
                     String(interruptionCount) === String(n)
-                      ? 'bg-violet-500 border-violet-400 text-white'
+                      ? 'bg-violet-500 border-violet-400 text-slate-900'
                       : 'bg-indigo-900/40 border-indigo-500/20 text-indigo-300'
                   }`}
                 >
@@ -196,7 +196,7 @@ export default function SleepLogForm({ existingLog, onSave, defaultBedtime, defa
                       onClick={() => setMinutesAwake(mins)}
                       className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${
                         minutesAwake === mins
-                          ? 'bg-violet-500 border-violet-400 text-white'
+                          ? 'bg-violet-500 border-violet-400 text-slate-900'
                           : 'bg-indigo-900/40 border-indigo-500/20 text-indigo-300'
                       }`}
                     >
@@ -208,7 +208,7 @@ export default function SleepLogForm({ existingLog, onSave, defaultBedtime, defa
             )}
           </div>
 
-          <div className="rounded-3xl bg-indigo-950/60 border border-indigo-500/20 p-5">
+          <div className="rounded-3xl surface p-5">
             <p className="text-sm font-semibold text-indigo-200 mb-3">¿Qué influyó en tu descanso?</p>
             <div className="space-y-3">
               {SLEEP_FACTOR_GROUPS.map((group) => (
@@ -240,7 +240,7 @@ export default function SleepLogForm({ existingLog, onSave, defaultBedtime, defa
         onClick={handleSave}
         disabled={!quality}
         className={`w-full py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-violet-300 ${
-          quality ? 'bg-violet-500 text-white hover:bg-violet-400' : 'bg-indigo-900/40 text-indigo-500'
+          quality ? 'bg-violet-500 text-slate-900 hover:bg-violet-400' : 'bg-indigo-900/40 text-indigo-500'
         }`}
       >
         <Check className="w-5 h-5" /> Guardar registro

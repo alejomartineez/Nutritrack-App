@@ -39,6 +39,7 @@ import {
 } from './lib/nutritionCalcs';
 import QuantitySheet from './QuantitySheet';
 import { useCountUp, prefersReducedMotion } from './lib/motion';
+import { theme, macroColors, celebrationColors } from './lib/theme';
 
 // ---------------------------------------------------------------------------
 // DATOS BASE DEL PLAN
@@ -825,15 +826,10 @@ export default function NutriTrackApp() {
               <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold truncate">
                 {activeTab === 'entreno' ? 'Seguimiento semanal' : activeTab === 'sueno' ? 'Sueño y recuperación' : formatDisplayDate(selectedDate)}
               </p>
-              <h1
-                className={`text-2xl font-black tracking-tight bg-clip-text text-transparent truncate ${
-                  activeTab === 'entreno'
-                    ? 'bg-gradient-to-r from-orange-400 to-amber-300'
-                    : activeTab === 'sueno'
-                    ? 'bg-gradient-to-r from-indigo-400 to-violet-300'
-                    : 'bg-gradient-to-r from-emerald-400 to-teal-300'
-                }`}
-              >
+              {/* Título en blanco sólido, no en degradado de color. El degradado
+                  hacía que el nombre de la pantalla compitiera con el dato
+                  principal; el acento se reserva para los números. */}
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-100 truncate">
                 {activeTab === 'entreno' ? 'Mis Entrenamientos' : activeTab === 'sueno' ? 'Mi Descanso' : 'Mi Plan Nutricional'}
               </h1>
             </div>
@@ -950,7 +946,7 @@ export default function NutriTrackApp() {
         {/* NAV INFERIOR */}
         <nav className="fixed bottom-0 inset-x-0 flex justify-center pointer-events-none">
           <div
-            className="w-full max-w-md bg-slate-800/95 backdrop-blur border-t border-slate-700 px-2 pt-2 flex justify-around pointer-events-auto"
+            className="w-full max-w-md bg-slate-900/80 backdrop-blur-xl border-t border-slate-700 px-2 pt-2 flex justify-around pointer-events-auto"
             style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.25rem)' }}
           >
             <NavButton icon={Home} label="Mi Día" active={activeTab === 'dia'} onClick={() => setActiveTab('dia')} />
@@ -961,8 +957,6 @@ export default function NutriTrackApp() {
                 label="Sueño"
                 active={activeTab === 'sueno'}
                 onClick={() => setActiveTab('sueno')}
-                activeColorClass="text-violet-400"
-                activeBgClass="bg-violet-500/15"
               />
             )}
             {modules.entreno && (
@@ -971,8 +965,6 @@ export default function NutriTrackApp() {
                 label="Entreno"
                 active={activeTab === 'entreno'}
                 onClick={() => setActiveTab('entreno')}
-                activeColorClass="text-orange-400"
-                activeBgClass="bg-orange-500/15"
               />
             )}
             <NavButton icon={TrendingUp} label="Progreso" active={activeTab === 'progreso'} onClick={() => setActiveTab('progreso')} />
@@ -1076,7 +1068,7 @@ export default function NutriTrackApp() {
 
 function DateNav({ isToday, label, onPrev, onNext, onToday }) {
   return (
-    <div className="flex items-center justify-between rounded-2xl bg-slate-800/60 border border-slate-700 px-3 py-2.5">
+    <div className="flex items-center justify-between rounded-2xl surface px-3 py-2.5">
       <button
         onClick={onPrev}
         aria-label="Ver día anterior"
@@ -1169,7 +1161,7 @@ function FeedbackBanner({ feedback }) {
 
 // Confeti breve al entrar en el rango de calorías. Estalla en abanico desde la
 // zona del anillo y se desvanece; puramente decorativo (aria-hidden).
-const CONFETTI_COLORS = ['#10b981', '#fbbf24', '#22d3ee', '#a78bfa'];
+const CONFETTI_COLORS = celebrationColors;
 
 function Confetti({ active }) {
   const pieces = useMemo(() => {
@@ -1230,7 +1222,7 @@ function TabMiDia({
   habitStrip,
   moduleCards,
 }) {
-  const kcalColor = ring.overshoot ? '#f59e0b' : '#10b981';
+  const kcalColor = ring.overshoot ? theme.warn : theme.accentBright;
   const statusText = ring.overshoot
     ? 'Por encima de la meta'
     : Math.abs(totals.kcal - goals.calories) <= TOLERANCE_CAL
@@ -1261,9 +1253,9 @@ function TabMiDia({
   // proporción entre macros (normalizada), así que se llenaba igual comieras
   // 20g o 200g de proteína: no dejaba ver si ibas acorde a la dieta.
   const macros = [
-    { key: 'p', label: 'Proteína', color: '#10b981', value: totals.p, goal: goals.protein, tol: TOLERANCE.protein },
-    { key: 'c', label: 'Carbos', color: '#fbbf24', value: totals.c, goal: goals.carbs, tol: TOLERANCE.carbs },
-    { key: 'f', label: 'Grasa', color: '#94a3b8', value: totals.f, goal: goals.fat, tol: TOLERANCE.fat },
+    { key: 'p', label: 'Proteína', color: macroColors.protein, value: totals.p, goal: goals.protein, tol: TOLERANCE.protein },
+    { key: 'c', label: 'Carbos', color: macroColors.carbs, value: totals.c, goal: goals.carbs, tol: TOLERANCE.carbs },
+    { key: 'f', label: 'Grasa', color: macroColors.fat, value: totals.f, goal: goals.fat, tol: TOLERANCE.fat },
   ];
 
   // Listado general único: todas las comidas del día juntas, sin clasificación por momento
@@ -1275,7 +1267,7 @@ function TabMiDia({
   return (
     <div className="space-y-4">
       {/* HÉROE: anillo de calorías + acción principal */}
-      <div className="rounded-3xl bg-slate-800/60 border border-slate-700 p-5 flex flex-col items-center">
+      <div className="rounded-3xl surface p-5 flex flex-col items-center">
         <svg width={ring.size} height={ring.size} viewBox={`0 0 ${ring.size} ${ring.size}`}>
           {/* track exterior */}
           <circle
@@ -1283,7 +1275,7 @@ function TabMiDia({
             cy={ring.center}
             r={ring.rOuter}
             fill="none"
-            stroke="#334155"
+            stroke={theme.track}
             strokeWidth={ring.swOuter}
           />
           {/* progreso calorías */}
@@ -1298,10 +1290,25 @@ function TabMiDia({
             strokeLinecap="round"
             transform={`rotate(-90 ${ring.center} ${ring.center})`}
           />
-          <text x={ring.center} y={ring.center - 4} textAnchor="middle" className="fill-slate-100" style={{ fontSize: 34, fontWeight: 800, fontFamily: 'ui-monospace, monospace' }}>
+          {/* El número héroe iba en monoespaciada del sistema, que es lo que le
+              daba aspecto de terminal. Inter con cifras tabulares mantiene el
+              ancho fijo mientras cuenta, sin cambiar de tipografía. */}
+          <text
+            x={ring.center}
+            y={ring.center - 2}
+            textAnchor="middle"
+            className="fill-slate-100"
+            style={{ fontSize: 38, fontWeight: 680, letterSpacing: '-0.035em', fontVariantNumeric: 'tabular-nums' }}
+          >
             {Math.round(animatedKcal)}
           </text>
-          <text x={ring.center} y={ring.center + 20} textAnchor="middle" className="fill-slate-400" style={{ fontSize: 12, fontWeight: 600 }}>
+          <text
+            x={ring.center}
+            y={ring.center + 22}
+            textAnchor="middle"
+            className="fill-slate-500"
+            style={{ fontSize: 12, fontWeight: 500, letterSpacing: '0.01em' }}
+          >
             de {Math.round(goals.calories)} kcal
           </text>
         </svg>
@@ -1335,7 +1342,7 @@ function TabMiDia({
           {habitStrip}
 
           {/* AGUA (compacta) */}
-          <div className="rounded-2xl bg-slate-800/60 border border-slate-700 px-4 py-3 flex items-center justify-between gap-2">
+          <div className="rounded-2xl surface px-4 py-3 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
               <Droplets className="w-5 h-5 text-cyan-300 shrink-0" />
               <span className="text-sm font-semibold text-slate-200">Agua</span>
@@ -1372,7 +1379,7 @@ function TabMiDia({
 
       {/* HISTORIAL DEL DÍA — listado general único, sin momentos del día */}
       <div>
-        <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wide mb-2">Registro del día</h2>
+        <h2 className="label-section mb-2">Registro del día</h2>
         {allEntries.length === 0 ? (
           <button
             onClick={onRegister}
@@ -1466,7 +1473,7 @@ function MacroProgress({ label, color, value = 0, goal = 0, tol = 0 }) {
       >
         <div
           className="h-full rounded-full transition-[width] duration-500"
-          style={{ width: `${pct * 100}%`, backgroundColor: over ? '#f59e0b' : color }}
+          style={{ width: `${pct * 100}%`, backgroundColor: over ? theme.warn : color }}
         />
       </div>
     </div>
@@ -1613,14 +1620,14 @@ function TabRegistrar({
               value={foodQuery}
               onChange={(e) => setFoodQuery(e.target.value)}
               placeholder="Buscar alimento (banana, milanesa, arroz...)"
-              className="w-full bg-slate-800/60 border border-slate-700 rounded-2xl pl-9 pr-3 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              className="w-full surface rounded-2xl pl-9 pr-3 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"
             />
           </div>
           {/* Escanear el paquete evita tipear los macros de un producto envasado */}
           <button
             onClick={onScan}
             aria-label="Escanear código de barras"
-            className="shrink-0 px-3.5 rounded-2xl bg-slate-800/60 border border-slate-700 hover:border-emerald-500/50 focus-visible:ring-2 focus-visible:ring-emerald-400 transition-colors"
+            className="shrink-0 px-3.5 rounded-2xl surface hover:border-emerald-500/50 focus-visible:ring-2 focus-visible:ring-emerald-400 transition-colors"
           >
             <ScanLine className="w-5 h-5 text-slate-300" />
           </button>
@@ -1631,7 +1638,7 @@ function TabRegistrar({
               <button
                 key={food.id}
                 onClick={() => pickFood(food)}
-                className={`w-full text-left rounded-xl bg-slate-800/60 border border-slate-700 px-3.5 py-2.5 flex items-center justify-between gap-3 transition-colors ${
+                className={`w-full text-left rounded-xl surface px-3.5 py-2.5 flex items-center justify-between gap-3 transition-colors ${
                   registerMode === 'plan' ? 'hover:border-emerald-500/50' : 'hover:border-amber-500/50'
                 }`}
               >
@@ -1677,7 +1684,7 @@ function TabRegistrar({
                   <button
                     key={food.id}
                     onClick={() => pickFood(food)}
-                    className={`w-full text-left rounded-xl bg-slate-800/60 border border-slate-700 px-3.5 py-2.5 flex items-center justify-between gap-3 transition-colors ${
+                    className={`w-full text-left rounded-xl surface px-3.5 py-2.5 flex items-center justify-between gap-3 transition-colors ${
                       registerMode === 'plan' ? 'hover:border-emerald-500/50' : 'hover:border-amber-500/50'
                     }`}
                   >
@@ -1705,7 +1712,7 @@ function TabRegistrar({
             {catalog.map((item) => (
               <div
                 key={item.id}
-                className="rounded-2xl bg-slate-800/60 border border-slate-700 flex items-center gap-1 pr-1 hover:border-emerald-500/50 transition-colors"
+                className="rounded-2xl surface flex items-center gap-1 pr-1 hover:border-emerald-500/50 transition-colors"
               >
                 <button
                   onClick={() => askQuantity(item, 'plan')}
@@ -1752,7 +1759,7 @@ function TabRegistrar({
             {freeCatalog.map((item) => (
               <div
                 key={item.id}
-                className="rounded-2xl bg-slate-800/60 border border-slate-700 flex items-center gap-1 pr-1 hover:border-amber-500/50 transition-colors"
+                className="rounded-2xl surface flex items-center gap-1 pr-1 hover:border-amber-500/50 transition-colors"
               >
                 <button
                   onClick={() => askQuantity(item, 'libre')}
@@ -1859,19 +1866,21 @@ function TabProgreso({ weekStats, goals, tipIndex, setTipIndex, streak, weeklyFr
       <WeeklyRecap weekStats={weekStats} goals={goals} modules={modules} />
       <WeightTracker />
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-2xl bg-slate-800/60 border border-slate-700 p-4 flex flex-col items-center justify-center text-center">
-          <div className="flex items-center gap-1.5 text-emerald-400">
+        <div className="rounded-2xl surface p-4 flex flex-col items-center justify-center text-center">
+          {/* Ámbar, igual que la racha de la tira de hábitos: es un logro, no un
+              estado del plan. Ver DailyRings. */}
+          <div className="flex items-center gap-1.5 text-amber-400">
             <Flame className="w-5 h-5" />
-            <span className="font-mono text-2xl font-black text-slate-100">{streak}</span>
+            <span className="num-display text-2xl text-slate-100">{streak}</span>
           </div>
           <p className="text-[11px] text-slate-400 mt-1 leading-tight">
             {streak === 1 ? 'día seguido dentro de rango' : 'días seguidos dentro de rango'}
           </p>
         </div>
-        <div className="rounded-2xl bg-slate-800/60 border border-slate-700 p-4 flex flex-col items-center justify-center text-center">
+        <div className="rounded-2xl surface p-4 flex flex-col items-center justify-center text-center">
           <div className="flex items-center gap-1.5 text-amber-400">
             <Sparkles className="w-5 h-5" />
-            <span className="font-mono text-2xl font-black text-slate-100">{weeklyFreeCount}</span>
+            <span className="num-display text-2xl text-slate-100">{weeklyFreeCount}</span>
           </div>
           <p className="text-[11px] text-slate-400 mt-1 leading-tight">
             {weeklyFreeCount === 1 ? 'gusto esta semana' : 'gustos esta semana'}
@@ -1879,8 +1888,8 @@ function TabProgreso({ weekStats, goals, tipIndex, setTipIndex, streak, weeklyFr
         </div>
       </div>
 
-      <div className="rounded-3xl bg-slate-800/60 border border-slate-700 p-5">
-        <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wide mb-4">Últimos 7 días</h2>
+      <div className="rounded-3xl surface p-5">
+        <h2 className="label-section mb-4">Últimos 7 días</h2>
         <div className="flex items-end justify-between gap-2 h-36">
           {weekStats.map((d) => {
             const h = Math.max(4, (d.kcal / maxKcal) * 100);
@@ -1906,10 +1915,10 @@ function TabProgreso({ weekStats, goals, tipIndex, setTipIndex, streak, weeklyFr
         </div>
       </div>
 
-      <div className="rounded-3xl bg-gradient-to-br from-emerald-500/10 to-teal-500/5 border border-emerald-500/25 p-5">
+      <div className="rounded-3xl surface-accent p-5">
         <div className="flex items-center gap-2 mb-3">
           <Lightbulb className="w-5 h-5 text-emerald-300" />
-          <h2 className="text-sm font-bold text-emerald-200 uppercase tracking-wide">Tip del día</h2>
+          <h2 className="label-section">Tip del día</h2>
         </div>
         <p className="text-sm text-slate-200 leading-relaxed min-h-[3rem]">{TIPS[tipIndex]}</p>
         <div className="flex items-center justify-between mt-4">
@@ -1933,8 +1942,8 @@ function TabProgreso({ weekStats, goals, tipIndex, setTipIndex, streak, weeklyFr
         </div>
       </div>
 
-      <div className="rounded-3xl bg-slate-800/60 border border-slate-700 p-5">
-        <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wide mb-3">Tus metas actuales</h2>
+      <div className="rounded-3xl surface p-5">
+        <h2 className="label-section mb-3">Tus metas actuales</h2>
         <div className="grid grid-cols-2 gap-3 text-sm">
           <GoalChip label="Calorías" value={`${Math.round(goals.calories)} kcal`} />
           <GoalChip label="Proteínas" value={`${round1(goals.protein)} g`} />

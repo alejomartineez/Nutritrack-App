@@ -8,7 +8,7 @@
 //     el nombre, o sea inmutables, así que servir de caché es seguro y rápido.
 //
 // Subir CACHE_NAME en cada cambio de esta lógica limpia las cachés viejas.
-const CACHE_NAME = 'nutritrack-v3';
+const CACHE_NAME = 'nutritrack-v4';
 const APP_SHELL = ['/', '/index.html', '/manifest.json'];
 
 self.addEventListener('install', (event) => {

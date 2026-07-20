@@ -21,25 +21,25 @@ export default function SleepDashboard({ sleepLogs, goalHours, onSelectDay }) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-2xl bg-indigo-950/60 border border-indigo-500/20 p-4 flex flex-col items-center justify-center text-center">
+        <div className="rounded-2xl surface p-4 flex flex-col items-center justify-center text-center">
           <div className="flex items-center gap-1.5 text-violet-300">
             <Moon className="w-5 h-5" />
-            <span className="font-mono text-2xl font-black text-white">{stats.avgHours}h</span>
+            <span className="font-mono text-2xl font-black text-slate-100">{stats.avgHours}h</span>
           </div>
           <p className="text-[11px] text-indigo-400 mt-1 leading-tight">promedio esta semana</p>
         </div>
-        <div className="rounded-2xl bg-indigo-950/60 border border-indigo-500/20 p-4 flex flex-col items-center justify-center text-center">
+        <div className="rounded-2xl surface p-4 flex flex-col items-center justify-center text-center">
           <div className="flex items-center gap-1.5 text-amber-300">
             <TrendingDown className="w-5 h-5" />
-            <span className="font-mono text-2xl font-black text-white">{stats.sleepDebtHours}h</span>
+            <span className="font-mono text-2xl font-black text-slate-100">{stats.sleepDebtHours}h</span>
           </div>
           <p className="text-[11px] text-indigo-400 mt-1 leading-tight">déficit de sueño</p>
         </div>
       </div>
 
-      <div className="rounded-3xl bg-indigo-950/60 border border-indigo-500/20 p-5">
+      <div className="rounded-3xl surface p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-bold text-indigo-200 uppercase tracking-wide">Últimos 7 días</h2>
+          <h2 className="label-section">Últimos 7 días</h2>
           {onSelectDay && <span className="text-[10px] text-indigo-400">Tocá un día para editarlo</span>}
         </div>
         <div className="flex items-end justify-between gap-2 h-36">
@@ -76,10 +76,10 @@ export default function SleepDashboard({ sleepLogs, goalHours, onSelectDay }) {
         </div>
       </div>
 
-      <div className="rounded-3xl bg-indigo-950/60 border border-indigo-500/20 p-5">
+      <div className="rounded-3xl surface p-5">
         <div className="flex items-center gap-2 mb-4">
           <Gauge className="w-4 h-4 text-violet-300" />
-          <h2 className="text-sm font-bold text-indigo-200 uppercase tracking-wide">Consistencia de horarios</h2>
+          <h2 className="label-section">Consistencia de horarios</h2>
         </div>
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div className="rounded-xl bg-indigo-900/40 border border-indigo-500/20 px-3 py-2.5">

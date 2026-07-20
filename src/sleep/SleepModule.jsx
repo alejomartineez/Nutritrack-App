@@ -19,8 +19,6 @@ const TABS = [
   { id: 'insights', label: 'Insights', icon: Sparkles },
 ];
 
-const VIOLET = 'from-violet-400 to-indigo-300';
-
 const sleepBadge = (Icon) => (
   <div className="flex items-center justify-center w-28 h-28 rounded-full bg-violet-500/10 border border-violet-500/30">
     <Icon className="w-12 h-12 text-violet-400" />
@@ -30,21 +28,18 @@ const sleepBadge = (Icon) => (
 const SLEEP_INTRO_SLIDES = [
   {
     key: 'intro',
-    titleClass: VIOLET,
     visual: sleepBadge(MoonStar),
     title: 'Tu descanso, en un lugar',
     text: 'Registrá cuánto y cómo dormís para entender tu energía día a día.',
   },
   {
     key: 'registro',
-    titleClass: VIOLET,
     visual: sleepBadge(CalendarClock),
     title: 'Registrá tu noche',
     text: 'Anotá a qué hora te acostaste, cuándo te despertaste y cómo amaneciste. Toma segundos.',
   },
   {
     key: 'insights',
-    titleClass: VIOLET,
     visual: sleepBadge(Sparkles),
     title: 'Descubrí tus patrones',
     text: 'En "Semana" ves tus horas de sueño de un vistazo, y en "Insights", consejos según lo que vas registrando.',
@@ -61,7 +56,7 @@ const dayLabelFor = (key, todayKey) => {
 
 function SleepDayNav({ label, isToday, onPrev, onNext }) {
   return (
-    <div className="flex items-center justify-between bg-indigo-950/60 border border-indigo-500/20 rounded-2xl px-2 py-1.5">
+    <div className="flex items-center justify-between surface rounded-2xl px-2 py-1.5">
       <button
         onClick={onPrev}
         aria-label="Día anterior"
@@ -136,18 +131,18 @@ export default function SleepModule() {
       <ModuleIntro
         storageKey="sleep_intro_seen"
         slides={SLEEP_INTRO_SLIDES}
-        dotActiveClass="bg-violet-400"
-        buttonClass="bg-violet-500 hover:bg-violet-400 text-white focus-visible:ring-violet-300"
+        dotActiveClass="bg-emerald-400"
+        buttonClass="bg-emerald-500 hover:bg-emerald-400 text-slate-900 focus-visible:ring-emerald-300"
         finalLabel="Entendido"
       />
 
-      <div className="grid grid-cols-3 gap-2 bg-indigo-950 border border-violet-500/20 rounded-2xl p-1">
+      <div className="grid grid-cols-3 gap-2 surface rounded-2xl p-1">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => goToTab(tab.id)}
             className={`py-2.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 transition-colors ${
-              subTab === tab.id ? 'bg-violet-500 text-white' : 'text-indigo-400'
+              subTab === tab.id ? 'bg-violet-500 text-slate-900' : 'text-indigo-400'
             }`}
           >
             <tab.icon className="w-4 h-4" /> {tab.label}

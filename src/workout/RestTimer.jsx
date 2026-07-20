@@ -47,12 +47,12 @@ export default function RestTimer({ durationSec, onDismiss }) {
     >
       <div
         className={`w-full max-w-md rounded-2xl border px-4 py-3 flex items-center justify-between gap-3 pointer-events-auto shadow-lg transition-colors ${
-          isDone ? 'bg-orange-500 border-orange-400 animate-pulse' : 'bg-neutral-900/95 border-orange-500/40'
+          isDone ? 'bg-emerald-500 border-emerald-400 animate-pulse' : 'bg-neutral-900/95 border-emerald-500/40'
         }`}
       >
         <div className="flex items-center gap-2">
-          <Timer className={`w-5 h-5 ${isDone ? 'text-neutral-900' : 'text-orange-400'}`} />
-          <span className={`font-mono text-xl font-black ${isDone ? 'text-neutral-900' : 'text-orange-300'}`}>
+          <Timer className={`w-5 h-5 ${isDone ? 'text-neutral-900' : 'text-emerald-400'}`} />
+          <span className={`font-mono text-xl font-black ${isDone ? 'text-neutral-900' : 'text-emerald-300'}`}>
             {mm}:{ss}
           </span>
           <span className={`text-xs font-semibold ${isDone ? 'text-neutral-900' : 'text-slate-400'}`}>
@@ -63,21 +63,21 @@ export default function RestTimer({ durationSec, onDismiss }) {
           <button
             onClick={() => setRemaining((r) => Math.max(0, r - 15))}
             aria-label="Restar 15 segundos"
-            className={`p-2 rounded-full ${isDone ? 'hover:bg-orange-400' : 'hover:bg-neutral-800'}`}
+            className={`p-2 rounded-full ${isDone ? 'hover:bg-emerald-400' : 'hover:bg-neutral-800'}`}
           >
             <Minus className={`w-4 h-4 ${isDone ? 'text-neutral-900' : 'text-slate-300'}`} />
           </button>
           <button
             onClick={() => setRemaining((r) => Math.max(0, r) + 15)}
             aria-label="Sumar 15 segundos"
-            className={`p-2 rounded-full ${isDone ? 'hover:bg-orange-400' : 'hover:bg-neutral-800'}`}
+            className={`p-2 rounded-full ${isDone ? 'hover:bg-emerald-400' : 'hover:bg-neutral-800'}`}
           >
             <Plus className={`w-4 h-4 ${isDone ? 'text-neutral-900' : 'text-slate-300'}`} />
           </button>
           <button
             onClick={onDismiss}
             aria-label="Cerrar temporizador"
-            className={`p-2 rounded-full ${isDone ? 'hover:bg-orange-400' : 'hover:bg-neutral-800'}`}
+            className={`p-2 rounded-full ${isDone ? 'hover:bg-emerald-400' : 'hover:bg-neutral-800'}`}
           >
             <X className={`w-4 h-4 ${isDone ? 'text-neutral-900' : 'text-slate-300'}`} />
           </button>
@@ -89,7 +89,7 @@ export default function RestTimer({ durationSec, onDismiss }) {
             <button
               key={preset}
               onClick={() => setRemaining(preset)}
-              className="px-2.5 py-1 rounded-full bg-neutral-900/90 border border-orange-500/30 text-orange-300 text-[11px] font-semibold"
+              className="px-2.5 py-1 rounded-full surface text-emerald-300 text-[11px] font-semibold"
             >
               {preset}s
             </button>

@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Scale, Check, TrendingDown, TrendingUp, Minus } from 'lucide-react';
+import { theme } from './lib/theme';
 
 // ---------------------------------------------------------------------------
 // PESO CORPORAL: registro rápido diario + tendencia de los últimos 30 días.
@@ -49,7 +50,7 @@ function Sparkline({ entries }) {
   return (
     <div className="mt-3">
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-16" preserveAspectRatio="none">
-        <polyline points={points} fill="none" stroke="#34d399" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+        <polyline points={points} fill="none" stroke={theme.accentBright} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
       </svg>
       <div className="flex justify-between text-[10px] text-slate-500 font-mono">
         <span>{entries[0].date.slice(5)}</span>
@@ -96,33 +97,37 @@ export default function WeightTracker() {
   const deltaColor = delta == null || delta === 0 ? 'text-slate-400' : delta < 0 ? 'text-emerald-400' : 'text-amber-400';
 
   return (
-    <div className="rounded-3xl bg-slate-800/60 border border-slate-700 p-5">
+    <div className="rounded-3xl surface p-5">
       <div className="flex items-center gap-2 mb-3">
         <Scale className="w-4 h-4 text-emerald-400" />
-        <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wide">Peso corporal</h2>
+        <h2 className="label-section">Peso corporal</h2>
       </div>
 
-      <div className="flex items-end justify-between gap-3">
-        <div>
-          {latest ? (
-            <>
-              <p className="font-mono text-3xl font-black text-slate-100">
-                {latest.kg}
-                <span className="text-base font-semibold text-slate-400 ml-1">kg</span>
-              </p>
-              <p className={`text-xs mt-0.5 flex items-center gap-1 ${deltaColor}`}>
-                <DeltaIcon className="w-3.5 h-3.5" />
-                {delta == null
-                  ? 'Primer registro'
-                  : delta === 0
-                  ? 'Sin cambios vs registro anterior'
-                  : `${delta > 0 ? '+' : ''}${delta} kg vs registro anterior`}
-              </p>
-            </>
-          ) : (
-            <p className="text-sm text-slate-500">Registrá tu peso para ver la tendencia y saber si el plan está funcionando.</p>
-          )}
-        </div>
+      {/* Sin registros el texto explicativo va en su propia fila: al costado del
+          input quedaba en una columna de 4 palabras de ancho, partido en 4 líneas. */}
+      {!latest && (
+        <p className="text-sm text-slate-500 leading-relaxed mb-3">
+          Registrá tu peso para ver la tendencia y saber si el plan está funcionando.
+        </p>
+      )}
+
+      <div className={`flex items-end gap-3 ${latest ? 'justify-between' : 'justify-end'}`}>
+        {latest && (
+          <div>
+            <p className="num-display text-3xl text-slate-100">
+              {latest.kg}
+              <span className="text-base font-medium text-slate-400 ml-1 tracking-normal">kg</span>
+            </p>
+            <p className={`text-xs mt-0.5 flex items-center gap-1 ${deltaColor}`}>
+              <DeltaIcon className="w-3.5 h-3.5" />
+              {delta == null
+                ? 'Primer registro'
+                : delta === 0
+                ? 'Sin cambios vs registro anterior'
+                : `${delta > 0 ? '+' : ''}${delta} kg vs registro anterior`}
+            </p>
+          </div>
+        )}
 
         <div className="flex items-center gap-2 shrink-0">
           <input

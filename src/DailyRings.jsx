@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Utensils, Dumbbell, Moon, Flame } from 'lucide-react';
 import { loadRoutines, loadActiveRoutineId, loadSessions } from './workout/workoutStorage';
 import { loadSleepLogs } from './sleep/sleepStorage';
+import { theme } from './lib/theme';
 
 // ---------------------------------------------------------------------------
 // ANILLOS DIARIOS + RACHA INDULGENTE
@@ -108,7 +109,7 @@ function Ring({ label, icon: Icon, done, color }) {
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }} title={label} aria-label={label}>
       <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#334155" strokeWidth={sw} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={theme.track} strokeWidth={sw} />
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -123,7 +124,7 @@ function Ring({ label, icon: Icon, done, color }) {
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <Icon className="w-4 h-4" style={{ color: done ? color : '#64748b' }} />
+        <Icon className="w-4 h-4" style={{ color: done ? color : theme.textDisabled }} />
       </div>
     </div>
   );
@@ -133,14 +134,17 @@ export default function DailyRings({ log, modules = { entreno: true, sueno: true
   const rings = useMemo(() => getTodayRings(log), [log]);
   const { streak, freezeAvailable } = useMemo(() => computeLoggingStreak(), [log]);
 
+  // Los 3 anillos comparten el acento: se distinguen por ícono, no por color.
+  // Con un color por pilar la fila parecía un semáforo y competía con el
+  // anillo de calorías, que es el dato principal de la pantalla.
   const items = [
-    { key: 'comida', label: 'Comida', icon: Utensils, done: rings.mealsDone, color: '#10b981' },
-    modules.entreno && { key: 'movimiento', label: 'Movimiento', icon: Dumbbell, done: rings.movementDone, color: '#f97316' },
-    modules.sueno && { key: 'sueno', label: 'Sueño', icon: Moon, done: rings.sleepDone, color: '#8b5cf6' },
+    { key: 'comida', label: 'Comida', icon: Utensils, done: rings.mealsDone, color: theme.accentBright },
+    modules.entreno && { key: 'movimiento', label: 'Movimiento', icon: Dumbbell, done: rings.movementDone, color: theme.accentBright },
+    modules.sueno && { key: 'sueno', label: 'Sueño', icon: Moon, done: rings.sleepDone, color: theme.accentBright },
   ].filter(Boolean);
 
   return (
-    <div className="rounded-2xl bg-slate-800/60 border border-slate-700 px-4 py-3 flex items-center justify-between gap-3">
+    <div className="rounded-2xl surface px-4 py-3 flex items-center justify-between gap-3">
       <div className="flex items-center gap-4">
         {items.map(({ key, ...it }) => (
           <Ring key={key} {...it} />
@@ -150,7 +154,9 @@ export default function DailyRings({ log, modules = { entreno: true, sueno: true
         className="flex items-center gap-1.5 text-sm shrink-0"
         title={freezeAvailable && streak > 0 ? '1 día libre disponible' : undefined}
       >
-        <Flame className={`w-4 h-4 ${streak > 0 ? 'text-orange-400' : 'text-slate-500'}`} />
+        {/* Única excepción al acento verde: la racha va en ámbar. Es un logro,
+            no un estado del plan, y en verde se confundía con "meta cumplida". */}
+        <Flame className={`w-4 h-4 ${streak > 0 ? 'text-amber-400' : 'text-slate-600'}`} />
         <span className="font-mono font-bold text-slate-100">{streak}</span>
         <span className="text-slate-400 text-xs">{streak === 1 ? 'día' : 'días'}</span>
       </div>

@@ -68,13 +68,13 @@ export default function TodayDashboard({ onGoToTab, modules = { entreno: true, s
     switch (workout.state) {
       case 'done':
         return {
-          icon: <Check className="w-3.5 h-3.5 text-orange-400 shrink-0" />,
+          icon: <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />,
           main: `${workout.dayName} completado`,
           sub: `${workout.completedSets} series registradas`,
         };
       case 'planned':
         return {
-          icon: <Dumbbell className="w-3.5 h-3.5 text-orange-400 shrink-0" />,
+          icon: <Dumbbell className="w-3.5 h-3.5 text-emerald-400 shrink-0" />,
           main: `Hoy: ${workout.dayName}`,
           sub:
             workout.exerciseCount > 0
@@ -83,13 +83,13 @@ export default function TodayDashboard({ onGoToTab, modules = { entreno: true, s
         };
       case 'rest':
         return {
-          icon: <Moon className="w-3.5 h-3.5 text-orange-400 shrink-0" />,
+          icon: <Moon className="w-3.5 h-3.5 text-emerald-400 shrink-0" />,
           main: 'Día de descanso',
           sub: 'Tu rutina no tiene entreno hoy',
         };
       default:
         return {
-          icon: <Dumbbell className="w-3.5 h-3.5 text-orange-400 shrink-0" />,
+          icon: <Dumbbell className="w-3.5 h-3.5 text-emerald-400 shrink-0" />,
           main: 'Sin rutina todavía',
           sub: 'Tocá para armar tu semana',
         };
@@ -112,7 +112,7 @@ export default function TodayDashboard({ onGoToTab, modules = { entreno: true, s
       <SummaryCard
         key="entreno"
         onClick={() => onGoToTab('entreno')}
-        accentClasses="bg-orange-500/5 border-orange-500/25 text-orange-300 hover:bg-orange-500/10"
+        accentClasses="bg-emerald-500/5 border-emerald-500/25 text-emerald-300 hover:bg-emerald-500/10"
         icon={workoutCard.icon}
         title="Entreno"
         main={workoutCard.main}

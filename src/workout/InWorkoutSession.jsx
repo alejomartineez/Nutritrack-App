@@ -9,7 +9,7 @@ import { getLastPerformance } from './workoutStorage';
 function WatermarkHint({ last }) {
   if (!last) return <p className="text-xs text-slate-600 italic mt-0.5">Primera vez que registrás este ejercicio</p>;
   return (
-    <p className="text-xs text-orange-400/70 italic mt-0.5">
+    <p className="text-xs text-emerald-400/70 italic mt-0.5">
       Última vez: {last.weight}kg x {last.reps} @ RIR {last.rir ?? '-'}
     </p>
   );
@@ -37,7 +37,7 @@ function SetRow({ set, index, onOpenPad, onUpdate, onRemove, onComplete }) {
   return (
     <div
       className={`rounded-xl border p-2 flex items-center gap-1.5 ${
-        set.completed ? 'bg-orange-500/10 border-orange-500/30' : 'bg-neutral-800/60 border-neutral-700'
+        set.completed ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-neutral-800/60 border-neutral-700'
       }`}
     >
       <span className="w-4 text-center text-xs font-mono text-slate-500 shrink-0">{index + 1}</span>
@@ -76,7 +76,7 @@ function SetRow({ set, index, onOpenPad, onUpdate, onRemove, onComplete }) {
         onClick={cycleRir}
         aria-label="RIR (repeticiones en reserva). Tocar para cambiar"
         className={`shrink-0 w-11 h-9 rounded-lg text-[11px] font-bold flex items-center justify-center ${
-          hasRir ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30' : 'text-slate-600 border border-neutral-700'
+          hasRir ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-slate-600 border border-neutral-700'
         }`}
       >
         {hasRir ? `RIR${set.rir}` : 'RIR'}
@@ -85,8 +85,8 @@ function SetRow({ set, index, onOpenPad, onUpdate, onRemove, onComplete }) {
       <button
         onClick={onComplete}
         aria-label="Marcar serie completa"
-        className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center focus-visible:ring-2 focus-visible:ring-orange-400 ${
-          set.completed ? 'bg-orange-500 text-neutral-900' : 'bg-neutral-700 text-slate-400 hover:bg-neutral-600'
+        className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center focus-visible:ring-2 focus-visible:ring-emerald-400 ${
+          set.completed ? 'bg-emerald-500 text-neutral-900' : 'bg-neutral-700 text-slate-400 hover:bg-neutral-600'
         }`}
       >
         <Check className="w-4 h-4" />
@@ -142,12 +142,12 @@ function ExerciseCard({
   if (!exercise) return null;
 
   return (
-    <div className="rounded-2xl bg-neutral-900/60 border border-neutral-800 overflow-hidden">
+    <div className="rounded-2xl surface overflow-hidden">
       <div className="p-4 pb-2">
         <div className="flex items-start justify-between gap-2">
           <button className="min-w-0 text-left flex-1" onClick={() => setCollapsed((c) => !c)}>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-300">
+              <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300">
                 {exercise.muscleGroup}
               </span>
               {sessionExercise.substitutedFrom && (
@@ -161,7 +161,7 @@ function ExerciseCard({
             <button
               onClick={() => setNotesOpen((v) => !v)}
               aria-label="Notas rápidas"
-              className={`p-2 rounded-full hover:bg-neutral-800 ${sessionExercise.notes ? 'text-orange-400' : 'text-slate-500'}`}
+              className={`p-2 rounded-full hover:bg-neutral-800 ${sessionExercise.notes ? 'text-emerald-400' : 'text-slate-500'}`}
             >
               <StickyNote className="w-4 h-4" />
             </button>
@@ -180,7 +180,7 @@ function ExerciseCard({
             onChange={(e) => onUpdateNotes(e.target.value)}
             placeholder="Técnica, ajuste de máquina, molestias..."
             rows={2}
-            className="w-full mt-2 bg-neutral-800 border border-neutral-700 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-400"
+            className="w-full mt-2 bg-neutral-800 border border-neutral-700 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"
           />
         )}
       </div>
@@ -200,7 +200,7 @@ function ExerciseCard({
           ))}
           <button
             onClick={addQuickSet}
-            className="w-full py-2.5 rounded-xl border border-dashed border-orange-500/30 text-orange-300 text-xs font-semibold hover:bg-orange-500/5 flex items-center justify-center gap-1.5"
+            className="w-full py-2.5 rounded-xl border border-dashed border-emerald-500/30 text-emerald-300 text-xs font-semibold hover:bg-emerald-500/5 flex items-center justify-center gap-1.5"
           >
             <Plus className="w-3.5 h-3.5" /> Agregar serie
           </button>
@@ -272,9 +272,9 @@ export default function InWorkoutSession({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl bg-gradient-to-br from-orange-500/15 to-neutral-900 border border-orange-500/30 p-4 flex items-center justify-between">
+      <div className="rounded-2xl surface-accent p-4 flex items-center justify-between">
         <div>
-          <p className="text-xs uppercase tracking-wide text-orange-400 font-bold">{session.dayName}</p>
+          <p className="text-xs uppercase tracking-wide text-emerald-400 font-bold">{session.dayName}</p>
           <p className="text-sm text-slate-300 mt-0.5">{elapsedMin} min · {totalCompletedSets} series completadas</p>
         </div>
         <div className="flex items-center gap-2">
@@ -286,7 +286,7 @@ export default function InWorkoutSession({
           </button>
           <button
             onClick={onFinish}
-            className="px-4 py-2.5 rounded-xl bg-orange-500 text-neutral-900 text-sm font-bold flex items-center gap-1.5 hover:bg-orange-400 focus-visible:ring-2 focus-visible:ring-orange-300"
+            className="px-4 py-2.5 rounded-xl bg-emerald-500 text-neutral-900 text-sm font-bold flex items-center gap-1.5 hover:bg-emerald-400 focus-visible:ring-2 focus-visible:ring-emerald-300"
           >
             <Flag className="w-4 h-4" /> Finalizar
           </button>

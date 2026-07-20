@@ -6,6 +6,8 @@
 // deterministas: reciben sus datos por parámetro y devuelven un valor nuevo.
 // ---------------------------------------------------------------------------
 
+import { macroColors } from './theme';
+
 /** Clave de día local en formato YYYY-MM-DD (sin depender de UTC). */
 export const dateKeyOf = (d) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
@@ -197,8 +199,8 @@ export const computeMacroSegments = (totals) => {
   const macroTotal = pKcal + cKcal + fKcal;
   if (macroTotal <= 0) return [];
   return [
-    { color: '#10b981', pct: pKcal / macroTotal }, // proteína - emerald-500
-    { color: '#fbbf24', pct: cKcal / macroTotal }, // carbohidratos - amber-400
-    { color: '#94a3b8', pct: fKcal / macroTotal }, // grasas - slate-400
+    { color: macroColors.protein, pct: pKcal / macroTotal },
+    { color: macroColors.carbs, pct: cKcal / macroTotal },
+    { color: macroColors.fat, pct: fKcal / macroTotal },
   ];
 };

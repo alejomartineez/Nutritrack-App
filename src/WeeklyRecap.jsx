@@ -82,7 +82,7 @@ export default function WeeklyRecap({ weekStats, goals, modules = { entreno: tru
     },
     modules.entreno && {
       icon: Dumbbell,
-      color: 'text-orange-400',
+      color: 'text-emerald-400',
       value: `${data.workout.sessions}`,
       label: data.workout.sessions === 1 ? 'entreno' : 'entrenos',
     },
@@ -95,11 +95,11 @@ export default function WeeklyRecap({ weekStats, goals, modules = { entreno: tru
   ].filter(Boolean);
 
   return (
-    <div className="rounded-3xl bg-gradient-to-br from-emerald-500/10 via-slate-800/60 to-violet-500/10 border border-slate-700 p-5">
+    <div className="rounded-3xl surface-accent p-5">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-emerald-300" />
-          <h2 className="text-sm font-bold text-slate-100 uppercase tracking-wide">Tu semana</h2>
+          <h2 className="label-section">Tu semana</h2>
         </div>
         {data.workout.newPRs > 0 && (
           <span className="flex items-center gap-1 text-[11px] font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30 rounded-full px-2.5 py-1">

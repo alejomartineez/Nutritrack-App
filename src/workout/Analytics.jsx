@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Download, FileJson, Trophy, TrendingUp } from 'lucide-react';
 import { MUSCLE_GROUP_COLORS } from './workoutData';
+import { theme } from '../lib/theme';
 import {
   computeWeeklyEffectiveSets,
   computeWeeklyVolumeHistory,
@@ -23,8 +24,8 @@ export default function Analytics({ sessionsMap, exercisesById }) {
 
   return (
     <div className="space-y-5">
-      <div className="rounded-3xl bg-neutral-900/60 border border-orange-500/20 p-5">
-        <h2 className="text-sm font-bold text-orange-300 uppercase tracking-wide mb-4">Series efectivas esta semana</h2>
+      <div className="rounded-3xl surface p-5">
+        <h2 className="label-section mb-4">Series efectivas esta semana</h2>
         {muscleEntries.length === 0 ? (
           <p className="text-sm text-slate-500">Todavía no registraste series efectivas esta semana.</p>
         ) : (
@@ -40,7 +41,7 @@ export default function Analytics({ sessionsMap, exercisesById }) {
                   <div className="h-2 w-full rounded-full bg-neutral-800 overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all duration-500"
-                      style={{ width: `${pct}%`, backgroundColor: MUSCLE_GROUP_COLORS[muscle] || '#f97316' }}
+                      style={{ width: `${pct}%`, backgroundColor: MUSCLE_GROUP_COLORS[muscle] || theme.accent }}
                     />
                   </div>
                 </div>
@@ -50,10 +51,10 @@ export default function Analytics({ sessionsMap, exercisesById }) {
         )}
       </div>
 
-      <div className="rounded-3xl bg-neutral-900/60 border border-orange-500/20 p-5">
+      <div className="rounded-3xl surface p-5">
         <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="w-4 h-4 text-orange-400" />
-          <h2 className="text-sm font-bold text-orange-300 uppercase tracking-wide">Volumen semanal (últimas 8 semanas)</h2>
+          <TrendingUp className="w-4 h-4 text-emerald-400" />
+          <h2 className="label-section">Volumen semanal (últimas 8 semanas)</h2>
         </div>
         <div className="flex items-end justify-between gap-1.5 h-32">
           {volumeHistory.map((w) => {
@@ -62,7 +63,7 @@ export default function Analytics({ sessionsMap, exercisesById }) {
               <div key={w.weekStart} className="flex-1 flex flex-col items-center gap-1">
                 <div className="w-full h-28 flex items-end">
                   <div
-                    className={`w-full rounded-t-md ${w.volume === 0 ? 'bg-neutral-800' : 'bg-orange-500'}`}
+                    className={`w-full rounded-t-md ${w.volume === 0 ? 'bg-neutral-800' : 'bg-emerald-500'}`}
                     style={{ height: `${h}%` }}
                     title={`${w.volume} kg`}
                   />
@@ -75,15 +76,15 @@ export default function Analytics({ sessionsMap, exercisesById }) {
         <p className="text-[11px] text-slate-500 mt-2">Volumen = peso × repeticiones de series efectivas (sin calentamiento).</p>
       </div>
 
-      <div className="rounded-3xl bg-neutral-900/60 border border-orange-500/20 p-5">
-        <h2 className="text-sm font-bold text-orange-300 uppercase tracking-wide mb-3">RIR promedio por semana</h2>
+      <div className="rounded-3xl surface p-5">
+        <h2 className="label-section mb-3">RIR promedio por semana</h2>
         <div className="flex items-end justify-between gap-1.5 h-20">
           {rirTrend.map((w) => (
             <div key={w.weekStart} className="flex-1 flex flex-col items-center gap-1">
               <span className="text-[10px] font-mono text-slate-400">{w.avgRir ?? '–'}</span>
               <div className="w-full h-12 flex items-end">
                 <div
-                  className={`w-full rounded-t-md ${w.avgRir == null ? 'bg-neutral-800' : 'bg-orange-400/70'}`}
+                  className={`w-full rounded-t-md ${w.avgRir == null ? 'bg-neutral-800' : 'bg-emerald-400/70'}`}
                   style={{ height: w.avgRir == null ? '4%' : `${Math.min(100, (w.avgRir / 5) * 100)}%` }}
                 />
               </div>
@@ -92,40 +93,40 @@ export default function Analytics({ sessionsMap, exercisesById }) {
         </div>
       </div>
 
-      <div className="rounded-3xl bg-gradient-to-br from-orange-500/10 to-neutral-900 border border-orange-500/25 p-5">
+      <div className="rounded-3xl surface-accent p-5">
         <div className="flex items-center gap-2 mb-3">
-          <Trophy className="w-4 h-4 text-orange-400" />
-          <h2 className="text-sm font-bold text-orange-300 uppercase tracking-wide">1RM estimado y récords personales</h2>
+          <Trophy className="w-4 h-4 text-emerald-400" />
+          <h2 className="label-section">1RM estimado y récords personales</h2>
         </div>
         {prs.length === 0 ? (
           <p className="text-sm text-slate-500">Completá series efectivas para ver tus estimaciones de 1RM.</p>
         ) : (
           <ul className="space-y-2">
             {prs.slice(0, 8).map((pr) => (
-              <li key={pr.exerciseId} className="flex items-center justify-between rounded-xl bg-neutral-900/60 border border-neutral-800 px-3 py-2.5">
+              <li key={pr.exerciseId} className="flex items-center justify-between rounded-xl surface px-3 py-2.5">
                 <div className="min-w-0">
                   <p className="text-sm text-slate-200 font-medium truncate">{pr.exerciseName}</p>
                   <p className="text-xs text-slate-500 mt-0.5">
                     PR: {pr.weight}kg x {pr.reps} · {pr.date}
                   </p>
                 </div>
-                <span className="font-mono text-lg font-black text-orange-300 shrink-0">{pr.estOneRM}kg</span>
+                <span className="font-mono text-lg font-black text-emerald-300 shrink-0">{pr.estOneRM}kg</span>
               </li>
             ))}
           </ul>
         )}
       </div>
 
-      <div className="rounded-2xl bg-neutral-900/60 border border-neutral-800 p-4 flex gap-3">
+      <div className="rounded-2xl surface p-4 flex gap-3">
         <button
           onClick={exportWorkoutDataAsJSON}
-          className="flex-1 rounded-xl border border-orange-500/30 text-orange-300 py-2.5 text-xs font-semibold flex items-center justify-center gap-1.5 hover:bg-orange-500/10"
+          className="flex-1 rounded-xl border border-emerald-500/30 text-emerald-300 py-2.5 text-xs font-semibold flex items-center justify-center gap-1.5 hover:bg-emerald-500/10"
         >
           <FileJson className="w-3.5 h-3.5" /> Exportar JSON
         </button>
         <button
           onClick={exportWorkoutDataAsCSV}
-          className="flex-1 rounded-xl border border-orange-500/30 text-orange-300 py-2.5 text-xs font-semibold flex items-center justify-center gap-1.5 hover:bg-orange-500/10"
+          className="flex-1 rounded-xl border border-emerald-500/30 text-emerald-300 py-2.5 text-xs font-semibold flex items-center justify-center gap-1.5 hover:bg-emerald-500/10"
         >
           <Download className="w-3.5 h-3.5" /> Exportar CSV
         </button>

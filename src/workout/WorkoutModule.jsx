@@ -30,32 +30,27 @@ import {
   finishSession,
 } from './workoutStorage';
 
-const ORANGE = 'from-orange-400 to-amber-300';
-
 const workoutBadge = (Icon) => (
-  <div className="flex items-center justify-center w-28 h-28 rounded-full bg-orange-500/10 border border-orange-500/30">
-    <Icon className="w-12 h-12 text-orange-400" />
+  <div className="flex items-center justify-center w-28 h-28 rounded-full bg-emerald-500/10 border border-emerald-500/30">
+    <Icon className="w-12 h-12 text-emerald-400" />
   </div>
 );
 
 const WORKOUT_INTRO_SLIDES = [
   {
     key: 'intro',
-    titleClass: ORANGE,
     visual: workoutBadge(Dumbbell),
     title: 'Armá y seguí tus entrenamientos',
     text: 'Creá una rutina semanal, registrá tus series y mirá cómo progresás con el tiempo.',
   },
   {
     key: 'semana',
-    titleClass: ORANGE,
     visual: workoutBadge(CalendarDays),
     title: 'Tu semana de entreno',
     text: 'Elegí una plantilla, armá tus días y empezá el entreno de hoy con un toque.',
   },
   {
     key: 'analiticas',
-    titleClass: ORANGE,
     visual: workoutBadge(BarChart3),
     title: 'Mirá tu progreso',
     text: 'Volumen, récords y evolución de cada ejercicio a medida que vas registrando sesiones.',
@@ -210,16 +205,16 @@ export default function WorkoutModule() {
       <ModuleIntro
         storageKey="workout_intro_seen"
         slides={WORKOUT_INTRO_SLIDES}
-        dotActiveClass="bg-orange-400"
-        buttonClass="bg-orange-500 hover:bg-orange-400 text-neutral-900 focus-visible:ring-orange-300"
+        dotActiveClass="bg-emerald-400"
+        buttonClass="bg-emerald-500 hover:bg-emerald-400 text-neutral-900 focus-visible:ring-emerald-300"
         finalLabel="Entendido"
       />
 
-      <div className="grid grid-cols-2 gap-2 bg-neutral-900 border border-orange-500/20 rounded-2xl p-1">
+      <div className="grid grid-cols-2 gap-2 surface rounded-2xl p-1">
         <button
           onClick={() => setSubTab('semana')}
           className={`py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors ${
-            subTab === 'semana' ? 'bg-orange-500 text-neutral-900' : 'text-slate-400'
+            subTab === 'semana' ? 'bg-emerald-500 text-neutral-900' : 'text-slate-400'
           }`}
         >
           <CalendarDays className="w-4 h-4" /> Semana
@@ -227,7 +222,7 @@ export default function WorkoutModule() {
         <button
           onClick={() => setSubTab('analiticas')}
           className={`py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors ${
-            subTab === 'analiticas' ? 'bg-orange-500 text-neutral-900' : 'text-slate-400'
+            subTab === 'analiticas' ? 'bg-emerald-500 text-neutral-900' : 'text-slate-400'
           }`}
         >
           <BarChart3 className="w-4 h-4" /> Analíticas

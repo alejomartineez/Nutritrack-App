@@ -8,7 +8,7 @@ import React, { useState, useRef } from 'react';
 // "Siguiente" hasta el último paso, donde muestra `finalLabel`. No maneja
 // persistencia: el que lo usa decide cuándo mostrarlo y qué hace `onDone`.
 //
-// Cada slide: { key, titleClass (gradiente del título), visual, title, text }.
+// Cada slide: { key, visual, title, text }.
 // ---------------------------------------------------------------------------
 
 export default function SlidesIntro({
@@ -74,9 +74,7 @@ export default function SlidesIntro({
               className={i === index ? 'flex flex-col items-center gap-6 anim-fade-in-up' : 'hidden'}
             >
               {s.visual}
-              <h2
-                className={`text-2xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r ${s.titleClass}`}
-              >
+              <h2 className="text-2xl font-semibold tracking-tight text-slate-100">
                 {s.title}
               </h2>
               <p className="text-sm text-slate-400 leading-relaxed max-w-xs">{s.text}</p>
