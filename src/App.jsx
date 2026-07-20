@@ -184,7 +184,23 @@ export default function NutriTrackApp() {
     }
   });
 
-  const [editingCatalogItem, setEditingCatalogItem] = useState(null); // { id } — id null = nueva opción
+  // Catálogo de comidas fuera de plan. Antes era la constante FREE_PRESETS y las
+  // comidas libres que cargaba el usuario se perdían del listado (solo quedaban
+  // en el log del día). Ahora se persiste igual que el del plan, sembrado con
+  // los presets para quien ya venía usando la app.
+  const [freeCatalog, setFreeCatalog] = useState(() => {
+    try {
+      const stored = localStorage.getItem('nutri_free_catalog');
+      if (!stored) return JSON.parse(JSON.stringify(FREE_PRESETS));
+      const parsed = JSON.parse(stored);
+      return Array.isArray(parsed) ? parsed : JSON.parse(JSON.stringify(FREE_PRESETS));
+    } catch (e) {
+      return JSON.parse(JSON.stringify(FREE_PRESETS));
+    }
+  });
+
+  // { id, kind } — id null = nueva opción; kind 'plan' | 'libre'
+  const [editingCatalogItem, setEditingCatalogItem] = useState(null);
   const [catalogName, setCatalogName] = useState('');
   const [catalogKcal, setCatalogKcal] = useState('');
   const [catalogP, setCatalogP] = useState('');
@@ -295,6 +311,15 @@ export default function NutriTrackApp() {
       // almacenamiento no disponible, se continúa sin persistir
     }
   }, [planCatalog, loaded]);
+
+  useEffect(() => {
+    if (!loaded) return;
+    try {
+      localStorage.setItem('nutri_free_catalog', JSON.stringify(freeCatalog));
+    } catch (e) {
+      // almacenamiento no disponible, se continúa sin persistir
+    }
+  }, [freeCatalog, loaded]);
 
   // Persistir módulos activos
   useEffect(() => {
@@ -464,12 +489,20 @@ export default function NutriTrackApp() {
   const submitCustomFree = () => {
     const kcalNum = parseFloat(customKcal);
     if (!customName.trim() || isNaN(kcalNum) || kcalNum <= 0) return;
-    addFreeMeal({
+    const values = {
       name: customName.trim(),
       kcal: kcalNum,
       p: parseFloat(customP) || 0,
       c: parseFloat(customC) || 0,
       f: parseFloat(customF) || 0,
+    };
+    addFreeMeal(values);
+    // Además de registrarla en el día, queda en el listado de fuera de plan para
+    // reusarla de un toque. Si ya existe una con el mismo nombre, se actualiza.
+    setFreeCatalog((prev) => {
+      const i = prev.findIndex((it) => it.name.toLowerCase() === values.name.toLowerCase());
+      if (i !== -1) return prev.map((it, idx) => (idx === i ? { ...it, ...values } : it));
+      return [...prev, { id: `free_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, ...values }];
     });
     setCustomName('');
     setCustomKcal('');
@@ -479,9 +512,9 @@ export default function NutriTrackApp() {
     setShowCustomForm(false);
   };
 
-  // ------------------------- Catálogo editable del plan --------------------
-  const openAddCatalogItem = () => {
-    setEditingCatalogItem({ id: null });
+  // ---------------- Catálogos editables (plan y fuera de plan) --------------
+  const openAddCatalogItem = (kind = 'plan') => {
+    setEditingCatalogItem({ id: null, kind });
     setCatalogName('');
     setCatalogKcal('');
     setCatalogP('');
@@ -489,8 +522,8 @@ export default function NutriTrackApp() {
     setCatalogF('');
   };
 
-  const openEditCatalogItem = (item) => {
-    setEditingCatalogItem({ id: item.id });
+  const openEditCatalogItem = (item, kind = 'plan') => {
+    setEditingCatalogItem({ id: item.id, kind });
     setCatalogName(item.name);
     setCatalogKcal(String(item.kcal));
     setCatalogP(String(item.p));
@@ -504,7 +537,9 @@ export default function NutriTrackApp() {
     if (!editingCatalogItem) return;
     const kcalNum = parseFloat(catalogKcal);
     if (!catalogName.trim() || isNaN(kcalNum) || kcalNum <= 0) return;
-    const { id } = editingCatalogItem;
+    const { id, kind } = editingCatalogItem;
+    const isFree = kind === 'libre';
+    const setCatalog = isFree ? setFreeCatalog : setPlanCatalog;
     const values = {
       name: catalogName.trim(),
       kcal: kcalNum,
@@ -512,23 +547,29 @@ export default function NutriTrackApp() {
       c: parseFloat(catalogC) || 0,
       f: parseFloat(catalogF) || 0,
     };
-    setPlanCatalog((prev) => {
+    setCatalog((prev) => {
       if (id) {
         return prev.map((it) => (it.id === id ? { ...it, ...values } : it));
       }
-      const newItem = { id: `custom_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, ...values };
+      const prefix = isFree ? 'free' : 'custom';
+      const newItem = { id: `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, ...values };
       return [...prev, newItem];
     });
     setEditingCatalogItem(null);
-    flashConfirm(id ? 'Opción del plan actualizada ✓' : 'Opción agregada a tu plan ✓');
+    if (isFree) {
+      flashConfirm(id ? 'Opción actualizada ✓' : 'Opción agregada a fuera de plan ✓');
+    } else {
+      flashConfirm(id ? 'Opción del plan actualizada ✓' : 'Opción agregada a tu plan ✓');
+    }
   };
 
   const deleteCatalogItem = () => {
     if (!editingCatalogItem || !editingCatalogItem.id) return;
-    const { id } = editingCatalogItem;
-    setPlanCatalog((prev) => prev.filter((it) => it.id !== id));
+    const { id, kind } = editingCatalogItem;
+    const isFree = kind === 'libre';
+    (isFree ? setFreeCatalog : setPlanCatalog)((prev) => prev.filter((it) => it.id !== id));
     setEditingCatalogItem(null);
-    flashConfirm('Opción eliminada de tu plan');
+    flashConfirm(isFree ? 'Opción eliminada de fuera de plan' : 'Opción eliminada de tu plan');
   };
 
   const openSettings = () => {
@@ -831,8 +872,10 @@ export default function NutriTrackApp() {
               registerMode={registerMode}
               setRegisterMode={setRegisterMode}
               catalog={planCatalog}
-              onAddCatalogItem={openAddCatalogItem}
-              onEditCatalogItem={openEditCatalogItem}
+              freeCatalog={freeCatalog}
+              onAddCatalogItem={() => openAddCatalogItem('plan')}
+              onEditCatalogItem={(item) => openEditCatalogItem(item, 'plan')}
+              onEditFreeCatalogItem={(item) => openEditCatalogItem(item, 'libre')}
               addPlanMeal={addPlanMeal}
               addFreeMeal={addFreeMeal}
               showCustomForm={showCustomForm}
@@ -956,6 +999,7 @@ export default function NutriTrackApp() {
         {editingCatalogItem && (
           <CatalogItemModal
             isNew={!editingCatalogItem.id}
+            isFree={editingCatalogItem.kind === 'libre'}
             name={catalogName}
             setName={setCatalogName}
             kcal={catalogKcal}
@@ -1352,8 +1396,10 @@ function TabRegistrar({
   registerMode,
   setRegisterMode,
   catalog,
+  freeCatalog,
   onAddCatalogItem,
   onEditCatalogItem,
+  onEditFreeCatalogItem,
   addPlanMeal,
   addFreeMeal,
   showCustomForm,
@@ -1521,21 +1567,38 @@ function TabRegistrar({
         <div className="space-y-4">
           <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">Gustos frecuentes</p>
           <div className="space-y-2">
-            {FREE_PRESETS.map((item) => (
-              <button
+            {freeCatalog.map((item) => (
+              <div
                 key={item.id}
-                onClick={() => addFreeMeal(item)}
-                className="w-full text-left rounded-2xl bg-slate-800/60 border border-slate-700 p-4 flex items-center justify-between gap-3 hover:border-amber-500/50 hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-amber-400 transition-colors"
+                className="rounded-2xl bg-slate-800/60 border border-slate-700 flex items-center gap-1 pr-1 hover:border-amber-500/50 transition-colors"
               >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-slate-200">{item.name}</p>
-                  <p className="text-xs text-slate-500 font-mono mt-0.5">
-                    {item.kcal} kcal · P {item.p}g · C {item.c}g · G {item.f}g
-                  </p>
-                </div>
-                <PlusCircle className="w-5 h-5 text-amber-400 shrink-0" />
-              </button>
+                <button
+                  onClick={() => addFreeMeal(item)}
+                  className="flex-1 min-w-0 text-left p-4 flex items-center justify-between gap-3 focus-visible:ring-2 focus-visible:ring-amber-400 rounded-2xl"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-slate-200">{item.name}</p>
+                    <p className="text-xs text-slate-500 font-mono mt-0.5">
+                      {item.kcal} kcal · P {item.p}g · C {item.c}g · G {item.f}g
+                    </p>
+                  </div>
+                  <PlusCircle className="w-5 h-5 text-amber-400 shrink-0" />
+                </button>
+                <button
+                  onClick={() => onEditFreeCatalogItem(item)}
+                  aria-label="Editar esta opción fuera de plan"
+                  className="p-2 rounded-full hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-slate-400 shrink-0"
+                >
+                  <Pencil className="w-4 h-4 text-slate-500" />
+                </button>
+              </div>
             ))}
+
+            {freeCatalog.length === 0 && (
+              <div className="rounded-2xl border border-dashed border-slate-700 p-6 text-center text-slate-500 text-sm">
+                Buscá un alimento arriba o cargá uno abajo: queda guardado acá para reusarlo de un toque.
+              </div>
+            )}
           </div>
 
           {!showCustomForm ? (
@@ -1806,17 +1869,24 @@ function EditEntryModal({ isPlan, name, setName, kcal, setKcal, p, setP, c, setC
   );
 }
 
-function CatalogItemModal({ isNew, name, setName, kcal, setKcal, p, setP, c, setC, f, setF, onSave, onCancel, onDelete }) {
+function CatalogItemModal({ isNew, isFree, name, setName, kcal, setKcal, p, setP, c, setC, f, setF, onSave, onCancel, onDelete }) {
+  const noun = isFree ? 'fuera de plan' : 'del plan';
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 px-0 sm:px-4">
-      <div className="w-full max-w-md bg-slate-800 border border-emerald-500/30 rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto">
+      <div
+        className={`w-full max-w-md bg-slate-800 border rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto ${
+          isFree ? 'border-amber-500/30' : 'border-emerald-500/30'
+        }`}
+      >
         <div className="flex items-center justify-between mb-1">
-          <h2 className="text-lg font-bold text-slate-100">{isNew ? 'Nueva opción del plan' : 'Editar opción del plan'}</h2>
+          <h2 className="text-lg font-bold text-slate-100">
+            {isNew ? `Nueva opción ${noun}` : `Editar opción ${noun}`}
+          </h2>
           <button onClick={onCancel} aria-label="Cerrar" className="p-2 rounded-full hover:bg-slate-700">
             <X className="w-5 h-5 text-slate-400" />
           </button>
         </div>
-        <p className="text-xs font-semibold mb-5 text-emerald-300">
+        <p className={`text-xs font-semibold mb-5 ${isFree ? 'text-amber-300' : 'text-emerald-300'}`}>
           Estos valores son los que va a usar la app cada vez que agregues esta opción
         </p>
 
@@ -1879,7 +1949,7 @@ function CatalogItemModal({ isNew, name, setName, kcal, setKcal, p, setP, c, set
             onClick={onDelete}
             className="w-full mt-4 text-center text-xs text-rose-400 hover:text-rose-300 py-1 flex items-center justify-center gap-1.5"
           >
-            <Trash2 className="w-3.5 h-3.5" /> Eliminar esta opción del plan
+            <Trash2 className="w-3.5 h-3.5" /> Eliminar esta opción {noun}
           </button>
         )}
 
