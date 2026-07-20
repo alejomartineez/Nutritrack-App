@@ -16,7 +16,7 @@ const formatMinutes = (mins) => {
 
 function SummaryCard({ log, onEdit, isToday }) {
   return (
-    <div className="rounded-3xl surface-accent p-5 text-center">
+    <div className="rounded-3xl surface-accent surface-accent-sueno p-5 text-center">
       <Check className="w-8 h-8 text-violet-300 mx-auto mb-2" />
       <p className="text-sm text-indigo-200 mb-1">
         {isToday ? 'Ya registraste tu descanso de hoy' : 'Descanso registrado'}

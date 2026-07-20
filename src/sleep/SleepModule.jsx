@@ -131,8 +131,8 @@ export default function SleepModule() {
       <ModuleIntro
         storageKey="sleep_intro_seen"
         slides={SLEEP_INTRO_SLIDES}
-        dotActiveClass="bg-emerald-400"
-        buttonClass="bg-emerald-500 hover:bg-emerald-400 text-slate-900 focus-visible:ring-emerald-300"
+        dotActiveClass="bg-sueno-400"
+        buttonClass="bg-sueno-500 hover:bg-sueno-400 text-slate-900 focus-visible:ring-sueno-300"
         finalLabel="Entendido"
       />
 

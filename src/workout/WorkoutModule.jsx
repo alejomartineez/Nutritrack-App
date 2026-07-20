@@ -31,8 +31,8 @@ import {
 } from './workoutStorage';
 
 const workoutBadge = (Icon) => (
-  <div className="flex items-center justify-center w-28 h-28 rounded-full bg-emerald-500/10 border border-emerald-500/30">
-    <Icon className="w-12 h-12 text-emerald-400" />
+  <div className="flex items-center justify-center w-28 h-28 rounded-full bg-entreno-500/10 border border-entreno-500/30">
+    <Icon className="w-12 h-12 text-entreno-400" />
   </div>
 );
 
@@ -205,8 +205,8 @@ export default function WorkoutModule() {
       <ModuleIntro
         storageKey="workout_intro_seen"
         slides={WORKOUT_INTRO_SLIDES}
-        dotActiveClass="bg-emerald-400"
-        buttonClass="bg-emerald-500 hover:bg-emerald-400 text-neutral-900 focus-visible:ring-emerald-300"
+        dotActiveClass="bg-entreno-400"
+        buttonClass="bg-entreno-500 hover:bg-entreno-400 text-neutral-900 focus-visible:ring-entreno-300"
         finalLabel="Entendido"
       />
 
@@ -214,7 +214,7 @@ export default function WorkoutModule() {
         <button
           onClick={() => setSubTab('semana')}
           className={`py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors ${
-            subTab === 'semana' ? 'bg-emerald-500 text-neutral-900' : 'text-slate-400'
+            subTab === 'semana' ? 'bg-entreno-500 text-neutral-900' : 'text-slate-400'
           }`}
         >
           <CalendarDays className="w-4 h-4" /> Semana
@@ -222,7 +222,7 @@ export default function WorkoutModule() {
         <button
           onClick={() => setSubTab('analiticas')}
           className={`py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors ${
-            subTab === 'analiticas' ? 'bg-emerald-500 text-neutral-900' : 'text-slate-400'
+            subTab === 'analiticas' ? 'bg-entreno-500 text-neutral-900' : 'text-slate-400'
           }`}
         >
           <BarChart3 className="w-4 h-4" /> Analíticas

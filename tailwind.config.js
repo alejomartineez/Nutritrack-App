@@ -21,7 +21,7 @@
 
 // Las rampas viven en src/lib/theme.js, que es también lo que importan los
 // componentes que pintan SVG o estilos inline. Una sola fuente de verdad.
-import { ink as graphite, brand as accent, amber, red } from './src/lib/theme.js';
+import { ink as graphite, brand as accent, amber, red, entreno, sueno } from './src/lib/theme.js';
 
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
@@ -42,8 +42,12 @@ export default {
         green: accent,
         teal: accent,
         lime: accent,
-        violet: accent,
-        purple: accent,
+
+        // `violet`/`purple` son el rol de ACENTO dentro del módulo de Sueño
+        // (`indigo` sigue mapeado a grafito, que es su rol neutro ahí). Aliasearlos
+        // al índigo del módulo le da su identidad sin tocar una sola clase.
+        violet: sueno,
+        purple: sueno,
 
         amber,
         orange: amber,
@@ -56,6 +60,12 @@ export default {
         // Alias semánticos para código nuevo. Preferí estos a los de arriba.
         ink: graphite,
         brand: accent,
+
+        // Acentos por módulo. Solo para detalles finos (íconos, hairlines,
+        // nav activo); los rellenos grandes siguen en `brand`. Ver moduleAccents
+        // en src/lib/theme.js.
+        entreno,
+        sueno,
       },
 
       fontFamily: {

@@ -39,8 +39,8 @@ const SLIDES = [
           <span className="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/30">
             <Utensils className="w-5 h-5 text-emerald-400" />
           </span>
-          <span className="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/30">
-            <Dumbbell className="w-5 h-5 text-emerald-400" />
+          <span className="flex items-center justify-center w-12 h-12 rounded-full bg-entreno-500/10 border border-entreno-500/30">
+            <Dumbbell className="w-5 h-5 text-entreno-400" />
           </span>
           <span className="flex items-center justify-center w-12 h-12 rounded-full bg-violet-500/10 border border-violet-500/30">
             <Moon className="w-5 h-5 text-violet-400" />

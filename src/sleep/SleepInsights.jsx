@@ -4,7 +4,7 @@ import { correlateLateDinnerWithQuality, correlateSleepWithWorkoutVolume } from 
 
 function InsightCard({ icon: Icon, title, children }) {
   return (
-    <div className="rounded-3xl surface-accent p-5">
+    <div className="rounded-3xl surface-accent surface-accent-sueno p-5">
       <div className="flex items-center gap-2 mb-2.5">
         <Icon className="w-4 h-4 text-violet-300" />
         <h2 className="label-section">{title}</h2>

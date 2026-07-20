@@ -26,18 +26,18 @@ export default function NumberPad({ label, value, onChange, onClose, quickSteps 
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50" onClick={onClose}>
       <div
-        className="w-full max-w-md bg-neutral-900 border-t border-emerald-500/30 rounded-t-3xl p-4 pb-6"
+        className="w-full max-w-md bg-neutral-900 border-t border-entreno-500/30 rounded-t-3xl p-4 pb-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-3">
-          <p className="text-xs font-bold uppercase tracking-wide text-emerald-400">{label}</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-entreno-400">{label}</p>
           <button onClick={onClose} aria-label="Cerrar teclado" className="p-1.5 rounded-full hover:bg-neutral-800">
             <X className="w-4 h-4 text-slate-400" />
           </button>
         </div>
 
         <div className="text-center py-3 mb-3 rounded-2xl bg-neutral-800 border border-neutral-700">
-          <span className="font-mono text-4xl font-black text-emerald-300">{value || '0'}</span>
+          <span className="font-mono text-4xl font-black text-entreno-300">{value || '0'}</span>
         </div>
 
         {quickSteps.length > 0 && (
@@ -46,7 +46,7 @@ export default function NumberPad({ label, value, onChange, onClose, quickSteps 
               <button
                 key={s}
                 onClick={() => step(s)}
-                className="shrink-0 px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-sm font-semibold focus-visible:ring-2 focus-visible:ring-emerald-400"
+                className="shrink-0 px-3 py-1.5 rounded-full bg-entreno-500/15 border border-entreno-500/30 text-entreno-300 text-sm font-semibold focus-visible:ring-2 focus-visible:ring-entreno-400"
               >
                 {s > 0 ? `+${s}` : s}
               </button>
@@ -61,7 +61,7 @@ export default function NumberPad({ label, value, onChange, onClose, quickSteps 
                 key={k}
                 onClick={backspace}
                 aria-label="Borrar"
-                className="py-4 rounded-2xl bg-neutral-800 border border-neutral-700 flex items-center justify-center hover:bg-neutral-700 focus-visible:ring-2 focus-visible:ring-emerald-400"
+                className="py-4 rounded-2xl bg-neutral-800 border border-neutral-700 flex items-center justify-center hover:bg-neutral-700 focus-visible:ring-2 focus-visible:ring-entreno-400"
               >
                 <Delete className="w-5 h-5 text-slate-300" />
               </button>
@@ -70,7 +70,7 @@ export default function NumberPad({ label, value, onChange, onClose, quickSteps 
                 key={k}
                 onClick={() => push(k)}
                 disabled={k === '.' && !allowDecimal}
-                className="py-4 rounded-2xl bg-neutral-800 border border-neutral-700 text-xl font-bold text-slate-100 hover:bg-neutral-700 focus-visible:ring-2 focus-visible:ring-emerald-400 disabled:opacity-30"
+                className="py-4 rounded-2xl bg-neutral-800 border border-neutral-700 text-xl font-bold text-slate-100 hover:bg-neutral-700 focus-visible:ring-2 focus-visible:ring-entreno-400 disabled:opacity-30"
               >
                 {k}
               </button>
@@ -80,7 +80,7 @@ export default function NumberPad({ label, value, onChange, onClose, quickSteps 
 
         <button
           onClick={onClose}
-          className="w-full mt-3 py-3.5 rounded-2xl bg-emerald-500 text-neutral-900 font-bold flex items-center justify-center gap-2 hover:bg-emerald-400 focus-visible:ring-2 focus-visible:ring-emerald-300"
+          className="w-full mt-3 py-3.5 rounded-2xl bg-entreno-500 text-neutral-900 font-bold flex items-center justify-center gap-2 hover:bg-entreno-400 focus-visible:ring-2 focus-visible:ring-entreno-300"
         >
           <Check className="w-5 h-5" /> Listo
         </button>

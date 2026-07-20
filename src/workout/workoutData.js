@@ -30,7 +30,7 @@ export const EQUIPMENT_TYPES = [
 
 export const SET_TYPES = [
   { id: 'warmup', label: 'Calentamiento', short: 'W', color: 'text-slate-400 bg-slate-700/60' },
-  { id: 'effective', label: 'Serie efectiva', short: 'E', color: 'text-emerald-300 bg-emerald-500/20' },
+  { id: 'effective', label: 'Serie efectiva', short: 'E', color: 'text-entreno-300 bg-entreno-500/20' },
   { id: 'dropset', label: 'Drop set', short: 'D', color: 'text-rose-300 bg-rose-500/20' },
   { id: 'myorep', label: 'Myo-rep', short: 'M', color: 'text-purple-300 bg-purple-500/20' },
   { id: 'superset', label: 'Superserie', short: 'S', color: 'text-cyan-300 bg-cyan-500/20' },

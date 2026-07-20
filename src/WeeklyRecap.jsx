@@ -82,7 +82,7 @@ export default function WeeklyRecap({ weekStats, goals, modules = { entreno: tru
     },
     modules.entreno && {
       icon: Dumbbell,
-      color: 'text-emerald-400',
+      color: 'text-entreno-400',
       value: `${data.workout.sessions}`,
       label: data.workout.sessions === 1 ? 'entreno' : 'entrenos',
     },

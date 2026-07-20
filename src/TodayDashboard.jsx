@@ -68,13 +68,13 @@ export default function TodayDashboard({ onGoToTab, modules = { entreno: true, s
     switch (workout.state) {
       case 'done':
         return {
-          icon: <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />,
+          icon: <Check className="w-3.5 h-3.5 text-entreno-400 shrink-0" />,
           main: `${workout.dayName} completado`,
           sub: `${workout.completedSets} series registradas`,
         };
       case 'planned':
         return {
-          icon: <Dumbbell className="w-3.5 h-3.5 text-emerald-400 shrink-0" />,
+          icon: <Dumbbell className="w-3.5 h-3.5 text-entreno-400 shrink-0" />,
           main: `Hoy: ${workout.dayName}`,
           sub:
             workout.exerciseCount > 0
@@ -83,13 +83,13 @@ export default function TodayDashboard({ onGoToTab, modules = { entreno: true, s
         };
       case 'rest':
         return {
-          icon: <Moon className="w-3.5 h-3.5 text-emerald-400 shrink-0" />,
+          icon: <Moon className="w-3.5 h-3.5 text-entreno-400 shrink-0" />,
           main: 'Día de descanso',
           sub: 'Tu rutina no tiene entreno hoy',
         };
       default:
         return {
-          icon: <Dumbbell className="w-3.5 h-3.5 text-emerald-400 shrink-0" />,
+          icon: <Dumbbell className="w-3.5 h-3.5 text-entreno-400 shrink-0" />,
           main: 'Sin rutina todavía',
           sub: 'Tocá para armar tu semana',
         };
@@ -112,7 +112,7 @@ export default function TodayDashboard({ onGoToTab, modules = { entreno: true, s
       <SummaryCard
         key="entreno"
         onClick={() => onGoToTab('entreno')}
-        accentClasses="bg-emerald-500/5 border-emerald-500/25 text-emerald-300 hover:bg-emerald-500/10"
+        accentClasses="bg-entreno-500/5 border-entreno-500/25 text-entreno-300 hover:bg-entreno-500/10"
         icon={workoutCard.icon}
         title="Entreno"
         main={workoutCard.main}
@@ -123,8 +123,8 @@ export default function TodayDashboard({ onGoToTab, modules = { entreno: true, s
       <SummaryCard
         key="sueno"
         onClick={() => onGoToTab('sueno')}
-        accentClasses="bg-violet-500/5 border-violet-500/25 text-violet-300 hover:bg-violet-500/10"
-        icon={<MoonStar className="w-3.5 h-3.5 text-violet-400 shrink-0" />}
+        accentClasses="bg-sueno-500/5 border-sueno-500/25 text-sueno-300 hover:bg-sueno-500/10"
+        icon={<MoonStar className="w-3.5 h-3.5 text-sueno-400 shrink-0" />}
         title="Sueño"
         main={sleepCard.main}
         sub={sleepCard.sub}

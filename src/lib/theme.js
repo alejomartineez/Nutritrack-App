@@ -40,6 +40,41 @@ export const brand = {
   950: '#09211A',
 };
 
+/**
+ * Acento del módulo de Entreno: bronce cálido. Deliberadamente más oscuro y
+ * más rojizo que `amber` (que es semántico: "fuera de rango") para que no se
+ * confundan cuando aparecen juntos en Mi Día.
+ */
+export const entreno = {
+  200: '#EBC4A6',
+  300: '#D9A07A',
+  400: '#C68558', // íconos y texto sobre card — 6.0:1
+  500: '#B0743F', // relleno de botón, con texto oscuro encima — 5.1:1
+  600: '#8A5636',
+  700: '#6B4229',
+  800: '#4A2E1C',
+  900: '#33200F',
+  950: '#1E1309',
+};
+
+/**
+ * Acento del módulo de Sueño: índigo frío, la asociación nocturna de siempre.
+ * La rampa está corrida hacia arriba respecto de un índigo "normal": el azul es
+ * intrínsecamente oscuro, y con los valores habituales el texto oscuro sobre el
+ * relleno del 500 no llegaba a 4.5:1.
+ */
+export const sueno = {
+  200: '#C6CCE2',
+  300: '#AEB6D6',
+  400: '#939DC5', // íconos y texto sobre card — 6.8:1
+  500: '#7A85B0', // relleno de botón, con texto oscuro encima — 5.5:1
+  600: '#5F6A93',
+  700: '#495275',
+  800: '#333A54',
+  900: '#1E2238',
+  950: '#131624',
+};
+
 /** Ámbar apagado: "fuera de rango", "fuera de plan", gustos. */
 export const amber = {
   50: '#FAF3E8',
@@ -88,6 +123,18 @@ export const theme = {
   accentBright: brand[400],
   warn: amber[400],
   danger: red[500],
+};
+
+/**
+ * Acento por módulo. Regla de uso: SOLO en detalles finos —íconos, hairlines,
+ * etiquetas chicas, el estado activo del nav—. Los rellenos grandes y los CTA
+ * primarios siguen en verde (`brand`) en toda la app, así los módulos se
+ * distinguen sin que cada pantalla parezca una app distinta.
+ */
+export const moduleAccents = {
+  nutricion: brand,
+  entreno,
+  sueno,
 };
 
 /** Macros. La grasa va en gris a propósito: es la que menos se mira a diario. */

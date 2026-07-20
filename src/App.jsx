@@ -823,7 +823,17 @@ export default function NutriTrackApp() {
               </button>
             )}
             <div className="min-w-0">
-              <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold truncate">
+              {/* El eyebrow lleva el acento del módulo: es la señal de color más
+                  barata para ubicarte, sin teñir la pantalla entera. */}
+              <p
+                className={`text-xs uppercase tracking-widest font-semibold truncate ${
+                  activeTab === 'entreno'
+                    ? 'text-entreno-400'
+                    : activeTab === 'sueno'
+                    ? 'text-sueno-400'
+                    : 'text-slate-500'
+                }`}
+              >
                 {activeTab === 'entreno' ? 'Seguimiento semanal' : activeTab === 'sueno' ? 'Sueño y recuperación' : formatDisplayDate(selectedDate)}
               </p>
               {/* Título en blanco sólido, no en degradado de color. El degradado
@@ -957,6 +967,8 @@ export default function NutriTrackApp() {
                 label="Sueño"
                 active={activeTab === 'sueno'}
                 onClick={() => setActiveTab('sueno')}
+                activeColorClass="text-sueno-300"
+                activeBgClass="bg-sueno-500/20"
               />
             )}
             {modules.entreno && (
@@ -965,6 +977,8 @@ export default function NutriTrackApp() {
                 label="Entreno"
                 active={activeTab === 'entreno'}
                 onClick={() => setActiveTab('entreno')}
+                activeColorClass="text-entreno-300"
+                activeBgClass="bg-entreno-500/20"
               />
             )}
             <NavButton icon={TrendingUp} label="Progreso" active={activeTab === 'progreso'} onClick={() => setActiveTab('progreso')} />

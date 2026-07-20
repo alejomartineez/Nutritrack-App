@@ -53,7 +53,7 @@ export default function Analytics({ sessionsMap, exercisesById }) {
 
       <div className="rounded-3xl surface p-5">
         <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="w-4 h-4 text-emerald-400" />
+          <TrendingUp className="w-4 h-4 text-entreno-400" />
           <h2 className="label-section">Volumen semanal (últimas 8 semanas)</h2>
         </div>
         <div className="flex items-end justify-between gap-1.5 h-32">
@@ -63,7 +63,7 @@ export default function Analytics({ sessionsMap, exercisesById }) {
               <div key={w.weekStart} className="flex-1 flex flex-col items-center gap-1">
                 <div className="w-full h-28 flex items-end">
                   <div
-                    className={`w-full rounded-t-md ${w.volume === 0 ? 'bg-neutral-800' : 'bg-emerald-500'}`}
+                    className={`w-full rounded-t-md ${w.volume === 0 ? 'bg-neutral-800' : 'bg-entreno-500'}`}
                     style={{ height: `${h}%` }}
                     title={`${w.volume} kg`}
                   />
@@ -84,7 +84,7 @@ export default function Analytics({ sessionsMap, exercisesById }) {
               <span className="text-[10px] font-mono text-slate-400">{w.avgRir ?? '–'}</span>
               <div className="w-full h-12 flex items-end">
                 <div
-                  className={`w-full rounded-t-md ${w.avgRir == null ? 'bg-neutral-800' : 'bg-emerald-400/70'}`}
+                  className={`w-full rounded-t-md ${w.avgRir == null ? 'bg-neutral-800' : 'bg-entreno-400/70'}`}
                   style={{ height: w.avgRir == null ? '4%' : `${Math.min(100, (w.avgRir / 5) * 100)}%` }}
                 />
               </div>
@@ -93,9 +93,9 @@ export default function Analytics({ sessionsMap, exercisesById }) {
         </div>
       </div>
 
-      <div className="rounded-3xl surface-accent p-5">
+      <div className="rounded-3xl surface-accent surface-accent-entreno p-5">
         <div className="flex items-center gap-2 mb-3">
-          <Trophy className="w-4 h-4 text-emerald-400" />
+          <Trophy className="w-4 h-4 text-entreno-400" />
           <h2 className="label-section">1RM estimado y récords personales</h2>
         </div>
         {prs.length === 0 ? (
@@ -110,7 +110,7 @@ export default function Analytics({ sessionsMap, exercisesById }) {
                     PR: {pr.weight}kg x {pr.reps} · {pr.date}
                   </p>
                 </div>
-                <span className="font-mono text-lg font-black text-emerald-300 shrink-0">{pr.estOneRM}kg</span>
+                <span className="font-mono text-lg font-black text-entreno-300 shrink-0">{pr.estOneRM}kg</span>
               </li>
             ))}
           </ul>
@@ -120,13 +120,13 @@ export default function Analytics({ sessionsMap, exercisesById }) {
       <div className="rounded-2xl surface p-4 flex gap-3">
         <button
           onClick={exportWorkoutDataAsJSON}
-          className="flex-1 rounded-xl border border-emerald-500/30 text-emerald-300 py-2.5 text-xs font-semibold flex items-center justify-center gap-1.5 hover:bg-emerald-500/10"
+          className="flex-1 rounded-xl border border-entreno-500/30 text-entreno-300 py-2.5 text-xs font-semibold flex items-center justify-center gap-1.5 hover:bg-entreno-500/10"
         >
           <FileJson className="w-3.5 h-3.5" /> Exportar JSON
         </button>
         <button
           onClick={exportWorkoutDataAsCSV}
-          className="flex-1 rounded-xl border border-emerald-500/30 text-emerald-300 py-2.5 text-xs font-semibold flex items-center justify-center gap-1.5 hover:bg-emerald-500/10"
+          className="flex-1 rounded-xl border border-entreno-500/30 text-entreno-300 py-2.5 text-xs font-semibold flex items-center justify-center gap-1.5 hover:bg-entreno-500/10"
         >
           <Download className="w-3.5 h-3.5" /> Exportar CSV
         </button>
