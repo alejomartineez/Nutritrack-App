@@ -8,7 +8,7 @@
 //     el nombre, o sea inmutables, así que servir de caché es seguro y rápido.
 //
 // Subir CACHE_NAME en cada cambio de esta lógica limpia las cachés viejas.
-const CACHE_NAME = 'nutritrack-v2';
+const CACHE_NAME = 'nutritrack-v3';
 const APP_SHELL = ['/', '/index.html', '/manifest.json'];
 
 self.addEventListener('install', (event) => {
@@ -28,6 +28,11 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
+
+  // Peticiones a otros orígenes (la API de Open Food Facts) van directo a la red:
+  // la rama cache-first de abajo las serviría obsoletas para siempre, y además no
+  // tiene sentido guardar respuestas de API junto al app shell.
+  if (new URL(req.url).origin !== self.location.origin) return;
 
   const isNavigation =
     req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html');

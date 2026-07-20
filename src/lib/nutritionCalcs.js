@@ -150,6 +150,42 @@ export const computePlanFromProfile = ({
 };
 
 /**
+ * Escala un alimento a la cantidad que realmente comiste.
+ *
+ * Hay dos bases posibles según de dónde salga el alimento:
+ *   - 'portion' (base local): los macros son de UNA porción, así que `qty` es un
+ *     multiplicador (1.5 = una porción y media).
+ *   - '100g' (Open Food Facts): los macros son por 100g, así que `qty` son gramos.
+ *
+ * Devuelve un alimento nuevo con los macros escalados y el nombre anotado con la
+ * cantidad, para que el registro del día se lea solo ("Banana (1 mediana) ×2").
+ */
+export const scaleFood = (food, qty) => {
+  const amount = Number(qty);
+  const isGrams = food.basis === '100g';
+  const factor = isGrams ? amount / 100 : amount;
+  // Cantidad inválida o no positiva: se cae a la porción tal cual, nunca a NaN.
+  const safe = Number.isFinite(factor) && factor > 0 ? factor : 1;
+
+  // Gramos van entre paréntesis; el multiplicador va suelto al final para no
+  // encadenar paréntesis con los que ya trae el nombre ("Banana (1 mediana) ×2").
+  const name = isGrams
+    ? `${food.name} (${round1(amount)} g)`
+    : safe === 1
+    ? food.name
+    : `${food.name} ×${round1(safe)}`;
+
+  return {
+    ...food,
+    name,
+    kcal: Math.round((food.kcal || 0) * safe),
+    p: round1((food.p || 0) * safe),
+    c: round1((food.c || 0) * safe),
+    f: round1((food.f || 0) * safe),
+  };
+};
+
+/**
  * Segmentos del anillo de composición por aporte calórico de cada macro.
  * Proteína y carbohidratos aportan 4 kcal/g, grasa 9 kcal/g. Si no hay macros
  * cargados devuelve una lista vacía (el anillo se dibuja sin arcos).

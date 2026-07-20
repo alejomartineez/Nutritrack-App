@@ -4,6 +4,7 @@ import {
   ChevronRight, ChevronLeft, Sparkles, Lightbulb, Award, Plus, Minus,
   Save, RotateCcw, Info, Utensils, Coffee, Pencil, Flame, Dumbbell, MoonStar,
   Download, Share, SquarePlus, Upload, ShieldCheck, Search, Bell, Clock, LayoutGrid, Calculator,
+  Loader2, Barcode, ScanLine,
 } from 'lucide-react';
 import WorkoutModule from './workout/WorkoutModule';
 import SleepModule from './sleep/SleepModule';
@@ -14,6 +15,8 @@ import ProfileSetup from './ProfileSetup';
 import WeeklyRecap from './WeeklyRecap';
 import WeightTracker from './WeightTracker';
 import { searchFoods } from './foodDatabase';
+import { searchProducts, getProductByBarcode } from './openFoodFacts';
+import BarcodeScanner from './BarcodeScanner';
 import { getFrequentFoods } from './foodHistory';
 import { requestPersistentStorage, downloadFullBackup, restoreFullBackup, readBackupFile } from './backupStorage';
 import {
@@ -32,7 +35,9 @@ import {
   computeTotals,
   computeStreak,
   computeMacroSegments,
+  scaleFood,
 } from './lib/nutritionCalcs';
+import QuantitySheet from './QuantitySheet';
 import { useCountUp, prefersReducedMotion } from './lib/motion';
 
 // ---------------------------------------------------------------------------
@@ -198,6 +203,10 @@ export default function NutriTrackApp() {
       return JSON.parse(JSON.stringify(FREE_PRESETS));
     }
   });
+
+  // Alimento esperando que elijas cantidad: { food, mode }. mode 'plan' | 'libre'.
+  const [pendingFood, setPendingFood] = useState(null);
+  const [scanning, setScanning] = useState(false);
 
   // { id, kind } — id null = nueva opción; kind 'plan' | 'libre'
   const [editingCatalogItem, setEditingCatalogItem] = useState(null);
@@ -393,6 +402,31 @@ export default function NutriTrackApp() {
     setLog((prev) => ({ ...prev, freeMeals: [...prev.freeMeals, entry] }));
     const entered = celebrateIfEnteringRange(totals.kcal + item.kcal);
     flashConfirm(entered ? '¡Entraste en tu rango de hoy! 🎯' : 'Registrado fuera de plan, ¡disfrutalo con calma!');
+  };
+
+  // Pide la cantidad antes de registrar (buscador y catálogos). Los frecuentes no
+  // pasan por acá: agregan ×1 directo para no perder el camino de un toque.
+  const askQuantity = (food, mode) => setPendingFood({ food, mode });
+
+  // Escaneo: cierra la cámara y, si el producto existe en Open Food Facts, pasa
+  // directo a elegir cantidad. Si no está cargado, lo dice y deja seguir a mano.
+  const handleBarcode = async (code) => {
+    setScanning(false);
+    try {
+      const food = await getProductByBarcode(code);
+      if (food) setPendingFood({ food, mode: registerMode });
+      else flashConfirm('Ese producto no está en Open Food Facts. Cargalo a mano.');
+    } catch (e) {
+      flashConfirm('No pudimos consultar el producto (sin conexión).');
+    }
+  };
+
+  const confirmQuantity = (qty) => {
+    if (!pendingFood) return;
+    const scaled = scaleFood(pendingFood.food, qty);
+    if (pendingFood.mode === 'plan') addPlanMeal(scaled);
+    else addFreeMeal(scaled);
+    setPendingFood(null);
   };
 
   const removeEntry = (id, isPlan) => {
@@ -878,6 +912,8 @@ export default function NutriTrackApp() {
               onEditFreeCatalogItem={(item) => openEditCatalogItem(item, 'libre')}
               addPlanMeal={addPlanMeal}
               addFreeMeal={addFreeMeal}
+              askQuantity={askQuantity}
+              onScan={() => setScanning(true)}
               showCustomForm={showCustomForm}
               setShowCustomForm={setShowCustomForm}
               customName={customName}
@@ -942,6 +978,19 @@ export default function NutriTrackApp() {
             <NavButton icon={TrendingUp} label="Progreso" active={activeTab === 'progreso'} onClick={() => setActiveTab('progreso')} />
           </div>
         </nav>
+
+        {/* ESCÁNER DE CÓDIGO DE BARRAS */}
+        {scanning && <BarcodeScanner onDetected={handleBarcode} onCancel={() => setScanning(false)} />}
+
+        {/* HOJA DE CANTIDAD (al agregar desde el buscador o los catálogos) */}
+        {pendingFood && (
+          <QuantitySheet
+            food={pendingFood.food}
+            mode={pendingFood.mode}
+            onConfirm={confirmQuantity}
+            onCancel={() => setPendingFood(null)}
+          />
+        )}
 
         {/* INTRO DE PRIMERA VEZ */}
         {showOnboarding && <Onboarding onDone={dismissOnboarding} />}
@@ -1262,8 +1311,8 @@ function TabMiDia({
             todo estaría en cero) */}
         {!quietStart && (
           <div className="w-full mt-4 grid grid-cols-3 gap-3">
-            {macros.map((m) => (
-              <MacroProgress key={m.key} {...m} />
+            {macros.map(({ key, ...m }) => (
+              <MacroProgress key={key} {...m} />
             ))}
           </div>
         )}
@@ -1436,6 +1485,8 @@ function TabRegistrar({
   onEditFreeCatalogItem,
   addPlanMeal,
   addFreeMeal,
+  askQuantity,
+  onScan,
   showCustomForm,
   setShowCustomForm,
   customName,
@@ -1456,11 +1507,54 @@ function TabRegistrar({
   // alimentos más registrados, para sumarlos de un toque sin buscar.
   const frequents = useMemo(() => getFrequentFoods(), []);
 
-  const addFoodFromDb = (food) => {
+  // Resultados de Open Food Facts. Van aparte de los locales a propósito: los
+  // locales son instantáneos y curados, así que se muestran primero y nunca
+  // quedan esperando a la red. 'idle' | 'loading' | 'done' | 'offline'
+  const [offResults, setOffResults] = useState([]);
+  const [offState, setOffState] = useState('idle');
+
+  useEffect(() => {
+    const q = foodQuery.trim();
+    if (q.length < 2) {
+      setOffResults([]);
+      setOffState('idle');
+      return undefined;
+    }
+
+    const ctrl = new AbortController();
+    // Debounce: no dispara una request por cada tecla.
+    const timer = setTimeout(() => {
+      setOffState('loading');
+      searchProducts(q, { signal: ctrl.signal })
+        .then((foods) => {
+          setOffResults(foods);
+          setOffState('done');
+        })
+        .catch((err) => {
+          if (err.name === 'AbortError') return; // búsqueda reemplazada, no es un fallo
+          setOffResults([]);
+          setOffState('offline');
+        });
+    }, 350);
+
+    return () => {
+      clearTimeout(timer);
+      ctrl.abort();
+    };
+  }, [foodQuery]);
+
+  // Desde el buscador se elige cantidad; el query se limpia al confirmar (o al
+  // cancelar queda la búsqueda, que es lo esperable si te equivocaste de ítem).
+  const pickFood = (food) => {
+    askQuantity({ name: food.name, kcal: food.kcal, p: food.p, c: food.c, f: food.f, basis: food.basis }, registerMode);
+    setFoodQuery('');
+  };
+
+  // Los frecuentes agregan ×1 al instante: es el camino repetitivo y rápido.
+  const addFrequent = (food) => {
     const item = { name: food.name, kcal: food.kcal, p: food.p, c: food.c, f: food.f };
     if (registerMode === 'plan') addPlanMeal(item);
     else addFreeMeal(item);
-    setFoodQuery('');
   };
 
   return (
@@ -1494,7 +1588,7 @@ function TabRegistrar({
             {frequents.map((food) => (
               <button
                 key={food.name}
-                onClick={() => addFoodFromDb(food)}
+                onClick={() => addFrequent(food)}
                 aria-label={`Agregar ${food.name}`}
                 className={`shrink-0 max-w-[75%] rounded-full border pl-3.5 pr-2.5 py-2 text-sm text-slate-200 flex items-center gap-1.5 transition-colors ${
                   registerMode === 'plan'
@@ -1512,21 +1606,31 @@ function TabRegistrar({
 
       {/* BÚSQUEDA EN LA BASE DE ALIMENTOS: registro rápido sin tipear macros */}
       <div>
-        <div className="relative">
-          <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            value={foodQuery}
-            onChange={(e) => setFoodQuery(e.target.value)}
-            placeholder="Buscar alimento (banana, milanesa, arroz...)"
-            className="w-full bg-slate-800/60 border border-slate-700 rounded-2xl pl-9 pr-3 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"
-          />
+        <div className="flex gap-2">
+          <div className="relative flex-1 min-w-0">
+            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              value={foodQuery}
+              onChange={(e) => setFoodQuery(e.target.value)}
+              placeholder="Buscar alimento (banana, milanesa, arroz...)"
+              className="w-full bg-slate-800/60 border border-slate-700 rounded-2xl pl-9 pr-3 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            />
+          </div>
+          {/* Escanear el paquete evita tipear los macros de un producto envasado */}
+          <button
+            onClick={onScan}
+            aria-label="Escanear código de barras"
+            className="shrink-0 px-3.5 rounded-2xl bg-slate-800/60 border border-slate-700 hover:border-emerald-500/50 focus-visible:ring-2 focus-visible:ring-emerald-400 transition-colors"
+          >
+            <ScanLine className="w-5 h-5 text-slate-300" />
+          </button>
         </div>
         {foodQuery.trim().length >= 2 && (
           <div className="mt-2 space-y-1.5">
             {foodResults.map((food) => (
               <button
                 key={food.id}
-                onClick={() => addFoodFromDb(food)}
+                onClick={() => pickFood(food)}
                 className={`w-full text-left rounded-xl bg-slate-800/60 border border-slate-700 px-3.5 py-2.5 flex items-center justify-between gap-3 transition-colors ${
                   registerMode === 'plan' ? 'hover:border-emerald-500/50' : 'hover:border-amber-500/50'
                 }`}
@@ -1542,10 +1646,54 @@ function TabRegistrar({
                 />
               </button>
             ))}
-            {foodResults.length === 0 && (
+            {foodResults.length === 0 && offState !== 'loading' && offResults.length === 0 && (
               <p className="text-xs text-slate-500 text-center py-2">
                 Sin resultados. Podés cargarlo manualmente más abajo.
               </p>
+            )}
+
+            {/* PRODUCTOS ENVASADOS (Open Food Facts). Aparecen debajo de los
+                locales: son más lentos y menos curados, pero cubren lo que la
+                base local no tiene, que es justo lo que obligaba a buscar afuera. */}
+            {offState === 'loading' && (
+              <p className="text-xs text-slate-500 text-center py-2 flex items-center justify-center gap-2">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Buscando productos envasados…
+              </p>
+            )}
+
+            {offState === 'offline' && (
+              <p className="text-xs text-slate-500 text-center py-2">
+                No se pudo buscar productos envasados (sin conexión).
+              </p>
+            )}
+
+            {offResults.length > 0 && (
+              <>
+                <p className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold pt-2 flex items-center gap-1.5">
+                  <Barcode className="w-3.5 h-3.5" /> Productos envasados
+                </p>
+                {offResults.map((food) => (
+                  <button
+                    key={food.id}
+                    onClick={() => pickFood(food)}
+                    className={`w-full text-left rounded-xl bg-slate-800/60 border border-slate-700 px-3.5 py-2.5 flex items-center justify-between gap-3 transition-colors ${
+                      registerMode === 'plan' ? 'hover:border-emerald-500/50' : 'hover:border-amber-500/50'
+                    }`}
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm text-slate-200 truncate">{food.name}</p>
+                      <p className="text-xs text-slate-500 font-mono mt-0.5">
+                        {food.kcal} kcal · P {food.p}g · C {food.c}g · G {food.f}g
+                        <span className="text-slate-600"> · por 100g</span>
+                      </p>
+                    </div>
+                    <PlusCircle
+                      className={`w-5 h-5 shrink-0 ${registerMode === 'plan' ? 'text-emerald-400' : 'text-amber-400'}`}
+                    />
+                  </button>
+                ))}
+              </>
             )}
           </div>
         )}
@@ -1560,7 +1708,7 @@ function TabRegistrar({
                 className="rounded-2xl bg-slate-800/60 border border-slate-700 flex items-center gap-1 pr-1 hover:border-emerald-500/50 transition-colors"
               >
                 <button
-                  onClick={() => addPlanMeal(item)}
+                  onClick={() => askQuantity(item, 'plan')}
                   className="flex-1 min-w-0 text-left p-4 flex items-center justify-between gap-3 focus-visible:ring-2 focus-visible:ring-emerald-400 rounded-2xl"
                 >
                   <div className="min-w-0">
@@ -1607,7 +1755,7 @@ function TabRegistrar({
                 className="rounded-2xl bg-slate-800/60 border border-slate-700 flex items-center gap-1 pr-1 hover:border-amber-500/50 transition-colors"
               >
                 <button
-                  onClick={() => addFreeMeal(item)}
+                  onClick={() => askQuantity(item, 'libre')}
                   className="flex-1 min-w-0 text-left p-4 flex items-center justify-between gap-3 focus-visible:ring-2 focus-visible:ring-amber-400 rounded-2xl"
                 >
                   <div className="min-w-0">

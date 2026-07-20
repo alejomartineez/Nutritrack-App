@@ -9,6 +9,7 @@ import {
   computeMacroSegments,
   mifflinStJeorBMR,
   computePlanFromProfile,
+  scaleFood,
 } from './nutritionCalcs';
 
 describe('dateKeyOf', () => {
@@ -131,6 +132,50 @@ describe('computeMacroSegments', () => {
   it('devuelve lista vacía sin macros', () => {
     expect(computeMacroSegments({ p: 0, c: 0, f: 0 })).toEqual([]);
     expect(computeMacroSegments({})).toEqual([]);
+  });
+});
+
+describe('scaleFood', () => {
+  const banana = { name: 'Banana (1 mediana)', kcal: 105, p: 1.3, c: 27, f: 0.4 };
+  const nutella = { name: 'Nutella', kcal: 539, p: 6.3, c: 57.5, f: 30.9, basis: '100g' };
+
+  it('multiplica una porción y anota la cantidad en el nombre', () => {
+    const r = scaleFood(banana, 2);
+    expect(r.kcal).toBe(210);
+    expect(r.p).toBe(2.6);
+    expect(r.c).toBe(54);
+    expect(r.name).toBe('Banana (1 mediana) ×2');
+  });
+
+  it('deja el nombre intacto con ×1', () => {
+    const r = scaleFood(banana, 1);
+    expect(r.kcal).toBe(105);
+    expect(r.name).toBe('Banana (1 mediana)');
+  });
+
+  it('admite fracciones de porción', () => {
+    const r = scaleFood(banana, 0.5);
+    expect(r.kcal).toBe(53); // 52.5 redondeado
+    expect(r.name).toBe('Banana (1 mediana) ×0.5');
+  });
+
+  it('escala por gramos cuando la base es 100g', () => {
+    const r = scaleFood(nutella, 60);
+    expect(r.kcal).toBe(323); // 539 × 0.6 = 323.4
+    expect(r.p).toBe(3.8);
+    expect(r.f).toBe(18.5);
+    expect(r.name).toBe('Nutella (60 g)');
+  });
+
+  it('cae a la porción original si la cantidad es inválida', () => {
+    expect(scaleFood(banana, 0).kcal).toBe(105);
+    expect(scaleFood(banana, -3).kcal).toBe(105);
+    expect(scaleFood(banana, NaN).kcal).toBe(105);
+  });
+
+  it('trata macros faltantes como cero', () => {
+    const r = scaleFood({ name: 'Sin datos', kcal: 100 }, 2);
+    expect(r).toMatchObject({ kcal: 200, p: 0, c: 0, f: 0 });
   });
 });
 
