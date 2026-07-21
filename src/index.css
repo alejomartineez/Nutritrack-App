@@ -141,51 +141,71 @@
      Lo que hace que se lea como vidrio y no como "un panel medio transparente"
      son tres capas que trabajan juntas, no la transparencia sola:
 
-     1. EL DESENFOQUE ES LO QUE APORTA OPACIDAD. Antes el relleno estaba al 92%:
-        con eso el blur no tenía nada que hacer y la barra era, en la práctica,
-        sólida. Ahora el relleno baja al 55% y el trabajo lo hace un blur denso
-        (32px) con saturación empujada: el contenido que pasa por debajo se
-        adivina como manchas de color difusas —que es exactamente lo que se ve a
-        través de vidrio esmerilado— y el texto de arriba sigue legible porque
-        detrás no queda ningún detalle con el que competir. El `brightness` de
-        más levanta el conjunto lo justo para que el vidrio se despegue del
-        fondo incluso donde no pasa nada por debajo.
+     1. EL DESENFOQUE ES LO QUE APORTA OPACIDAD. Arrancó al 92% —con eso el blur
+        no tenía nada que hacer y la barra era, en la práctica, sólida— y hoy
+        está al 22%. Casi todo el cuerpo del material lo pone el filtro: blur de
+        44px con la saturación al 190%. A esta transparencia la barra se TIÑE con
+        lo que pasa por debajo —el CTA verde la vuelve verdosa, una card la
+        levanta— que es la señal que delata al vidrio de verdad.
 
-     2. LA LUZ NO ES UNIFORME. Un `background-image` en degradado —blanco al 9%
+     2. EL `brightness` VA PARA ABAJO (0.45), NO PARA ARRIBA. Es contraintuitivo
+        y es la corrección más importante de esta versión. El instinto es
+        "iluminar" el vidrio, y funciona mientras detrás haya fondo oscuro; pero
+        cuando pasa el CTA verde por debajo, un `brightness` mayor a 1 lo satura
+        y la barra se vuelve un bloque claro. Medido: con brightness 1.35 las
+        etiquetas quedaban en 1.02:1 contra ese verde. Invisibles.
+
+        En modo oscuro el material tiene que OSCURECER lo que hay detrás, no
+        aclararlo: así el texto claro siempre tiene fondo oscuro donde apoyarse,
+        pase lo que pase por abajo. Es lo que hacen los materiales oscuros de
+        iOS, y es justamente lo que permite bajar tanto el relleno: la
+        legibilidad la garantiza el filtro, no la opacidad. Con brightness 0.45,
+        el peor caso (el CTA verde justo debajo) queda en 4.6:1 y el caso normal
+        en 8.2:1.
+
+        Cualquier cambio a estos dos números —el relleno o el brightness— obliga
+        a rehacer esa cuenta contra el verde de marca, que es la superficie más
+        clara y grande que puede pasar por debajo de la barra.
+
+     3. LA LUZ NO ES UNIFORME. Un `background-image` en degradado —blanco al 14%
         arriba, nada a media altura— simula la luz cenital entrando por el canto
         superior y muriendo hacia abajo. Sin este gradiente la superficie parece
-        plástico tintado: es la caída lo que la vuelve vidrio.
+        plástico tintado: es la caída lo que la vuelve vidrio. Que el cuerpo sea
+        oscuro y el filo brillante no se contradice: así se comporta el vidrio
+        grueso, el canto capta la luz y la masa la absorbe.
 
-     3. EL CANTO TIENE ESPESOR. Los tres primeros `inset` son el bisel: filo
+     4. EL CANTO TIENE ESPESOR. Los tres primeros `inset` son el bisel: filo
         superior brillante (el borde que capta la luz), aro completo tenue (el
         canto lateral) y una línea oscura abajo (la sombra propia del espesor
-        del vidrio). El cuarto inset es la refracción: un halo interior difuso
-        que reparte la luz del filo hacia adentro en vez de cortarla de golpe.
+        del vidrio). Los dos siguientes son la refracción: un halo que reparte la
+        luz del filo hacia adentro, y un rebote más débil desde el canto de abajo
+        —el vidrio grueso devuelve algo de luz por donde apoya—.
 
      El borde exterior queda casi al mínimo a propósito: el bisel ya está dibujado
      con insets y un borde marcado encima lo aplana. */
   .nav-floating {
-    background-color: rgba(26, 32, 38, 0.55);
+    background-color: rgba(28, 34, 41, 0.22);
     background-image: linear-gradient(
       to bottom,
-      rgba(255, 255, 255, 0.09) 0%,
-      rgba(255, 255, 255, 0.025) 45%,
+      rgba(255, 255, 255, 0.14) 0%,
+      rgba(255, 255, 255, 0.035) 42%,
       rgba(255, 255, 255, 0) 100%
     );
-    backdrop-filter: blur(32px) saturate(180%) brightness(1.18);
-    -webkit-backdrop-filter: blur(32px) saturate(180%) brightness(1.18);
-    border: 1px solid rgba(255, 255, 255, 0.09);
+    backdrop-filter: blur(44px) saturate(190%) brightness(0.45);
+    -webkit-backdrop-filter: blur(44px) saturate(190%) brightness(0.45);
+    border: 1px solid rgba(255, 255, 255, 0.13);
     box-shadow:
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.28),
-      inset 0 0 0 1px rgba(255, 255, 255, 0.05),
-      inset 0 -1px 0 0 rgba(0, 0, 0, 0.5),
-      inset 0 14px 26px -20px rgba(255, 255, 255, 0.5),
-      0 14px 34px -8px rgba(0, 0, 0, 0.8),
-      0 4px 12px -4px rgba(0, 0, 0, 0.6);
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.40),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+      inset 0 -1px 0 0 rgba(0, 0, 0, 0.55),
+      inset 0 18px 30px -22px rgba(255, 255, 255, 0.55),
+      inset 0 -20px 26px -26px rgba(255, 255, 255, 0.22),
+      0 16px 40px -10px rgba(0, 0, 0, 0.85),
+      0 6px 14px -6px rgba(0, 0, 0, 0.6);
   }
 
   /* Sin soporte de backdrop-filter no hay vidrio posible: lo que se ve es un
-     panel al 55% con el contenido nítido pasando por debajo, ilegible. En ese
+     panel al 22% con el contenido nítido pasando por debajo, ilegible. En ese
      caso volvemos a una superficie sólida. */
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .nav-floating {
@@ -193,16 +213,69 @@
     }
   }
 
-  /* Indicador de pestaña activa. El color de módulo lo sigue poniendo la clase
-     de Tailwind desde el JSX (`bg-sueno-500/25` y compañía); acá va solo el
-     acabado: un filo superior claro y una sombra corta hacia abajo para que la
-     pastilla se lea como una lente apoyada SOBRE el vidrio, no como un
-     rectángulo pintado dentro. */
+  /* CONTRASTE SOBRE VIDRIO MUY TRANSPARENTE — segunda línea de defensa.
+     Al 22% el fondo de la barra ya no es un color: es lo que haya debajo. El
+     `brightness: 0.45` del filtro es lo que mantiene ese fondo oscuro y hace el
+     grueso del trabajo (ver arriba), pero el rango sigue siendo variable: entre
+     el caso normal y el CTA verde hay casi el doble de contraste de diferencia.
+
+     Estas sombras cubren esa variación. Le dan al glifo un borde propio contra
+     CUALQUIER fondo, y como son sombra y no relleno no ensucian la tipografía en
+     el caso habitual. El ícono va con `drop-shadow` en vez de `text-shadow`
+     porque es un SVG y necesita que la sombra siga el trazo, no la caja.
+
+     No son un sustituto de la cuenta de contraste: son el margen que hace que el
+     peor caso se lea cómodo en vez de apenas pasar. */
+  .nav-floating .nav-label {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  }
+  .nav-floating .nav-icon {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
+  }
+
+  /* Carril del indicador: solo posiciona y traslada. La deformación va en el
+     hijo, separada a propósito —ver .nav-indicator abajo—.
+
+     La curva tiene overshoot (el 1.42 del tercer control): la pastilla se pasa
+     un pelo del destino y vuelve. Es lo que separa un deslizamiento mecánico de
+     algo que se siente con masa, y es la firma del tab bar de iOS. */
+  .nav-indicator-track {
+    transition: transform 0.44s cubic-bezier(0.34, 1.42, 0.5, 1);
+  }
+
+  /* Pastilla activa — lente sobre el vidrio.
+     El color de módulo lo sigue poniendo la clase de Tailwind desde el JSX
+     (`bg-sueno-500/25` y compañía); acá va solo el acabado.
+
+     NO lleva `backdrop-filter` propio aunque sea lo primero que uno querría:
+     vive dentro de `.nav-floating`, que ya tiene uno, y anidarlos hace que el
+     hijo no se pinte (es el mismo problema que resolvimos en `.sheet`). El
+     volumen lo dan el gradiente de gloss y los insets. */
   .nav-indicator {
+    background-image: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.16) 0%,
+      rgba(255, 255, 255, 0.02) 55%,
+      rgba(0, 0, 0, 0.06) 100%
+    );
     box-shadow:
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.16),
-      inset 0 -1px 0 0 rgba(0, 0, 0, 0.18),
-      0 1px 3px rgba(0, 0, 0, 0.25);
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.34),
+      inset 0 -1px 1px 0 rgba(0, 0, 0, 0.22),
+      inset 0 8px 14px -10px rgba(255, 255, 255, 0.5),
+      0 2px 6px -1px rgba(0, 0, 0, 0.35);
+  }
+
+  /* Ícono de pestaña. El activo crece y sube un pelo; al presionar, TODO ícono
+     se hunde. El orden importa: `:active` va después para ganarle al activo,
+     así la pestaña en la que ya estás también responde al toque. */
+  .nav-icon {
+    transition: transform 0.34s cubic-bezier(0.34, 1.5, 0.5, 1);
+  }
+  .nav-btn[aria-current='page'] .nav-icon {
+    transform: translateY(-1px) scale(1.14);
+  }
+  .nav-btn:active .nav-icon {
+    transform: scale(0.86);
   }
 
   /* Fondo de modal/hoja. Reemplaza los `bg-black/60` sueltos (11 en 6 archivos,
@@ -395,6 +468,24 @@
     to   { opacity: 1; transform: none; }
   }
 
+  /* LA PARTE "LÍQUIDA" DEL VIDRIO.
+     Mientras el carril traslada la pastilla, la pastilla se estira en el sentido
+     del viaje y adelgaza, y al llegar rebota antes de asentarse. Es el gesto que
+     hace que el tab bar de iOS parezca una gota de mercurio y no un rectángulo
+     que se mueve: la materia se deforma por la aceleración y recupera la forma
+     cuando frena.
+
+     Los tiempos están alineados con el `cubic-bezier` del carril: el pico de
+     estiramiento (36%) cae donde la traslación va más rápido, y la corrección
+     por debajo de 1 (72%) coincide con el overshoot del carril. Si las dos
+     curvas se desfasan, se ve como dos animaciones distintas encima. */
+  @keyframes nav-liquid {
+    0%   { transform: scale(1, 1); }
+    36%  { transform: scale(1.20, 0.86); }
+    72%  { transform: scale(0.96, 1.04); }
+    100% { transform: scale(1, 1); }
+  }
+
   /* Cambio de pestaña: el contenido nuevo entra desde el lado hacia el que te
      moviste en la barra (adelante = por la derecha).
 
@@ -420,6 +511,10 @@
   .anim-meal-out    { animation: meal-out 0.2s cubic-bezier(0.4, 0, 1, 1) both; }
   .anim-fade-in-up  { animation: fade-in-up 0.42s cubic-bezier(0.16, 1, 0.3, 1) both; }
   .anim-glow        { animation: celebrate-glow 1.1s ease-out; }
+  /* Se re-dispara remontando el elemento (`key` en el JSX), no con una clase que
+     se agrega y se saca: sin remontar, el navegador no reinicia una animación
+     que ya corrió y el segundo cambio de pestaña saldría sin deformación. */
+  .anim-nav-liquid  { animation: nav-liquid 0.46s cubic-bezier(0.34, 1.42, 0.5, 1) both; }
   .confetti-piece   { animation: confetti-fall 1s ease-out forwards; }
   /* Estas dos NO usan la curva expo de arriba: con un cambio de pantalla entera
      el arranque violento del expo (≈88% del recorrido en el primer 30% del

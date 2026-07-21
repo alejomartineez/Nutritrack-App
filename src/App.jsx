@@ -1064,8 +1064,11 @@ export default function NutriTrackApp() {
           aria-hidden={keyboardOpen || undefined}
           style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)' }}
         >
+          {/* Cápsula, no rectángulo redondeado: es la forma del tab bar flotante
+              de iOS y a esta transparencia importa, porque el canto curvo
+              continuo es donde más se nota la refracción del borde. */}
           <div
-            className={`relative w-full max-w-md rounded-2xl nav-floating px-2 py-2 flex ${
+            className={`relative w-full max-w-md rounded-full nav-floating px-2 py-2 flex ${
               keyboardOpen ? 'pointer-events-none' : 'pointer-events-auto'
             }`}
           >
@@ -1073,15 +1076,31 @@ export default function NutriTrackApp() {
                 activo, en vez de una pastilla por botón que aparece y desaparece:
                 así el cambio de sección se ve como un movimiento continuo. Los
                 slots son todos del mismo ancho (flex-1), por eso alcanza con
-                correrlo un múltiplo de su propio ancho. */}
+                correrlo un múltiplo de su propio ancho.
+
+                Va partido en dos elementos porque son dos movimientos que tienen
+                que convivir sin pisarse: el carril de afuera TRASLADA (con
+                `transition`, que necesita que el elemento persista entre
+                cambios) y la pastilla de adentro se DEFORMA (con `animation`,
+                que necesita remontarse para volver a dispararse). En un solo
+                elemento, la `transition` y la `animation` compiten por la misma
+                propiedad `transform` y gana la animación: la pastilla se
+                deformaría en el lugar sin llegar a viajar. */}
             <span
               aria-hidden="true"
-              className={`nav-indicator absolute top-2 bottom-2 left-2 rounded-xl transition-[transform,background-color] duration-300 ease-out motion-reduce:transition-none ${navTabs[activeNavIndex]?.indicatorClass ?? 'bg-emerald-500/20'}`}
+              className="nav-indicator-track absolute top-2 bottom-2 left-2 motion-reduce:transition-none"
               style={{
                 width: `calc((100% - 1rem) / ${navTabs.length})`,
                 transform: `translateX(${activeNavIndex * 100}%)`,
               }}
-            />
+            >
+              <span
+                key={activeNavIndex}
+                className={`nav-indicator anim-nav-liquid block h-full w-full rounded-full ${
+                  navTabs[activeNavIndex]?.indicatorClass ?? 'bg-emerald-500/20'
+                }`}
+              />
+            </span>
             {navTabs.map((t) => (
               <NavButton
                 key={t.id}
@@ -1236,19 +1255,25 @@ function NavButton({
     <button
       onClick={onClick}
       aria-current={active ? 'page' : undefined}
-      // Las pestañas inactivas van un paso más claras (400, no 500) desde que la
-      // barra es de vidrio: el relleno pasó del 92% al 55% y el `brightness` del
-      // backdrop levantó la superficie, así que ink-500 sobre ese fondo caía a
-      // 3.8:1 —por debajo del mínimo, y encima en texto de 11px—. Con ink-400
-      // vuelve a 5.4:1 sin que la pestaña inactiva compita con la activa.
-      className={`relative flex-1 flex flex-col items-center gap-1 py-1.5 rounded-xl transition-colors duration-200 ${
-        active ? activeColorClass : 'text-slate-400 hover:text-slate-200'
+      // Las pestañas inactivas subieron dos escalones (300, no el 500 original)
+      // a medida que la barra se fue transparentando: el relleno bajó del 92% al
+      // 22%, así que el fondo de la etiqueta ya no es un color fijo sino lo que
+      // pase por debajo. El caso que manda es el CTA verde justo debajo de la
+      // barra, que es la superficie más clara y más grande que puede aparecer
+      // ahí: con ink-400 quedaba en 3.4:1 y con ink-300 llega a 4.6:1. En el
+      // caso normal —fondo oscuro— da 8.2:1.
+      //
+      // Que la inactiva sea casi tan clara como la activa no rompe la jerarquía:
+      // la activa se distingue por color de módulo, por la cápsula que lleva
+      // debajo y porque su ícono está escalado (ver .nav-icon en index.css).
+      className={`nav-btn relative flex-1 flex flex-col items-center gap-1 py-1.5 rounded-full transition-colors duration-200 ${
+        active ? activeColorClass : 'text-slate-300 hover:text-slate-100'
       }`}
     >
       {/* El fondo activo ya no vive acá: lo dibuja el indicador deslizante del
           contenedor, que se mueve entre pestañas en vez de aparecer y desaparecer. */}
-      <Icon className="w-5 h-5" />
-      <span className={`text-[11px] leading-none transition-all duration-200 ${active ? 'font-semibold' : 'font-medium'}`}>
+      <Icon className="nav-icon w-5 h-5" />
+      <span className={`nav-label text-[11px] leading-none transition-all duration-200 ${active ? 'font-semibold' : 'font-medium'}`}>
         {label}
       </span>
     </button>
