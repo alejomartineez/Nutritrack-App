@@ -909,8 +909,22 @@ export default function NutriTrackApp() {
             —Progreso, la semana de Entreno— perdías de vista en qué sección
             estabas. El desenfoque se difumina hacia abajo (ver .app-header en
             index.css) para que no aparezca una línea dura a media pantalla. */}
+        {/* Con el teclado abierto deja de estar pegado, por la misma razón por la
+            que la barra de abajo se esconde: iOS despega los elementos anclados
+            —fixed y sticky— mientras acomoda el foco, y los reubica por su
+            cuenta a media pantalla (ver el historial en src/lib/viewport.js).
+            Soltar el anclaje evita eso y de paso libera pantalla para los
+            resultados del buscador.
+
+            Es `position: static` y no `display: none`: el header sigue ocupando
+            su lugar en el flujo, así que soltarlo NO cambia el alto del
+            documento. Esa distinción importa —cualquier cambio de altura acá
+            dispara el mismo clampeo de scroll que rompía el buscador, ver el
+            comentario del `main` más abajo—. */}
         <header
-          className="app-header px-5 pb-4 flex items-center justify-between"
+          className={`app-header px-5 pb-4 flex items-center justify-between ${
+            keyboardOpen ? 'app-header-unpinned' : ''
+          }`}
           style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.5rem)' }}
         >
           <div className="flex items-center gap-3 min-w-0">
@@ -982,9 +996,41 @@ export default function NutriTrackApp() {
         )}
 
         {/* CONTENIDO */}
-        {/* Con el teclado abierto la barra desaparece, así que el colchón de
-            abajo puede achicarse y se recupera esa altura para los resultados. */}
-        <main className={`flex-1 overflow-y-auto px-5 ${keyboardOpen ? 'pb-6' : 'pb-32'}`}>
+        {/* EL COLCHÓN DE ABAJO ES CONSTANTE, Y NO PUEDE DEJAR DE SERLO.
+            Antes valía `pb-6` con el teclado abierto y `pb-32` con el teclado
+            cerrado, para recuperar altura para los resultados. Eso rompía el
+            buscador en iPhone:
+
+              1. Tocás el buscador, que está bien abajo de la pestaña Registrar.
+              2. iOS scrollea para dejar el campo por encima del teclado.
+              3. React re-renderiza con `pb-6` y el documento se acorta ~104px.
+              4. El navegador tiene que clampear el scroll al nuevo máximo, el
+                 contenido baja esos 104px y el campo termina JUSTO DEBAJO del
+                 teclado, fuera de la vista.
+
+            El paso 3 pelea contra el paso 2, y siempre gana el 3 porque llega
+            después. La altura que se "recuperaba" además nunca se veía: queda
+            abajo del teclado. Cambiar el alto del documento mientras iOS está
+            acomodando el foco es la trampa; el colchón se queda fijo.
+
+            SIN `overflow-y-auto`, y esto es la otra mitad del arreglo. Con él,
+            quién scrollea dependía de cuánto contenido hubiera: `flex-1` dentro
+            de un contenedor `min-h-screen` le da a `main` una altura definida,
+            así que con poco contenido `main` era su propio contenedor de scroll
+            (medido: 727px, recortando), y con muchos resultados crecía y pasaba
+            a scrollear la ventana. Dos modelos de scroll distintos según los
+            resultados de la búsqueda.
+
+            En iPhone eso es peor de lo que suena: cuando el que scrollea es
+            `main`, su altura sale de `100vh`, que NO se achica con el teclado
+            abierto. Su área visible sigue metiéndose por debajo del teclado, y
+            scrollear dentro de `main` nunca logra subir el campo lo suficiente.
+            Encima el `window.scrollTo` de `goToTab` no tocaba ese scroll.
+
+            Nada del código scrollea `main` —el único scroll manejado a mano es
+            `window.scrollTo`—, así que sacarlo no rompe nada y deja un solo
+            modelo: scrollea siempre la ventana. */}
+        <main className="flex-1 px-5 pb-32">
           {/* La `key` fuerza el remontaje al cambiar de pestaña, que es lo que
               dispara la animación de entrada. No cambia el comportamiento: cada
               pestaña ya se desmontaba al salir (render condicional). */}

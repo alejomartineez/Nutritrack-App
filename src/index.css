@@ -368,6 +368,18 @@
     z-index: 20;
   }
 
+  /* Teclado abierto: se suelta el anclaje. `static` y no `none` a propósito —el
+     header conserva su lugar en el flujo y el alto del documento no cambia—.
+     También se apaga el vidrio: sin anclaje no hay nada que pase por detrás, y
+     un `backdrop-filter` de más en el momento en que iOS está recomponiendo el
+     viewport es justo lo que conviene no tener. */
+  .app-header-unpinned {
+    position: static;
+  }
+  .app-header-unpinned::before {
+    display: none;
+  }
+
   .app-header::before {
     content: '';
     position: absolute;
