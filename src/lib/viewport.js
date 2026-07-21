@@ -5,22 +5,35 @@ import { useEffect, useState } from 'react';
 //
 // El problema que resuelven: en iOS Safari, cuando se abre el teclado, el
 // *visual viewport* (lo que realmente ves) se achica, pero el *layout viewport*
-// (contra el que se posiciona `position: fixed`) queda igual. Resultado: una
-// barra fija con `bottom: 0` queda anclada detrás del teclado, y Safari la
-// reposiciona por su cuenta mientras scrolleás — se ve "flotando" sobre el
-// contenido y tapándolo.
+// (contra el que se posiciona `position: fixed`) queda igual. Una barra fija con
+// `bottom: 0` queda anclada detrás del teclado, y Safari la reposiciona por su
+// cuenta mientras scrolleás — aparece flotando en medio de la pantalla.
+//
+// Se intentó perseguir al teclado subiendo la barra con un transform, y no
+// alcanza: durante el scroll Safari despega los elementos fijos y los reacomoda
+// a su antojo, así que la barra igual termina en el medio. La única solución
+// confiable es esconderla mientras el teclado está abierto.
 // ---------------------------------------------------------------------------
 
 /**
- * Píxeles del layout viewport que quedan tapados por debajo del viewport visual
- * (teclado abierto, barras del navegador). 0 cuando no hay nada tapando.
+ * Mínimo de píxeles tapados para considerar que hay un teclado.
  *
- * Un elemento fijo al fondo puede subirse esa cantidad para quedar justo encima
- * del teclado y dejar de saltar. Devuelve 0 en navegadores sin `visualViewport`,
- * así que el comportamiento previo queda intacto.
+ * No alcanza con `> 0`: al scrollear, Safari colapsa y expande su propia barra
+ * de herramientas, y eso también achica el viewport visual (~50-90px). Con el
+ * umbral en cero, ese vaivén se leía como "el teclado se movió" y la barra
+ * saltaba a mitad del scroll. Un teclado siempre tapa bastante más que esto.
  */
-export function useKeyboardInset() {
-  const [inset, setInset] = useState(0);
+const KEYBOARD_MIN_INSET = 120;
+
+/**
+ * true cuando hay un teclado virtual abierto tapando el fondo del viewport.
+ *
+ * Devuelve false en navegadores sin `visualViewport`, y también en Android y
+ * desktop, donde el layout viewport sí se achica con el teclado y por lo tanto
+ * el posicionamiento fijo ya funciona bien sin ayuda.
+ */
+export function useKeyboardOpen() {
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const vv = window.visualViewport;
@@ -30,9 +43,7 @@ export function useKeyboardInset() {
       // Fondo del viewport visual, en coordenadas del layout viewport.
       const visibleBottom = vv.offsetTop + vv.height;
       const covered = window.innerHeight - visibleBottom;
-      // Se redondea para no disparar renders por diferencias subpíxel, que iOS
-      // produce de a decenas mientras el teclado se anima.
-      setInset(Math.max(0, Math.round(covered)));
+      setOpen(covered > KEYBOARD_MIN_INSET);
     };
 
     update();
@@ -44,5 +55,5 @@ export function useKeyboardInset() {
     };
   }, []);
 
-  return inset;
+  return open;
 }
