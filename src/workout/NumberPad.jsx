@@ -24,9 +24,9 @@ export default function NumberPad({ label, value, onChange, onClose, quickSteps 
   const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'back'];
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50" onClick={onClose}>
+    <div className="fixed inset-0 z-[60] flex items-end justify-center scrim" onClick={onClose}>
       <div
-        className="w-full max-w-md bg-neutral-900 border-t border-entreno-500/30 rounded-t-3xl p-4 pb-6"
+        className="w-full max-w-md sheet sheet-entreno rounded-t-3xl p-4 pb-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-3">

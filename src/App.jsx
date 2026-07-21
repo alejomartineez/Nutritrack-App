@@ -878,8 +878,14 @@ export default function NutriTrackApp() {
       <div className="w-full max-w-md flex flex-col min-h-screen relative">
         <Confetti active={celebrate} />
         {/* HEADER */}
+        {/* El header queda pegado arriba con el mismo material que la barra de
+            abajo: las dos piezas de chrome son de vidrio y el contenido pasa por
+            detrás de ambas. Antes se iba con el scroll y en las pantallas largas
+            —Progreso, la semana de Entreno— perdías de vista en qué sección
+            estabas. El desenfoque se difumina hacia abajo (ver .app-header en
+            index.css) para que no aparezca una línea dura a media pantalla. */}
         <header
-          className="px-5 pb-4 flex items-center justify-between"
+          className="app-header px-5 pb-4 flex items-center justify-between"
           style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.5rem)' }}
         >
           <div className="flex items-center gap-3 min-w-0">
@@ -1070,7 +1076,7 @@ export default function NutriTrackApp() {
                 correrlo un múltiplo de su propio ancho. */}
             <span
               aria-hidden="true"
-              className={`absolute top-2 bottom-2 left-2 rounded-xl transition-[transform,background-color] duration-300 ease-out motion-reduce:transition-none ${navTabs[activeNavIndex]?.indicatorClass ?? 'bg-emerald-500/20'}`}
+              className={`nav-indicator absolute top-2 bottom-2 left-2 rounded-xl transition-[transform,background-color] duration-300 ease-out motion-reduce:transition-none ${navTabs[activeNavIndex]?.indicatorClass ?? 'bg-emerald-500/20'}`}
               style={{
                 width: `calc((100% - 1rem) / ${navTabs.length})`,
                 transform: `translateX(${activeNavIndex * 100}%)`,
@@ -1230,8 +1236,13 @@ function NavButton({
     <button
       onClick={onClick}
       aria-current={active ? 'page' : undefined}
+      // Las pestañas inactivas van un paso más claras (400, no 500) desde que la
+      // barra es de vidrio: el relleno pasó del 92% al 55% y el `brightness` del
+      // backdrop levantó la superficie, así que ink-500 sobre ese fondo caía a
+      // 3.8:1 —por debajo del mínimo, y encima en texto de 11px—. Con ink-400
+      // vuelve a 5.4:1 sin que la pestaña inactiva compita con la activa.
       className={`relative flex-1 flex flex-col items-center gap-1 py-1.5 rounded-xl transition-colors duration-200 ${
-        active ? activeColorClass : 'text-slate-500 hover:text-slate-300'
+        active ? activeColorClass : 'text-slate-400 hover:text-slate-200'
       }`}
     >
       {/* El fondo activo ya no vive acá: lo dibuja el indicador deslizante del
@@ -2153,13 +2164,13 @@ function GoalChip({ label, value }) {
 function EditEntryModal({ isPlan, name, setName, kcal, setKcal, p, setP, c, setC, f, setF, onSave, onCancel }) {
   const accent = isPlan ? 'emerald' : 'amber';
   const accentText = isPlan ? 'text-emerald-300' : 'text-amber-300';
-  const accentBorder = isPlan ? 'border-emerald-500/30' : 'border-amber-500/30';
+  const accentBorder = isPlan ? 'sheet-plan' : 'sheet-free';
   const accentBg = isPlan ? 'bg-emerald-500' : 'bg-amber-500';
   const accentRing = isPlan ? '' : '';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 px-0 sm:px-4">
-      <div className={`w-full max-w-md bg-slate-800 border ${accentBorder} rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto`}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center scrim px-0 sm:px-4">
+      <div className={`w-full max-w-md sheet ${accentBorder} rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto`}>
         <div className="flex items-center justify-between mb-1">
           <h2 className="text-lg font-bold text-slate-100">Editar comida</h2>
           <button onClick={onCancel} aria-label="Cerrar edición" className="btn-icon hover:bg-slate-700">
@@ -2245,10 +2256,10 @@ function EditEntryModal({ isPlan, name, setName, kcal, setKcal, p, setP, c, setC
 function CatalogItemModal({ isNew, isFree, name, setName, kcal, setKcal, p, setP, c, setC, f, setF, onSave, onCancel, onDelete }) {
   const noun = isFree ? 'fuera de plan' : 'del plan';
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 px-0 sm:px-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center scrim px-0 sm:px-4">
       <div
-        className={`w-full max-w-md bg-slate-800 border rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto ${
-          isFree ? 'border-amber-500/30' : 'border-emerald-500/30'
+        className={`w-full max-w-md sheet rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto ${
+          isFree ? 'sheet-free' : 'sheet-plan'
         }`}
       >
         <div className="flex items-center justify-between mb-1">
@@ -2365,8 +2376,8 @@ function InstallGuideModal({ onClose }) {
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 px-0 sm:px-4">
-      <div className="w-full max-w-md bg-slate-800 border border-slate-700 rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center scrim px-0 sm:px-4">
+      <div className="w-full max-w-md sheet rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-1">
           <h2 className="text-lg font-bold text-slate-100">Instalar en tu iPhone</h2>
           <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-slate-700">
@@ -2450,8 +2461,8 @@ function SettingsModal({ tempGoals, setTempGoals, onSave, onCancel, onReset, onR
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 px-0 sm:px-4">
-      <div className="w-full max-w-md bg-slate-800 border border-slate-700 rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center scrim px-0 sm:px-4">
+      <div className="w-full max-w-md sheet rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-lg font-bold text-slate-100">Ajustes de mi plan</h2>
           <button onClick={onCancel} aria-label="Cerrar ajustes" className="btn-icon hover:bg-slate-700">

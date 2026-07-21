@@ -22,8 +22,8 @@ function RoutineManagerModal({ routines, activeRoutineId, onSelect, onRename, on
   const trainingDays = (r) => r.days.filter((d) => !d.isRest).length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 px-0 sm:px-4">
-      <div className="w-full max-w-md surface rounded-t-3xl sm:rounded-3xl p-5 max-h-[85vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center scrim px-0 sm:px-4">
+      <div className="w-full max-w-md sheet rounded-t-3xl sm:rounded-3xl p-5 max-h-[85vh] flex flex-col">
         <div className="flex items-center justify-between mb-1">
           <h2 className="text-lg font-bold text-slate-100">Mis rutinas</h2>
           <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-neutral-800">
@@ -123,8 +123,8 @@ function NewRoutineModal({ onCreate, onClose }) {
   const [name, setName] = useState('');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 px-0 sm:px-4">
-      <div className="w-full max-w-md surface rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center scrim px-0 sm:px-4">
+      <div className="w-full max-w-md sheet rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-slate-100">Nueva rutina semanal</h2>
           <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-neutral-800">
@@ -167,8 +167,8 @@ function DayEditor({ day, exercises, exercisesById, onAddExercise, onRemoveExerc
   const [pickerOpen, setPickerOpen] = useState(false);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 px-0 sm:px-4">
-      <div className="w-full max-w-md surface rounded-t-3xl sm:rounded-3xl p-5 max-h-[85vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center scrim px-0 sm:px-4">
+      <div className="w-full max-w-md sheet rounded-t-3xl sm:rounded-3xl p-5 max-h-[85vh] flex flex-col">
         <div className="flex items-center justify-between mb-1">
           <div>
             <p className="label-section text-slate-500">{day.weekday}</p>

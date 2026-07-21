@@ -33,8 +33,8 @@ export default function QuantitySheet({ food, mode = 'plan', onConfirm, onCancel
 
   const accent =
     mode === 'plan'
-      ? { ring: '', chip: 'bg-emerald-500 text-slate-900', btn: 'bg-emerald-500 hover:bg-emerald-400 text-slate-900', border: 'border-emerald-500/30' }
-      : { ring: '', chip: 'bg-amber-500 text-slate-900', btn: 'bg-amber-500 hover:bg-amber-400 text-slate-900', border: 'border-amber-500/30' };
+      ? { ring: '', chip: 'bg-emerald-500 text-slate-900', btn: 'bg-emerald-500 hover:bg-emerald-400 text-slate-900', border: 'sheet-plan' }
+      : { ring: '', chip: 'bg-amber-500 text-slate-900', btn: 'bg-amber-500 hover:bg-amber-400 text-slate-900', border: 'sheet-free' };
 
   const pick = (value) => {
     setQty(value);
@@ -42,9 +42,9 @@ export default function QuantitySheet({ food, mode = 'plan', onConfirm, onCancel
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 px-0 sm:px-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center scrim px-0 sm:px-4">
       <div
-        className={`w-full max-w-md bg-slate-800 border ${accent.border} rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto`}
+        className={`w-full max-w-md sheet ${accent.border} rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto`}
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }}
       >
         <div className="flex items-start justify-between gap-3 mb-1">

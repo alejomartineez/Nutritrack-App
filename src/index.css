@@ -133,21 +133,184 @@
     --accent-hairline: theme('colors.sueno.900');
   }
 
-  /* Barra de navegación flotante.
+  /* Barra de navegación flotante — cristal líquido.
      En UI oscura "elevado" se lee como MÁS CLARO, no como más sombra: antes
      usaba ink-900, que es exactamente el color del fondo de página, así que por
-     más sombra que le pusiéramos seguía fundiéndose. Ahora la superficie es
-     varios pasos más clara que el fondo, con un borde más marcado que el de las
-     cards y una sombra larga que la despega del contenido que pasa por debajo. */
+     más sombra que le pusiéramos seguía fundiéndose.
+
+     Lo que hace que se lea como vidrio y no como "un panel medio transparente"
+     son tres capas que trabajan juntas, no la transparencia sola:
+
+     1. EL DESENFOQUE ES LO QUE APORTA OPACIDAD. Antes el relleno estaba al 92%:
+        con eso el blur no tenía nada que hacer y la barra era, en la práctica,
+        sólida. Ahora el relleno baja al 55% y el trabajo lo hace un blur denso
+        (32px) con saturación empujada: el contenido que pasa por debajo se
+        adivina como manchas de color difusas —que es exactamente lo que se ve a
+        través de vidrio esmerilado— y el texto de arriba sigue legible porque
+        detrás no queda ningún detalle con el que competir. El `brightness` de
+        más levanta el conjunto lo justo para que el vidrio se despegue del
+        fondo incluso donde no pasa nada por debajo.
+
+     2. LA LUZ NO ES UNIFORME. Un `background-image` en degradado —blanco al 9%
+        arriba, nada a media altura— simula la luz cenital entrando por el canto
+        superior y muriendo hacia abajo. Sin este gradiente la superficie parece
+        plástico tintado: es la caída lo que la vuelve vidrio.
+
+     3. EL CANTO TIENE ESPESOR. Los tres primeros `inset` son el bisel: filo
+        superior brillante (el borde que capta la luz), aro completo tenue (el
+        canto lateral) y una línea oscura abajo (la sombra propia del espesor
+        del vidrio). El cuarto inset es la refracción: un halo interior difuso
+        que reparte la luz del filo hacia adentro en vez de cortarla de golpe.
+
+     El borde exterior queda casi al mínimo a propósito: el bisel ya está dibujado
+     con insets y un borde marcado encima lo aplana. */
   .nav-floating {
-    background-color: rgba(24, 29, 34, 0.92);
-    backdrop-filter: blur(20px) saturate(1.2);
-    -webkit-backdrop-filter: blur(20px) saturate(1.2);
-    border: 1px solid rgba(74, 84, 92, 0.55);
+    background-color: rgba(26, 32, 38, 0.55);
+    background-image: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.09) 0%,
+      rgba(255, 255, 255, 0.025) 45%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    backdrop-filter: blur(32px) saturate(180%) brightness(1.18);
+    -webkit-backdrop-filter: blur(32px) saturate(180%) brightness(1.18);
+    border: 1px solid rgba(255, 255, 255, 0.09);
     box-shadow:
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.07),
-      0 8px 24px -6px rgba(0, 0, 0, 0.85),
-      0 2px 6px -2px rgba(0, 0, 0, 0.7);
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.28),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+      inset 0 -1px 0 0 rgba(0, 0, 0, 0.5),
+      inset 0 14px 26px -20px rgba(255, 255, 255, 0.5),
+      0 14px 34px -8px rgba(0, 0, 0, 0.8),
+      0 4px 12px -4px rgba(0, 0, 0, 0.6);
+  }
+
+  /* Sin soporte de backdrop-filter no hay vidrio posible: lo que se ve es un
+     panel al 55% con el contenido nítido pasando por debajo, ilegible. En ese
+     caso volvemos a una superficie sólida. */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .nav-floating {
+      background-color: rgba(24, 29, 34, 0.97);
+    }
+  }
+
+  /* Indicador de pestaña activa. El color de módulo lo sigue poniendo la clase
+     de Tailwind desde el JSX (`bg-sueno-500/25` y compañía); acá va solo el
+     acabado: un filo superior claro y una sombra corta hacia abajo para que la
+     pastilla se lea como una lente apoyada SOBRE el vidrio, no como un
+     rectángulo pintado dentro. */
+  .nav-indicator {
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.16),
+      inset 0 -1px 0 0 rgba(0, 0, 0, 0.18),
+      0 1px 3px rgba(0, 0, 0, 0.25);
+  }
+
+  /* Fondo de modal/hoja. Reemplaza los `bg-black/60` sueltos (11 en 6 archivos,
+     uno de ellos al 50% sin razón).
+
+     Lo importante acá no es oscurecer más: es DESENFOCAR EL FONDO. Un velo negro
+     plano tapa el contenido pero lo deja en el mismo plano —la hoja parece
+     pegada encima de una captura de pantalla—. Al desenfocar, lo de atrás
+     retrocede de verdad y la hoja queda flotando en un espacio con profundidad,
+     que es lo que hace iOS. La desaturación leve ayuda: el color de atrás pierde
+     fuerza y deja de competir con los controles de la hoja.
+
+     Con el fondo ya desenfocado, la hoja de adelante puede ser más translúcida
+     sin perder legibilidad: no hay ningún detalle nítido detrás con el que su
+     texto pueda confundirse. Las dos capas se habilitan mutuamente. */
+  .scrim {
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(14px) saturate(0.85);
+    -webkit-backdrop-filter: blur(14px) saturate(0.85);
+  }
+
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .scrim { background-color: rgba(0, 0, 0, 0.72); }
+  }
+
+  /* Panel de hoja/modal — material grueso.
+     Unifica tres tratamientos que convivían: `bg-slate-800 + border-slate-700`,
+     `.surface` y un `bg-neutral-900 + border-t` suelto.
+
+     LA HOJA NO LLEVA `backdrop-filter` PROPIO, Y ES A PROPÓSITO. Vive dentro del
+     `.scrim`, que sí lo tiene, y `backdrop-filter` anidado está roto: en
+     Chromium el panel hijo directamente no se pinta (verificado en el preview:
+     apagando el blur del scrim, la hoja reaparecía), y en iOS Safari el
+     resultado va de parpadeos a capas negras. Además sería trabajo repetido: lo
+     que la hoja tendría para desenfocar ya lo desenfocó el velo.
+
+     Así que el material lo arma sin filtro: translúcida al 92% sobre un velo que
+     ya está borroso. Se ve exactamente igual que si tuviera blur propio —detrás
+     hay manchas difusas, no contenido nítido— y encima queda más legible, que es
+     lo que corresponde en un panel lleno de inputs y cifras. La regla de la app
+     queda: vidrio fino y con filtro donde mirás a través (la barra), vidrio
+     grueso y sin filtro donde te tenés que concentrar (las hojas).
+
+     El borde superior va más brillante que los laterales: es el canto que da a
+     la luz cuando la hoja sube desde abajo, y es lo que la separa del velo en el
+     punto donde se tocan. */
+  .sheet {
+    background-color: rgba(18, 23, 28, 0.92);
+    background-image: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.06) 0%,
+      rgba(255, 255, 255, 0) 180px
+    );
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.22),
+      inset 0 20px 30px -28px rgba(255, 255, 255, 0.45),
+      0 -8px 40px -8px rgba(0, 0, 0, 0.7);
+  }
+
+  /* Sin blur en el velo, detrás de la hoja queda contenido nítido: ahí la
+     translucidez sí molesta y el panel pasa a sólido. */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .sheet { background-color: theme('colors.ink.800'); }
+  }
+
+  /* Variante de acento: el hairline de la hoja toma el tono del contexto
+     (verde el plan, ámbar lo libre) sin teñir el material entero. */
+  .sheet-plan    { border-color: rgba(38, 165, 120, 0.32); }
+  .sheet-free    { border-color: rgba(188, 136, 64, 0.32); }
+  .sheet-entreno { border-color: rgba(176, 116, 63, 0.32); }
+
+  /* Header pegajoso con desenfoque progresivo.
+     El vidrio no lo pinta el header sino un ::before: si el desenfoque fuera del
+     propio header, la máscara de abajo se comería también el título y los
+     botones. Así el material se difumina y el contenido queda entero.
+
+     La máscara es lo que evita el problema clásico del header de vidrio: sin
+     ella, el material termina en una línea horizontal dura a media pantalla que
+     se lee como un borde falso. Con el degradado, el desenfoque se disuelve y el
+     contenido parece entrar en foco a medida que sale de abajo del header.
+
+     `z-index: -1` lo mete detrás del contenido del propio header pero delante de
+     la página: el ::before pinta en la capa de z negativos del contexto de
+     apilamiento que crea el header, que está por encima de todo lo que quedó
+     debajo en orden de pintado. */
+  .app-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+
+  .app-header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: linear-gradient(
+      to bottom,
+      rgba(10, 12, 14, 0.72) 0%,
+      rgba(10, 12, 14, 0.45) 60%,
+      rgba(10, 12, 14, 0) 100%
+    );
+    backdrop-filter: blur(18px) saturate(180%);
+    -webkit-backdrop-filter: blur(18px) saturate(180%);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 55%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 55%, transparent 100%);
   }
 
   /* Superficie de card estándar: hairline en vez de sombra difusa, más un

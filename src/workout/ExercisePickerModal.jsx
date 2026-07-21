@@ -26,8 +26,8 @@ export default function ExercisePickerModal({ title, exercises, onSelect, onCrea
   };
 
   return (
-    <div className="fixed inset-0 z-[55] flex items-end sm:items-center justify-center bg-black/60 px-0 sm:px-4">
-      <div className="w-full max-w-md surface rounded-t-3xl sm:rounded-3xl p-5 max-h-[85vh] flex flex-col">
+    <div className="fixed inset-0 z-[55] flex items-end sm:items-center justify-center scrim px-0 sm:px-4">
+      <div className="w-full max-w-md sheet rounded-t-3xl sm:rounded-3xl p-5 max-h-[85vh] flex flex-col">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-bold text-slate-100">{title || 'Elegí un ejercicio'}</h2>
           <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-neutral-800">
