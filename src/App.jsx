@@ -39,6 +39,7 @@ import {
 } from './lib/nutritionCalcs';
 import QuantitySheet from './QuantitySheet';
 import { useCountUp, prefersReducedMotion } from './lib/motion';
+import { useKeyboardInset } from './lib/viewport';
 import { theme, macroColors, celebrationColors } from './lib/theme';
 
 // ---------------------------------------------------------------------------
@@ -850,6 +851,10 @@ export default function NutriTrackApp() {
 
   const activeNavIndex = Math.max(0, navTabs.findIndex((t) => t.id === activeTab));
 
+  // Cuánto tapa el teclado por debajo. La barra se sube esa cantidad para
+  // quedar apoyada encima del teclado en vez de que iOS la mueva sola.
+  const keyboardInset = useKeyboardInset();
+
   // ---------------------------------------------------------------------
   // RENDER
   // ---------------------------------------------------------------------
@@ -928,7 +933,15 @@ export default function NutriTrackApp() {
         )}
 
         {/* CONTENIDO */}
-        <main className="flex-1 overflow-y-auto px-5 pb-32">
+        <main
+          className="flex-1 overflow-y-auto px-5 pb-32"
+          style={
+            // Con el teclado abierto la barra sube, así que el colchón de abajo
+            // tiene que crecer lo mismo: si no, el contenido que queda detrás de
+            // la barra no se puede scrollear para sacarlo de ahí.
+            keyboardInset > 0 ? { paddingBottom: `calc(8rem + ${keyboardInset}px)` } : undefined
+          }
+        >
           {/* La `key` fuerza el remontaje al cambiar de pestaña, que es lo que
               dispara la animación de entrada. No cambia el comportamiento: cada
               pestaña ya se desmontaba al salir (render condicional). */}
@@ -1017,8 +1030,19 @@ export default function NutriTrackApp() {
             un pie pegado a la pantalla. El safe-area va en el contenedor externo
             para que el separado del borde sea el mismo en iPhone con y sin notch. */}
         <nav
-          className="fixed bottom-0 inset-x-0 z-30 flex justify-center px-4 pointer-events-none"
-          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)' }}
+          className="fixed bottom-0 inset-x-0 z-30 flex justify-center px-4 pointer-events-none will-change-transform"
+          style={{
+            // Con el teclado abierto el safe-area de abajo no aplica (el
+            // indicador de home queda tapado), así que solo se deja el respiro.
+            paddingBottom: keyboardInset > 0
+              ? '0.75rem'
+              : 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)',
+            // Se sube lo que tape el teclado. Sin esto, en iOS la barra queda
+            // anclada al layout viewport (detrás del teclado) y Safari la
+            // reacomoda sola al scrollear, apareciendo sobre el contenido.
+            transform: keyboardInset > 0 ? `translate3d(0, -${keyboardInset}px, 0)` : undefined,
+            transition: 'transform 0.2s ease-out',
+          }}
         >
           <div className="relative w-full max-w-md rounded-2xl nav-floating px-2 py-2 flex pointer-events-auto">
             {/* Indicador deslizante. Es UN solo elemento que se desplaza al tab
