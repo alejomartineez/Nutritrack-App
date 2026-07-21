@@ -124,12 +124,26 @@ const emptyLog = () => ({ water: 0, planMeals: [], freeMeals: [] });
 const nowHM = () =>
   new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 
+/** Orden de las pestañas en la barra inferior. Solo define hacia qué lado desliza
+ *  la transición; incluye las opcionales (sueño/entreno) aunque estén apagadas. */
+const TAB_ORDER = ['dia', 'registrar', 'sueno', 'entreno', 'progreso'];
+
 // ---------------------------------------------------------------------------
 // COMPONENTE PRINCIPAL
 // ---------------------------------------------------------------------------
 
 export default function NutriTrackApp() {
   const [activeTab, setActiveTab] = useState('dia');
+  // Dirección del deslizamiento entre pestañas: la nueva entra desde el lado al
+  // que te movés en la barra, así el gesto tiene sentido espacial. Se calcula al
+  // cambiar de tab (no en un efecto) para que el primer frame ya salga bien.
+  const [tabDir, setTabDir] = useState('forward');
+
+  const goToTab = (next) => {
+    if (next === activeTab) return;
+    setTabDir(TAB_ORDER.indexOf(next) >= TAB_ORDER.indexOf(activeTab) ? 'forward' : 'back');
+    setActiveTab(next);
+  };
   const [showSettings, setShowSettings] = useState(false);
   const [showInstallGuide, setShowInstallGuide] = useState(false);
   // Intro de primera vez: se muestra una sola vez y deja un flag al cerrarse.
@@ -341,10 +355,12 @@ export default function NutriTrackApp() {
     }
   }, [modules, loaded]);
 
-  // Si se desactiva el módulo de la pestaña actual, volver a Mi Día
+  // Si se desactiva el módulo de la pestaña actual, volver a Mi Día. Va por
+  // goToTab para que el deslizamiento salga hacia atrás, que es el sentido real
+  // del movimiento (Mi Día está a la izquierda de ambos módulos en la barra).
   useEffect(() => {
-    if (activeTab === 'entreno' && !modules.entreno) setActiveTab('dia');
-    if (activeTab === 'sueno' && !modules.sueno) setActiveTab('dia');
+    if (activeTab === 'entreno' && !modules.entreno) goToTab('dia');
+    if (activeTab === 'sueno' && !modules.sueno) goToTab('dia');
   }, [modules, activeTab]);
 
   // Totales del día
@@ -877,7 +893,14 @@ export default function NutriTrackApp() {
         )}
 
         {/* CONTENIDO */}
-        <main className="flex-1 overflow-y-auto px-5 pb-28 space-y-5">
+        <main className="flex-1 overflow-y-auto px-5 pb-32">
+          {/* La `key` fuerza el remontaje al cambiar de pestaña, que es lo que
+              dispara la animación de entrada. No cambia el comportamiento: cada
+              pestaña ya se desmontaba al salir (render condicional). */}
+          <div
+            key={activeTab}
+            className={`space-y-5 ${tabDir === 'forward' ? 'anim-tab-forward' : 'anim-tab-back'}`}
+          >
           {(activeTab === 'dia' || activeTab === 'registrar') && (
             <DateNav
               isToday={isToday}
@@ -900,10 +923,10 @@ export default function NutriTrackApp() {
               log={log}
               removeEntry={removeEntry}
               onEdit={openEditEntry}
-              onRegister={() => setActiveTab('registrar')}
+              onRegister={() => goToTab('registrar')}
               quietStart={isFreshStart}
               habitStrip={isToday ? <DailyRings log={log} modules={modules} /> : null}
-              moduleCards={isToday ? <TodayDashboard onGoToTab={setActiveTab} modules={modules} /> : null}
+              moduleCards={isToday ? <TodayDashboard onGoToTab={goToTab} modules={modules} /> : null}
             />
           )}
 
@@ -951,22 +974,26 @@ export default function NutriTrackApp() {
           {activeTab === 'entreno' && modules.entreno && <WorkoutModule />}
 
           {activeTab === 'sueno' && modules.sueno && <SleepModule />}
+          </div>
         </main>
 
-        {/* NAV INFERIOR */}
-        <nav className="fixed bottom-0 inset-x-0 flex justify-center pointer-events-none">
-          <div
-            className="w-full max-w-md bg-slate-900/80 backdrop-blur-xl border-t border-slate-700 px-2 pt-2 flex justify-around pointer-events-auto"
-            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.25rem)' }}
-          >
-            <NavButton icon={Home} label="Mi Día" active={activeTab === 'dia'} onClick={() => setActiveTab('dia')} />
-            <NavButton icon={PlusCircle} label="Registrar" active={activeTab === 'registrar'} onClick={() => setActiveTab('registrar')} />
+        {/* NAV INFERIOR — flotante: despegada del borde y con todas las esquinas
+            redondeadas, así se lee como un control encima del contenido y no como
+            un pie pegado a la pantalla. El safe-area va en el contenedor externo
+            para que el separado del borde sea el mismo en iPhone con y sin notch. */}
+        <nav
+          className="fixed bottom-0 inset-x-0 z-30 flex justify-center px-4 pointer-events-none"
+          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)' }}
+        >
+          <div className="w-full max-w-md rounded-2xl bg-slate-900/85 backdrop-blur-xl border border-slate-700 shadow-raised px-2 py-2 flex justify-around pointer-events-auto">
+            <NavButton icon={Home} label="Mi Día" active={activeTab === 'dia'} onClick={() => goToTab('dia')} />
+            <NavButton icon={PlusCircle} label="Registrar" active={activeTab === 'registrar'} onClick={() => goToTab('registrar')} />
             {modules.sueno && (
               <NavButton
                 icon={MoonStar}
                 label="Sueño"
                 active={activeTab === 'sueno'}
-                onClick={() => setActiveTab('sueno')}
+                onClick={() => goToTab('sueno')}
                 activeColorClass="text-sueno-300"
                 activeBgClass="bg-sueno-500/20"
               />
@@ -976,12 +1003,12 @@ export default function NutriTrackApp() {
                 icon={Dumbbell}
                 label="Entreno"
                 active={activeTab === 'entreno'}
-                onClick={() => setActiveTab('entreno')}
+                onClick={() => goToTab('entreno')}
                 activeColorClass="text-entreno-300"
                 activeBgClass="bg-entreno-500/20"
               />
             )}
-            <NavButton icon={TrendingUp} label="Progreso" active={activeTab === 'progreso'} onClick={() => setActiveTab('progreso')} />
+            <NavButton icon={TrendingUp} label="Progreso" active={activeTab === 'progreso'} onClick={() => goToTab('progreso')} />
           </div>
         </nav>
 

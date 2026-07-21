@@ -161,14 +161,29 @@
     to   { opacity: 1; transform: none; }
   }
 
+  /* Cambio de pestaña: el contenido nuevo entra desde el lado hacia el que te
+     moviste en la barra (adelante = por la derecha). El recorrido es corto a
+     propósito —18px—: lo que vende el movimiento es la curva, no la distancia,
+     y un desplazamiento largo se siente lento cuando cambiás de tab seguido. */
+  @keyframes tab-forward {
+    from { opacity: 0; transform: translate3d(18px, 0, 0); }
+    to   { opacity: 1; transform: none; }
+  }
+  @keyframes tab-back {
+    from { opacity: 0; transform: translate3d(-18px, 0, 0); }
+    to   { opacity: 1; transform: none; }
+  }
+
   /* Curvas de salida propias: arrancan rápido y frenan largo. Se sienten
      más "resueltas" que ease-out y son lo que separa una animación de UI
      de una animación de plantilla. */
-  .anim-meal-in    { animation: meal-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) both; }
-  .anim-meal-out   { animation: meal-out 0.2s cubic-bezier(0.4, 0, 1, 1) both; }
-  .anim-fade-in-up { animation: fade-in-up 0.42s cubic-bezier(0.16, 1, 0.3, 1) both; }
-  .anim-glow       { animation: celebrate-glow 1.1s ease-out; }
-  .confetti-piece  { animation: confetti-fall 1s ease-out forwards; }
+  .anim-meal-in     { animation: meal-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .anim-meal-out    { animation: meal-out 0.2s cubic-bezier(0.4, 0, 1, 1) both; }
+  .anim-fade-in-up  { animation: fade-in-up 0.42s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .anim-glow        { animation: celebrate-glow 1.1s ease-out; }
+  .confetti-piece   { animation: confetti-fall 1s ease-out forwards; }
+  .anim-tab-forward { animation: tab-forward 0.26s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .anim-tab-back    { animation: tab-back 0.26s cubic-bezier(0.16, 1, 0.3, 1) both; }
 
   /* Feedback táctil: mini "hundido" al presionar cualquier control. */
   button:active { transform: scale(0.98); }
