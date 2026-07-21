@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Home, PlusCircle, TrendingUp, Settings, Droplet, Droplets, Trash2, X, Check,
-  ChevronRight, ChevronLeft, Sparkles, Lightbulb, Award, Plus, Minus,
+  ChevronRight, ChevronLeft, ChevronDown, Sparkles, Lightbulb, Award, Plus, Minus,
   Save, RotateCcw, Info, Utensils, Coffee, Pencil, Flame, Dumbbell, MoonStar,
   Download, Share, SquarePlus, Upload, ShieldCheck, Search, Bell, Clock, LayoutGrid, Calculator,
   Loader2, Barcode, ScanLine,
@@ -815,6 +815,35 @@ export default function NutriTrackApp() {
     [weekStats]
   );
 
+  // Pestañas visibles de la barra inferior. Se arma como lista (y no como JSX
+  // suelto) porque el indicador deslizante necesita saber cuántos slots hay y en
+  // cuál está parado; sueño y entreno pueden estar apagados desde Ajustes.
+  const navTabs = useMemo(
+    () =>
+      [
+        { id: 'dia', icon: Home, label: 'Mi Día' },
+        { id: 'registrar', icon: PlusCircle, label: 'Registrar' },
+        modules.sueno && {
+          id: 'sueno',
+          icon: MoonStar,
+          label: 'Sueño',
+          activeColorClass: 'text-sueno-200',
+          indicatorClass: 'bg-sueno-500/25',
+        },
+        modules.entreno && {
+          id: 'entreno',
+          icon: Dumbbell,
+          label: 'Entreno',
+          activeColorClass: 'text-entreno-200',
+          indicatorClass: 'bg-entreno-500/25',
+        },
+        { id: 'progreso', icon: TrendingUp, label: 'Progreso' },
+      ].filter(Boolean),
+    [modules]
+  );
+
+  const activeNavIndex = Math.max(0, navTabs.findIndex((t) => t.id === activeTab));
+
   // ---------------------------------------------------------------------
   // RENDER
   // ---------------------------------------------------------------------
@@ -985,30 +1014,30 @@ export default function NutriTrackApp() {
           className="fixed bottom-0 inset-x-0 z-30 flex justify-center px-4 pointer-events-none"
           style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)' }}
         >
-          <div className="w-full max-w-md rounded-2xl bg-slate-900/85 backdrop-blur-xl border border-slate-700 shadow-raised px-2 py-2 flex justify-around pointer-events-auto">
-            <NavButton icon={Home} label="Mi Día" active={activeTab === 'dia'} onClick={() => goToTab('dia')} />
-            <NavButton icon={PlusCircle} label="Registrar" active={activeTab === 'registrar'} onClick={() => goToTab('registrar')} />
-            {modules.sueno && (
+          <div className="relative w-full max-w-md rounded-2xl nav-floating px-2 py-2 flex pointer-events-auto">
+            {/* Indicador deslizante. Es UN solo elemento que se desplaza al tab
+                activo, en vez de una pastilla por botón que aparece y desaparece:
+                así el cambio de sección se ve como un movimiento continuo. Los
+                slots son todos del mismo ancho (flex-1), por eso alcanza con
+                correrlo un múltiplo de su propio ancho. */}
+            <span
+              aria-hidden="true"
+              className={`absolute top-2 bottom-2 left-2 rounded-xl transition-[transform,background-color] duration-300 ease-out motion-reduce:transition-none ${navTabs[activeNavIndex]?.indicatorClass ?? 'bg-emerald-500/20'}`}
+              style={{
+                width: `calc((100% - 1rem) / ${navTabs.length})`,
+                transform: `translateX(${activeNavIndex * 100}%)`,
+              }}
+            />
+            {navTabs.map((t) => (
               <NavButton
-                icon={MoonStar}
-                label="Sueño"
-                active={activeTab === 'sueno'}
-                onClick={() => goToTab('sueno')}
-                activeColorClass="text-sueno-300"
-                activeBgClass="bg-sueno-500/20"
+                key={t.id}
+                icon={t.icon}
+                label={t.label}
+                active={activeTab === t.id}
+                onClick={() => goToTab(t.id)}
+                activeColorClass={t.activeColorClass}
               />
-            )}
-            {modules.entreno && (
-              <NavButton
-                icon={Dumbbell}
-                label="Entreno"
-                active={activeTab === 'entreno'}
-                onClick={() => goToTab('entreno')}
-                activeColorClass="text-entreno-300"
-                activeBgClass="bg-entreno-500/20"
-              />
-            )}
-            <NavButton icon={TrendingUp} label="Progreso" active={activeTab === 'progreso'} onClick={() => goToTab('progreso')} />
+            ))}
           </div>
         </nav>
 
@@ -1147,28 +1176,29 @@ function NavButton({
   label,
   active,
   onClick,
-  activeColorClass = 'text-emerald-400',
-  activeBgClass = 'bg-emerald-500/15',
+  activeColorClass = 'text-emerald-300',
 }) {
   return (
     <button
       onClick={onClick}
       aria-current={active ? 'page' : undefined}
-      className={`flex flex-col items-center gap-0.5 px-1 pt-1 pb-0.5 rounded-xl focus-visible:ring-2 focus-visible:ring-emerald-400 transition-colors ${
-        active ? activeColorClass : 'text-slate-500 hover:text-slate-400'
+      className={`relative flex-1 flex flex-col items-center gap-1 py-1.5 rounded-xl focus-visible:ring-2 focus-visible:ring-emerald-400 transition-colors duration-200 ${
+        active ? activeColorClass : 'text-slate-500 hover:text-slate-300'
       }`}
     >
-      {/* Pastilla tenue detrás del ícono: marca sutil de "estás acá". Mantiene el
-          mismo padding activa/inactiva para no mover el layout, solo cambia el fondo. */}
-      <span className={`flex items-center justify-center rounded-full px-4 py-1 transition-colors ${active ? activeBgClass : 'bg-transparent'}`}>
-        <Icon className="w-5 h-5" />
+      {/* El fondo activo ya no vive acá: lo dibuja el indicador deslizante del
+          contenedor, que se mueve entre pestañas en vez de aparecer y desaparecer. */}
+      <Icon className="w-5 h-5" />
+      <span className={`text-[11px] leading-none transition-all duration-200 ${active ? 'font-semibold' : 'font-medium'}`}>
+        {label}
       </span>
-      <span className={`text-[11px] transition-all ${active ? 'font-semibold' : 'font-medium'}`}>{label}</span>
     </button>
   );
 }
 
 function FeedbackBanner({ feedback }) {
+  const [expanded, setExpanded] = useState(false);
+
   const styleFor = (type) => {
     switch (type) {
       case 'positive':
@@ -1184,18 +1214,52 @@ function FeedbackBanner({ feedback }) {
     }
   };
 
+  if (feedback.length === 0) return null;
+
+  // Antes se apilaban los 3-4 consejos a la vez: ocupaban media pantalla, todos
+  // con el mismo peso visual, y competían con el anillo. Ahora se muestra solo
+  // el primero (el de mayor prioridad, que es como los arma el useMemo) y el
+  // resto queda detrás de un toggle discreto. Mismo contenido, una sola cosa
+  // que leer al abrir la app.
+  const [primary, ...rest] = feedback;
+  const Banner = ({ f, style }) => {
+    const s = styleFor(f.type);
+    const Icon = s.icon;
+    return (
+      <div className={`rounded-2xl border px-4 py-3 flex items-start gap-3 ${s.wrap}`} style={style}>
+        <Icon className={`w-5 h-5 mt-0.5 shrink-0 ${s.iconClass}`} />
+        <p className="text-sm text-slate-200 leading-snug">{f.text}</p>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-2">
-      {feedback.map((f, i) => {
-        const s = styleFor(f.type);
-        const Icon = s.icon;
-        return (
-          <div key={i} className={`rounded-2xl border px-4 py-3 flex items-start gap-3 ${s.wrap}`}>
-            <Icon className={`w-5 h-5 mt-0.5 shrink-0 ${s.iconClass}`} />
-            <p className="text-sm text-slate-200 leading-snug">{f.text}</p>
-          </div>
-        );
-      })}
+      <Banner f={primary} />
+
+      {rest.length > 0 && (
+        <>
+          {expanded &&
+            rest.map((f, i) => (
+              // Cascada al desplegar: cada uno entra 60ms después del anterior.
+              // Que aparezcan de a uno es justamente lo que faltaba antes.
+              <div key={i} className="anim-fade-in-up" style={{ animationDelay: `${i * 60}ms` }}>
+                <Banner f={f} />
+              </div>
+            ))}
+
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            aria-expanded={expanded}
+            className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-slate-500 hover:text-slate-300 rounded-xl transition-colors"
+          >
+            <ChevronDown
+              className={`w-4 h-4 transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`}
+            />
+            {expanded ? 'Ocultar' : `${rest.length} consejo${rest.length === 1 ? '' : 's'} más`}
+          </button>
+        </>
+      )}
     </div>
   );
 }
