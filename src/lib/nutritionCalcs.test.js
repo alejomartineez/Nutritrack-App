@@ -6,6 +6,7 @@ import {
   round1,
   computeTotals,
   kcalFromMacros,
+  hasMacros,
   computeStreak,
   computeMacroSegments,
   mifflinStJeorBMR,
@@ -57,6 +58,18 @@ describe('round1', () => {
   });
 });
 
+describe('hasMacros', () => {
+  it('distingue un ítem completo de uno cargado solo con calorías', () => {
+    expect(hasMacros({ p: 20, c: 2, f: 30 })).toBe(true);
+    expect(hasMacros({ f: 0.2 })).toBe(true);
+    expect(hasMacros({ alc: 18.4 })).toBe(true); // solo alcohol también cuenta
+    expect(hasMacros({ kcal: 300 })).toBe(false);
+    expect(hasMacros({ kcal: 300, p: 0, c: 0, f: 0 })).toBe(false);
+    expect(hasMacros({})).toBe(false);
+    expect(hasMacros()).toBe(false);
+  });
+});
+
 describe('kcalFromMacros', () => {
   it('aplica los factores de Atwater 4/4/9', () => {
     expect(kcalFromMacros({ p: 20, c: 30, f: 10 })).toBe(290);
@@ -105,10 +118,19 @@ describe('computeTotals', () => {
     expect(computeTotals()).toEqual({ kcal: 0, p: 0, c: 0, f: 0, alc: 0 });
   });
 
-  it('una comida sin macros ya no infla el contador', () => {
-    // Antes sumaba 100 kcal contra macros en cero, que era la otra vía por la
-    // que el número grande se despegaba de las barras de abajo.
-    expect(computeTotals([{ kcal: 100 }])).toEqual({ kcal: 0, p: 0, c: 0, f: 0, alc: 0 });
+  it('una comida sin macros conserva sus calorías en vez de desaparecer', () => {
+    // Derivar acá daba 0 y borraba comida real del contador. Un ítem sin macros
+    // está incompleto, no descuadrado: se arregla completándolo (la fila lo
+    // marca), no descontándolo del día.
+    expect(computeTotals([{ kcal: 100 }])).toEqual({ kcal: 100, p: 0, c: 0, f: 0, alc: 0 });
+  });
+
+  it('mezcla ítems completos e incompletos sin perder ninguno', () => {
+    const t = computeTotals([
+      { kcal: 400, p: 20, c: 2, f: 30 }, // completo: manda el macro (358)
+      { kcal: 250 }, // incompleto: manda su kcal
+    ]);
+    expect(t.kcal).toBe(608);
   });
 
   it('acumula el alcohol aparte y lo suma a las kcal', () => {
@@ -220,9 +242,9 @@ describe('scaleFood', () => {
     expect(scaleFood(banana, NaN).kcal).toBe(117);
   });
 
-  it('un alimento sin macros escala a cero kcal, no arrastra el campo kcal', () => {
+  it('un alimento sin macros escala su kcal, que es el único dato que tiene', () => {
     const r = scaleFood({ name: 'Sin datos', kcal: 100 }, 2);
-    expect(r).toMatchObject({ kcal: 0, p: 0, c: 0, f: 0 });
+    expect(r).toMatchObject({ kcal: 200, p: 0, c: 0, f: 0 });
   });
 
   it('escala el alcohol y lo cuenta en las kcal', () => {

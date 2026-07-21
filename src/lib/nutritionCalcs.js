@@ -59,11 +59,23 @@ export const ATWATER = { protein: 4, carbs: 4, fat: 9, alcohol: 7 };
  * una cerveza pasaría de 205 a 76 kcal. Vale 0 para todo alimento sólido, con
  * lo cual para el 99% del catálogo esto es literalmente 4p + 4c + 9f.
  */
-export const kcalFromMacros = (m = {}) =>
-  (m.p || 0) * ATWATER.protein +
-  (m.c || 0) * ATWATER.carbs +
-  (m.f || 0) * ATWATER.fat +
-  (m.alc || 0) * ATWATER.alcohol;
+export const hasMacros = (m = {}) => Boolean(m.p || m.c || m.f || m.alc);
+
+export const kcalFromMacros = (m = {}) => {
+  // Sin NINGÚN macro cargado no hay nada que derivar, así que manda el `kcal`
+  // del ítem. Derivar acá daba 0 y hacía desaparecer comida real del contador:
+  // un ítem cargado a las apuradas con solo las calorías pasaba a valer nada.
+  // Ese caso no es una caloría "desalineada" (el problema que vinimos a
+  // resolver) sino un ítem incompleto, y se resuelve completándolo, no
+  // borrándolo. La fila lo marca para que se pueda arreglar.
+  if (!hasMacros(m)) return m.kcal || 0;
+  return (
+    (m.p || 0) * ATWATER.protein +
+    (m.c || 0) * ATWATER.carbs +
+    (m.f || 0) * ATWATER.fat +
+    (m.alc || 0) * ATWATER.alcohol
+  );
+};
 
 /**
  * Suma los macros de todas las comidas del día (plan + libres).
@@ -220,7 +232,11 @@ export const scaleFood = (food, qty) => {
   // valor original: si el ítem venía descuadrado, escalarlo multiplicaba también
   // el descuadre (los "3 Huevos doble yema" tenían +42 kcal de gap, y al
   // registrarlos ×1.3 el gap pasaba a +55.7).
-  scaled.kcal = Math.round(kcalFromMacros(scaled));
+  // Si el ítem no trae macros no hay nada que derivar, y ahí sí se escala el
+  // `kcal` original: es el único dato que tiene.
+  scaled.kcal = hasMacros(scaled)
+    ? Math.round(kcalFromMacros(scaled))
+    : Math.round((food.kcal || 0) * safe);
   return scaled;
 };
 

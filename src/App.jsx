@@ -4,7 +4,7 @@ import {
   ChevronRight, ChevronLeft, ChevronDown, Sparkles, Lightbulb, Award, Plus, Minus,
   Save, RotateCcw, Info, Utensils, Coffee, Pencil, Flame, Dumbbell, MoonStar,
   Download, Share, SquarePlus, Upload, ShieldCheck, Search, Bell, Clock, LayoutGrid, Calculator,
-  Loader2, Barcode, ScanLine,
+  Loader2, Barcode, ScanLine, AlertCircle,
 } from 'lucide-react';
 import WorkoutModule from './workout/WorkoutModule';
 import SleepModule from './sleep/SleepModule';
@@ -37,6 +37,7 @@ import {
   computeMacroSegments,
   scaleFood,
   kcalFromMacros,
+  hasMacros,
 } from './lib/nutritionCalcs';
 import QuantitySheet from './QuantitySheet';
 import { useCountUp, prefersReducedMotion } from './lib/motion';
@@ -492,15 +493,25 @@ export default function NutriTrackApp() {
   const saveEditEntry = () => {
     if (!editingEntry) return;
     const kcalNum = parseFloat(editKcal);
-    if (!editName.trim() || isNaN(kcalNum) || kcalNum <= 0) return;
+    const macros = {
+      p: parseFloat(editP) || 0,
+      c: parseFloat(editC) || 0,
+      f: parseFloat(editF) || 0,
+    };
+    // Alcanza con el nombre y CON QUE HAYA ALGO: macros o calorías. Antes se
+    // exigía `kcal > 0`, y eso dejaba encerrada a una comida que hubiera
+    // quedado en 0: al abrirla, el campo venía en 0 y guardar no hacía nada,
+    // así que no había forma de completarle los macros desde la UI.
+    const tieneAlgo = kcalNum > 0 || hasMacros(macros);
+    if (!editName.trim() || !tieneAlgo) return;
     const updated = {
       id: editingEntry.id,
       time: editingEntry.time,
       name: editName.trim(),
-      kcal: kcalNum,
-      p: parseFloat(editP) || 0,
-      c: parseFloat(editC) || 0,
-      f: parseFloat(editF) || 0,
+      // Con macros cargados el kcal se deriva (invariante de la app); sin
+      // macros se respeta lo que se tipeó, que es el único dato disponible.
+      kcal: hasMacros(macros) ? Math.round(kcalFromMacros(macros)) : kcalNum,
+      ...macros,
     };
     setLog((prev) => ({
       ...prev,
@@ -1562,10 +1573,28 @@ function TabMiDia({
                       catálogo). Sin él la fila de una cerveza dice "205 kcal ·
                       P 2 · C 17 · G 0", que a ojo no cierra: las 129 kcal que
                       faltan son etanol y no viven en ningún macro. */}
+                  {/* Los `|| 0` no son decorativos: una comida vieja puede no
+                      tener la clave del macro (no es 0, no existe), y round1()
+                      de undefined imprimía "P NaNg". */}
                   <p className="text-xs text-slate-400 font-mono mt-0.5">
-                    {Math.round(kcalFromMacros(entry))} kcal · P {round1(entry.p)}g · C {round1(entry.c)}g · G {round1(entry.f)}g
+                    {Math.round(kcalFromMacros(entry))} kcal · P {round1(entry.p || 0)}g · C{' '}
+                    {round1(entry.c || 0)}g · G {round1(entry.f || 0)}g
                     {entry.alc ? ` · Alc ${round1(entry.alc)}g` : ''}
                   </p>
+                  {/* Comida cargada sin macros: sus calorías cuentan igual (por
+                      eso el fallback en kcalFromMacros) pero no aportan a las
+                      barras de proteína/carbos/grasa, así que el día se lee
+                      incompleto. Se avisa acá para poder completarla en vez de
+                      dejarla en silencio. */}
+                  {!hasMacros(entry) && (
+                    <button
+                      onClick={() => onEdit(entry, entry.kind === 'plan')}
+                      className="mt-1 flex items-center gap-1 text-left text-[11px] text-amber-400 hover:text-amber-300 transition-colors"
+                    >
+                      <AlertCircle className="w-3 h-3 shrink-0" />
+                      Faltan macros · completar
+                    </button>
+                  )}
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <button
