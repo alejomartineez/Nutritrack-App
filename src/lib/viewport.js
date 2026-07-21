@@ -19,39 +19,68 @@ import { useEffect, useState } from 'react';
  * Mínimo de píxeles tapados para considerar que hay un teclado.
  *
  * No alcanza con `> 0`: al scrollear, Safari colapsa y expande su propia barra
- * de herramientas, y eso también achica el viewport visual (~50-90px). Con el
- * umbral en cero, ese vaivén se leía como "el teclado se movió" y la barra
- * saltaba a mitad del scroll. Un teclado siempre tapa bastante más que esto.
+ * de herramientas, y eso también achica el viewport visual (~50-90px). Un
+ * teclado siempre tapa bastante más que esto.
  */
 const KEYBOARD_MIN_INSET = 120;
+
+const TEXTLESS_INPUT_TYPES = ['button', 'submit', 'reset', 'checkbox', 'radio', 'range', 'file', 'color'];
+
+const isTextField = (el) =>
+  !!el &&
+  (el.tagName === 'TEXTAREA' ||
+    el.isContentEditable ||
+    (el.tagName === 'INPUT' && !TEXTLESS_INPUT_TYPES.includes(el.type)));
 
 /**
  * true cuando hay un teclado virtual abierto tapando el fondo del viewport.
  *
- * Devuelve false en navegadores sin `visualViewport`, y también en Android y
- * desktop, donde el layout viewport sí se achica con el teclado y por lo tanto
- * el posicionamiento fijo ya funciona bien sin ayuda.
+ * Devuelve false en desktop y en Android, donde el layout viewport sí se achica
+ * con el teclado y por lo tanto el posicionamiento fijo ya funciona bien solo.
  */
 export function useKeyboardOpen() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const vv = window.visualViewport;
-    if (!vv) return undefined;
+    const touch = window.matchMedia('(pointer: coarse)').matches;
 
-    const update = () => {
-      // Fondo del viewport visual, en coordenadas del layout viewport.
-      const visibleBottom = vv.offsetTop + vv.height;
-      const covered = window.innerHeight - visibleBottom;
-      setOpen(covered > KEYBOARD_MIN_INSET);
+    // OJO: acá NO se resta `vv.offsetTop`, y es a propósito.
+    //
+    // `offsetTop` es cuánto se desplazó el viewport visual dentro del layout
+    // viewport, o sea posición de scroll — no tiene nada que ver con si hay un
+    // teclado. Restarlo hacía que, al scrollear con el teclado abierto, la
+    // cuenta diera cada vez menos "tapado" hasta cruzar el umbral: el hook
+    // creía que el teclado se había cerrado y mostraba la barra en medio de la
+    // pantalla. La diferencia de alturas sola es estable durante el scroll,
+    // porque `vv.height` solo cambia cuando aparece o desaparece algo (teclado
+    // o barra de Safari).
+    const measure = () => !!vv && window.innerHeight - vv.height > KEYBOARD_MIN_INSET;
+
+    const update = () => setOpen(measure());
+
+    // Respaldo: en un dispositivo táctil, un campo de texto enfocado implica
+    // teclado. Es inmune a cualquier rareza del viewport, y cubre el arranque
+    // (el foco llega antes que el `resize`). Al desenfocar se vuelve a medir.
+    const onFocusIn = (e) => {
+      if (touch && isTextField(e.target)) setOpen(true);
     };
 
     update();
-    vv.addEventListener('resize', update);
-    vv.addEventListener('scroll', update);
+    if (vv) {
+      vv.addEventListener('resize', update);
+      vv.addEventListener('scroll', update);
+    }
+    document.addEventListener('focusin', onFocusIn);
+    document.addEventListener('focusout', update);
+
     return () => {
-      vv.removeEventListener('resize', update);
-      vv.removeEventListener('scroll', update);
+      if (vv) {
+        vv.removeEventListener('resize', update);
+        vv.removeEventListener('scroll', update);
+      }
+      document.removeEventListener('focusin', onFocusIn);
+      document.removeEventListener('focusout', update);
     };
   }, []);
 
