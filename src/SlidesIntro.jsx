@@ -14,7 +14,7 @@ import React, { useState, useRef } from 'react';
 export default function SlidesIntro({
   slides,
   dotActiveClass = 'bg-emerald-400',
-  buttonClass = 'bg-emerald-500 hover:bg-emerald-400 text-slate-900 focus-visible:ring-emerald-300',
+  buttonClass = 'bg-emerald-500 hover:bg-emerald-400 text-slate-900 ',
   finalLabel = 'Empezar',
   finalIcon = null,
   onDone,
@@ -55,7 +55,7 @@ export default function SlidesIntro({
           {!isLast && (
             <button
               onClick={onDone}
-              className="text-sm font-semibold text-slate-400 hover:text-slate-200 focus-visible:ring-2 focus-visible:ring-emerald-400 rounded px-2 py-1"
+              className="text-sm font-semibold text-slate-400 hover:text-slate-200 rounded px-2 py-1"
             >
               Saltar
             </button>
@@ -90,7 +90,7 @@ export default function SlidesIntro({
               onClick={() => go(i)}
               aria-label={`Ir al paso ${i + 1}`}
               aria-current={i === index ? 'true' : undefined}
-              className={`h-2 rounded-full transition-all focus-visible:ring-2 focus-visible:ring-emerald-400 ${
+              className={`h-2 rounded-full transition-all ${
                 i === index ? `w-6 ${dotActiveClass}` : 'w-2 bg-slate-600 hover:bg-slate-500'
               }`}
             />
@@ -101,7 +101,7 @@ export default function SlidesIntro({
         <div className="px-5">
           <button
             onClick={next}
-            className={`w-full flex items-center justify-center gap-2 rounded-2xl font-bold py-3.5 focus-visible:ring-2 transition-colors ${buttonClass}`}
+            className={`w-full flex items-center justify-center gap-2 rounded-2xl font-bold py-3.5 transition-colors ${buttonClass}`}
           >
             {isLast ? (
               <>

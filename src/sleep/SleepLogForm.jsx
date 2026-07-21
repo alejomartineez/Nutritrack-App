@@ -132,7 +132,7 @@ export default function SleepLogForm({ existingLog, onSave, defaultBedtime, defa
         </div>
 
         <div className="mt-4 pt-4 border-t border-indigo-500/20 text-center">
-          <p className="text-[11px] uppercase tracking-wide text-indigo-400 font-semibold">Total dormido</p>
+          <p className="label-section">Total dormido</p>
           <p className="text-3xl font-black text-slate-100 font-mono">{formatMinutes(totalMinutes)}</p>
         </div>
       </div>
@@ -213,7 +213,7 @@ export default function SleepLogForm({ existingLog, onSave, defaultBedtime, defa
             <div className="space-y-3">
               {SLEEP_FACTOR_GROUPS.map((group) => (
                 <div key={group.id}>
-                  <p className="text-[10px] uppercase tracking-wide text-indigo-400 font-semibold mb-1.5">{group.label}</p>
+                  <p className="label-section mb-1.5">{group.label}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {group.factors.map((f) => (
                       <button
@@ -239,7 +239,7 @@ export default function SleepLogForm({ existingLog, onSave, defaultBedtime, defa
       <button
         onClick={handleSave}
         disabled={!quality}
-        className={`w-full py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-violet-300 ${
+        className={`w-full py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 ${
           quality ? 'bg-violet-500 text-slate-900 hover:bg-violet-400' : 'bg-indigo-900/40 text-indigo-500'
         }`}
       >

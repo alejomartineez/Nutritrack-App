@@ -140,7 +140,7 @@ export default function WeightTracker() {
           <button
             onClick={submit}
             aria-label="Guardar peso de hoy"
-            className="p-2.5 rounded-xl bg-emerald-500 text-slate-900 hover:bg-emerald-400 focus-visible:ring-2 focus-visible:ring-emerald-300"
+            className="p-2.5 rounded-xl bg-emerald-500 text-slate-900 hover:bg-emerald-400"
           >
             <Check className="w-5 h-5" />
           </button>

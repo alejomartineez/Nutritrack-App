@@ -34,9 +34,20 @@
   }
 
   /* Un solo estilo de foco en toda la app, visible sobre cualquier superficie.
-     Solo :focus-visible, así el mouse no lo dispara. */
+     Solo :focus-visible, así el mouse no lo dispara.
+
+     El color sale de una variable en vez de estar fijo: los módulos la rebindean
+     (ver .module-entreno / .module-sueno abajo) y el foco toma el acento del
+     módulo en el que estás sin que ningún componente tenga que declararlo.
+     Antes cada botón repetía el par de utilidades de ring a mano —63 veces— y
+     el resultado eran DOS indicadores de foco encima del otro: este outline
+     más el ring de Tailwind. */
+  :root {
+    --focus-ring: theme('colors.brand.400');
+  }
+
   :focus-visible {
-    outline: 2px solid theme('colors.brand.400');
+    outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
     border-radius: 2px;
   }
@@ -149,6 +160,49 @@
       inset 0 1px 0 0 rgba(255, 255, 255, 0.04),
       0 1px 2px rgba(0, 0, 0, 0.4);
   }
+
+  /* Contexto de módulo. Solo rebindea el color del foco: el resto de la
+     identidad del módulo ya la dan los íconos y los hairlines. Va en la raíz de
+     WorkoutModule y SleepModule. */
+  .module-entreno { --focus-ring: theme('colors.entreno.400'); }
+  .module-sueno   { --focus-ring: theme('colors.sueno.400'); }
+
+  /* Botón de ícono con área táctil real de 44×44 (mínimo de las HIG de iOS).
+     Los íconos de 16px con `p-2` daban 32px: se fallaba el toque de forma
+     constante en el borde inferior de la pantalla, que es donde peor se apunta.
+     `grid` centra el ícono sin depender del padding, así el área crece sin
+     descolocarlo. */
+  .btn-icon {
+    display: grid;
+    place-items: center;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    border-radius: 9999px;
+  }
+
+  /* Fila del registro del día. Antes cada comida era una card teñida entera
+     (verde el plan, ámbar lo libre); con 6 comidas la pantalla se leía como un
+     semáforo y competía con el anillo, que es el dato principal. Ahora la fila
+     es superficie neutra y la clasificación la lleva un filete de 3px al borde
+     izquierdo: se distingue de un vistazo y no grita. */
+  .meal-row {
+    position: relative;
+    background-color: theme('colors.ink.800');
+    border: 1px solid theme('colors.ink.700');
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
+    overflow: hidden;
+  }
+  .meal-row::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background-color: var(--meal-accent, theme('colors.brand.500'));
+  }
+  .meal-row-plan { --meal-accent: theme('colors.brand.500'); }
+  .meal-row-free { --meal-accent: theme('colors.amber.500'); }
 }
 
 /* ---------------------------------------------------------------------------

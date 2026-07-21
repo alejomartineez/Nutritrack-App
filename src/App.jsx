@@ -874,7 +874,7 @@ export default function NutriTrackApp() {
               <button
                 onClick={() => setShowInstallGuide(true)}
                 aria-label="Instalar la app en tu iPhone"
-                className="p-2.5 rounded-full bg-slate-800 border border-slate-700 hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-emerald-400 transition-colors shrink-0"
+                className="btn-icon bg-slate-800 border border-slate-700 hover:bg-slate-700 transition-colors shrink-0"
               >
                 <Download className="w-5 h-5 text-slate-300" />
               </button>
@@ -905,16 +905,20 @@ export default function NutriTrackApp() {
             <button
               onClick={openSettings}
               aria-label="Ajustes del plan"
-              className="p-2.5 rounded-full bg-slate-800 border border-slate-700 hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-emerald-400 transition-colors"
+              className="btn-icon bg-slate-800 border border-slate-700 hover:bg-slate-700 transition-colors"
             >
               <Settings className="w-5 h-5 text-slate-300" />
             </button>
           )}
         </header>
 
-        {/* CONFIRMACIÓN FLOTANTE */}
+        {/* CONFIRMACIÓN FLOTANTE
+            Entrada de una sola vez en vez de `animate-pulse`: el pulso de
+            Tailwind late para siempre —un "guardado" resuelto no debería seguir
+            pidiendo atención— y además ignora prefers-reduced-motion, que el
+            resto de las animaciones de la app sí respeta. */}
         {confirmMsg && (
-          <div className="mx-5 mb-2 -mt-1 px-4 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-sm flex items-center gap-2 animate-pulse">
+          <div className="mx-5 mb-2 -mt-1 px-4 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-sm flex items-center gap-2 anim-fade-in-up">
             <Check className="w-4 h-4 shrink-0" />
             <span>{confirmMsg}</span>
           </div>
@@ -926,7 +930,7 @@ export default function NutriTrackApp() {
             <span>Comida eliminada</span>
             <button
               onClick={undoDelete}
-              className="text-emerald-400 font-semibold shrink-0 focus-visible:ring-2 focus-visible:ring-emerald-400 rounded px-1"
+              className="text-emerald-400 font-semibold shrink-0 rounded px-1"
             >
               Deshacer
             </button>
@@ -940,9 +944,16 @@ export default function NutriTrackApp() {
           {/* La `key` fuerza el remontaje al cambiar de pestaña, que es lo que
               dispara la animación de entrada. No cambia el comportamiento: cada
               pestaña ya se desmontaba al salir (render condicional). */}
+          {/* `module-entreno` / `module-sueno` solo rebindean --focus-ring (ver
+              index.css): el foco toma el acento del módulo en el que estás sin
+              que ningún botón tenga que declararlo. Va acá y no en la raíz de
+              cada módulo porque la variable se hereda por el árbol, así que un
+              solo punto cubre también las vistas a pantalla completa. */}
           <div
             key={activeTab}
-            className={`space-y-5 ${tabDir === 'forward' ? 'anim-tab-forward' : 'anim-tab-back'}`}
+            className={`space-y-5 ${tabDir === 'forward' ? 'anim-tab-forward' : 'anim-tab-back'} ${
+              activeTab === 'entreno' ? 'module-entreno' : activeTab === 'sueno' ? 'module-sueno' : ''
+            }`}
           >
           {(activeTab === 'dia' || activeTab === 'registrar') && (
             <DateNav
@@ -1166,7 +1177,7 @@ function DateNav({ isToday, label, onPrev, onNext, onToday }) {
       <button
         onClick={onPrev}
         aria-label="Ver día anterior"
-        className="p-2 rounded-full hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-emerald-400"
+        className="btn-icon hover:bg-slate-700"
       >
         <ChevronLeft className="w-4 h-4 text-slate-300" />
       </button>
@@ -1175,7 +1186,7 @@ function DateNav({ isToday, label, onPrev, onNext, onToday }) {
         {!isToday && (
           <button
             onClick={onToday}
-            className="text-[11px] text-emerald-400 font-semibold mt-0.5 focus-visible:ring-2 focus-visible:ring-emerald-400 rounded"
+            className="text-[11px] text-emerald-400 font-semibold mt-0.5 rounded"
           >
             Volver a hoy
           </button>
@@ -1185,7 +1196,7 @@ function DateNav({ isToday, label, onPrev, onNext, onToday }) {
         onClick={onNext}
         disabled={isToday}
         aria-label="Ver día siguiente"
-        className={`p-2 rounded-full focus-visible:ring-2 focus-visible:ring-emerald-400 ${
+        className={`btn-icon ${
           isToday ? 'opacity-30 cursor-not-allowed' : 'hover:bg-slate-700'
         }`}
       >
@@ -1206,7 +1217,7 @@ function NavButton({
     <button
       onClick={onClick}
       aria-current={active ? 'page' : undefined}
-      className={`relative flex-1 flex flex-col items-center gap-1 py-1.5 rounded-xl focus-visible:ring-2 focus-visible:ring-emerald-400 transition-colors duration-200 ${
+      className={`relative flex-1 flex flex-col items-center gap-1 py-1.5 rounded-xl transition-colors duration-200 ${
         active ? activeColorClass : 'text-slate-500 hover:text-slate-300'
       }`}
     >
@@ -1275,7 +1286,7 @@ function FeedbackBanner({ feedback }) {
           <button
             onClick={() => setExpanded((v) => !v)}
             aria-expanded={expanded}
-            className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-slate-500 hover:text-slate-300 rounded-xl transition-colors"
+            className="w-full min-h-11 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-slate-500 hover:text-slate-300 rounded-xl transition-colors"
           >
             <ChevronDown
               className={`w-4 h-4 transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`}
@@ -1456,7 +1467,7 @@ function TabMiDia({
         {/* Acción principal: el corazón de la dinámica diaria */}
         <button
           onClick={onRegister}
-          className="w-full mt-4 flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold py-3 focus-visible:ring-2 focus-visible:ring-emerald-300 transition-colors"
+          className="w-full mt-4 flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold py-3 transition-colors"
         >
           <PlusCircle className="w-5 h-5" />
           Registrar comida
@@ -1470,12 +1481,18 @@ function TabMiDia({
           {/* TIRA DE HÁBITOS (comida / movimiento / sueño + racha) */}
           {habitStrip}
 
-          {/* AGUA (compacta) */}
+          {/* AGUA (compacta)
+              Iba en clases `cyan-*`, pero `cyan` está aliaseado a grafito en
+              tailwind.config.js: renderizaba gris, no celeste. El gris es la
+              decisión correcta (un solo acento en la app), así que acá se
+              nombra como lo que es —`ink`— en vez de mentir en el nombre.
+              La excepción es el "+": es la acción de la fila y era lo único
+              gris sobre gris, indistinguible de un control deshabilitado. */}
           <div className="rounded-2xl surface px-4 py-3 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
-              <Droplets className="w-5 h-5 text-cyan-300 shrink-0" />
+              <Droplets className="w-5 h-5 text-ink-300 shrink-0" />
               <span className="text-sm font-semibold text-slate-200">Agua</span>
-              <span className="font-mono text-xs text-cyan-200/80 truncate">
+              <span className="font-mono text-xs text-ink-400 truncate">
                 {waterGlasses}/{waterGoalGlasses} vasos
               </span>
             </div>
@@ -1483,17 +1500,17 @@ function TabMiDia({
               <button
                 onClick={() => addWater(-1)}
                 aria-label="Quitar un vaso de agua"
-                className="p-2 rounded-full bg-slate-700 hover:bg-slate-600 focus-visible:ring-2 focus-visible:ring-cyan-400"
+                className="btn-icon bg-slate-700 hover:bg-slate-600 transition-colors"
               >
                 <Minus className="w-4 h-4 text-slate-200" />
               </button>
-              <span className="font-mono text-sm text-cyan-200 w-16 text-center">{log.water} ml</span>
+              <span className="font-mono text-sm text-slate-200 w-16 text-center">{log.water} ml</span>
               <button
                 onClick={() => addWater(1)}
                 aria-label="Agregar un vaso de agua"
-                className="p-2 rounded-full bg-cyan-500/20 border border-cyan-400/40 hover:bg-cyan-500/30 focus-visible:ring-2 focus-visible:ring-cyan-400"
+                className="btn-icon bg-brand-500/20 border border-brand-400/40 hover:bg-brand-500/30 transition-colors"
               >
-                <Plus className="w-4 h-4 text-cyan-300" />
+                <Plus className="w-4 h-4 text-brand-300" />
               </button>
             </div>
           </div>
@@ -1512,7 +1529,7 @@ function TabMiDia({
         {allEntries.length === 0 ? (
           <button
             onClick={onRegister}
-            className="w-full rounded-2xl border border-dashed border-slate-700 p-6 text-center hover:border-emerald-500/50 hover:bg-emerald-500/5 focus-visible:ring-2 focus-visible:ring-emerald-400 transition-colors"
+            className="w-full rounded-2xl border border-dashed border-slate-700 p-6 text-center hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-colors"
           >
             <Utensils className="w-6 h-6 text-slate-500 mx-auto mb-2" />
             <p className="text-sm font-semibold text-slate-300">Empezá tu día</p>
@@ -1523,17 +1540,17 @@ function TabMiDia({
             {allEntries.map((entry) => (
               <li
                 key={entry.id}
-                className={`rounded-2xl border p-3 flex items-center justify-between gap-3 ${
-                  entry.kind === 'plan' ? 'bg-emerald-500/5 border-emerald-500/25' : 'bg-amber-500/5 border-amber-500/25'
+                className={`rounded-2xl meal-row py-3 pl-4 pr-3 flex items-center justify-between gap-3 ${
+                  entry.kind === 'plan' ? 'meal-row-plan' : 'meal-row-free'
                 } ${removingId === entry.id ? 'anim-meal-out' : 'anim-meal-in'}`}
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span
-                      className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
-                        entry.kind === 'plan' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'
-                      }`}
-                    >
+                    {/* La clasificación ya la lleva el filete lateral de .meal-row,
+                        así que acá alcanza con la etiqueta en color: la píldora
+                        rellena duplicaba la señal y sumaba una tercera forma con
+                        fondo a una fila que ya tiene nombre, hora y macros. */}
+                    <span className={`label-section ${entry.kind === 'plan' ? 'text-brand-400' : 'text-amber-400'}`}>
                       {entry.kind === 'plan' ? 'Plan oficial' : 'Fuera de plan'}
                     </span>
                     <span className="text-[11px] text-slate-500">{entry.time}</span>
@@ -1547,14 +1564,14 @@ function TabMiDia({
                   <button
                     onClick={() => onEdit(entry, entry.kind === 'plan')}
                     aria-label="Editar comida"
-                    className="p-2 rounded-full hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-slate-400"
+                    className="btn-icon hover:bg-slate-700"
                   >
                     <Pencil className="w-4 h-4 text-slate-500" />
                   </button>
                   <button
                     onClick={() => handleRemove(entry.id, entry.kind === 'plan')}
                     aria-label="Eliminar registro"
-                    className="p-2 rounded-full hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-slate-400"
+                    className="btn-icon hover:bg-slate-700"
                   >
                     <Trash2 className="w-4 h-4 text-slate-500" />
                   </button>
@@ -1717,7 +1734,7 @@ function TabRegistrar({
       {/* FRECUENTES: tus alimentos más registrados, a un toque. Se ocultan mientras buscás. */}
       {frequents.length > 0 && foodQuery.trim().length < 2 && (
         <div>
-          <p className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold mb-2 flex items-center gap-1.5">
+          <p className="label-section text-slate-500 mb-2 flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5" /> Frecuentes
           </p>
           <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
@@ -1756,7 +1773,7 @@ function TabRegistrar({
           <button
             onClick={onScan}
             aria-label="Escanear código de barras"
-            className="shrink-0 px-3.5 rounded-2xl surface hover:border-emerald-500/50 focus-visible:ring-2 focus-visible:ring-emerald-400 transition-colors"
+            className="shrink-0 px-3.5 rounded-2xl surface hover:border-emerald-500/50 transition-colors"
           >
             <ScanLine className="w-5 h-5 text-slate-300" />
           </button>
@@ -1806,7 +1823,7 @@ function TabRegistrar({
 
             {offResults.length > 0 && (
               <>
-                <p className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold pt-2 flex items-center gap-1.5">
+                <p className="label-section text-slate-500 pt-2 flex items-center gap-1.5">
                   <Barcode className="w-3.5 h-3.5" /> Productos envasados
                 </p>
                 {offResults.map((food) => (
@@ -1845,7 +1862,7 @@ function TabRegistrar({
               >
                 <button
                   onClick={() => askQuantity(item, 'plan')}
-                  className="flex-1 min-w-0 text-left p-4 flex items-center justify-between gap-3 focus-visible:ring-2 focus-visible:ring-emerald-400 rounded-2xl"
+                  className="flex-1 min-w-0 text-left p-4 flex items-center justify-between gap-3 rounded-2xl"
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-slate-200">{item.name}</p>
@@ -1858,7 +1875,7 @@ function TabRegistrar({
                 <button
                   onClick={() => onEditCatalogItem(item)}
                   aria-label="Editar esta opción del plan"
-                  className="p-2 rounded-full hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-slate-400 shrink-0"
+                  className="btn-icon hover:bg-slate-700 shrink-0"
                 >
                   <Pencil className="w-4 h-4 text-slate-500" />
                 </button>
@@ -1873,7 +1890,7 @@ function TabRegistrar({
 
             <button
               onClick={onAddCatalogItem}
-              className="w-full rounded-2xl border border-dashed border-emerald-500/40 text-emerald-300 py-3 text-sm font-semibold hover:bg-emerald-500/5 focus-visible:ring-2 focus-visible:ring-emerald-400"
+              className="w-full rounded-2xl border border-dashed border-emerald-500/40 text-emerald-300 py-3 text-sm font-semibold hover:bg-emerald-500/5"
             >
               + Agregar comida frecuente
             </button>
@@ -1883,7 +1900,7 @@ function TabRegistrar({
 
       {registerMode === 'libre' && (
         <div className="space-y-4">
-          <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">Gustos frecuentes</p>
+          <p className="label-section text-slate-500">Gustos frecuentes</p>
           <div className="space-y-2">
             {freeCatalog.map((item) => (
               <div
@@ -1892,7 +1909,7 @@ function TabRegistrar({
               >
                 <button
                   onClick={() => askQuantity(item, 'libre')}
-                  className="flex-1 min-w-0 text-left p-4 flex items-center justify-between gap-3 focus-visible:ring-2 focus-visible:ring-amber-400 rounded-2xl"
+                  className="flex-1 min-w-0 text-left p-4 flex items-center justify-between gap-3 rounded-2xl"
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-slate-200">{item.name}</p>
@@ -1905,7 +1922,7 @@ function TabRegistrar({
                 <button
                   onClick={() => onEditFreeCatalogItem(item)}
                   aria-label="Editar esta opción fuera de plan"
-                  className="p-2 rounded-full hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-slate-400 shrink-0"
+                  className="btn-icon hover:bg-slate-700 shrink-0"
                 >
                   <Pencil className="w-4 h-4 text-slate-500" />
                 </button>
@@ -1922,7 +1939,7 @@ function TabRegistrar({
           {!showCustomForm ? (
             <button
               onClick={() => setShowCustomForm(true)}
-              className="w-full rounded-2xl border border-dashed border-amber-500/40 text-amber-300 py-3 text-sm font-semibold hover:bg-amber-500/5 focus-visible:ring-2 focus-visible:ring-amber-400"
+              className="w-full rounded-2xl border border-dashed border-amber-500/40 text-amber-300 py-3 text-sm font-semibold hover:bg-amber-500/5"
             >
               + Cargar otra comida fuera de plan
             </button>
@@ -1972,7 +1989,7 @@ function TabRegistrar({
               </div>
               <button
                 onClick={submitCustomFree}
-                className="w-full rounded-xl bg-amber-500 text-slate-900 font-semibold py-2.5 text-sm hover:bg-amber-400 focus-visible:ring-2 focus-visible:ring-amber-300"
+                className="w-full rounded-xl bg-amber-500 text-slate-900 font-semibold py-2.5 text-sm hover:bg-amber-400"
               >
                 Agregar a mi registro
               </button>
@@ -2054,7 +2071,7 @@ function TabProgreso({ weekStats, goals, tipIndex, setTipIndex, streak, weeklyFr
           <button
             onClick={prevTip}
             aria-label="Tip anterior"
-            className="p-2 rounded-full bg-slate-800/60 hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-emerald-400"
+            className="btn-icon bg-slate-800/60 hover:bg-slate-700"
           >
             <ChevronLeft className="w-4 h-4 text-slate-300" />
           </button>
@@ -2064,7 +2081,7 @@ function TabProgreso({ weekStats, goals, tipIndex, setTipIndex, streak, weeklyFr
           <button
             onClick={nextTip}
             aria-label="Tip siguiente"
-            className="p-2 rounded-full bg-slate-800/60 hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-emerald-400"
+            className="btn-icon bg-slate-800/60 hover:bg-slate-700"
           >
             <ChevronRight className="w-4 h-4 text-slate-300" />
           </button>
@@ -2091,7 +2108,7 @@ function TabProgreso({ weekStats, goals, tipIndex, setTipIndex, streak, weeklyFr
 function GoalChip({ label, value }) {
   return (
     <div className="rounded-xl bg-slate-900/60 border border-slate-700 px-3 py-2">
-      <p className="text-[10px] uppercase text-slate-500 font-semibold">{label}</p>
+      <p className="label-section text-slate-500">{label}</p>
       <p className="font-mono text-slate-200 font-semibold">{value}</p>
     </div>
   );
@@ -2102,14 +2119,14 @@ function EditEntryModal({ isPlan, name, setName, kcal, setKcal, p, setP, c, setC
   const accentText = isPlan ? 'text-emerald-300' : 'text-amber-300';
   const accentBorder = isPlan ? 'border-emerald-500/30' : 'border-amber-500/30';
   const accentBg = isPlan ? 'bg-emerald-500' : 'bg-amber-500';
-  const accentRing = isPlan ? 'focus-visible:ring-emerald-400' : 'focus-visible:ring-amber-400';
+  const accentRing = isPlan ? '' : '';
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 px-0 sm:px-4">
       <div className={`w-full max-w-md bg-slate-800 border ${accentBorder} rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto`}>
         <div className="flex items-center justify-between mb-1">
           <h2 className="text-lg font-bold text-slate-100">Editar comida</h2>
-          <button onClick={onCancel} aria-label="Cerrar edición" className="p-2 rounded-full hover:bg-slate-700">
+          <button onClick={onCancel} aria-label="Cerrar edición" className="btn-icon hover:bg-slate-700">
             <X className="w-5 h-5 text-slate-400" />
           </button>
         </div>
@@ -2173,13 +2190,13 @@ function EditEntryModal({ isPlan, name, setName, kcal, setKcal, p, setP, c, setC
         <div className="flex gap-3 mt-6">
           <button
             onClick={onCancel}
-            className="flex-1 rounded-xl border border-slate-600 text-slate-300 py-2.5 text-sm font-semibold hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-slate-400"
+            className="flex-1 rounded-xl border border-slate-600 text-slate-300 py-2.5 text-sm font-semibold hover:bg-slate-700"
           >
             Cancelar
           </button>
           <button
             onClick={onSave}
-            className={`flex-1 rounded-xl ${accentBg} text-slate-900 py-2.5 text-sm font-bold flex items-center justify-center gap-2 focus-visible:ring-2 ${accentRing}`}
+            className={`flex-1 rounded-xl ${accentBg} text-slate-900 py-2.5 text-sm font-bold flex items-center justify-center gap-2 ${accentRing}`}
           >
             <Save className="w-4 h-4" /> Guardar
           </button>
@@ -2202,7 +2219,7 @@ function CatalogItemModal({ isNew, isFree, name, setName, kcal, setKcal, p, setP
           <h2 className="text-lg font-bold text-slate-100">
             {isNew ? `Nueva opción ${noun}` : `Editar opción ${noun}`}
           </h2>
-          <button onClick={onCancel} aria-label="Cerrar" className="p-2 rounded-full hover:bg-slate-700">
+          <button onClick={onCancel} aria-label="Cerrar" className="btn-icon hover:bg-slate-700">
             <X className="w-5 h-5 text-slate-400" />
           </button>
         </div>
@@ -2276,13 +2293,13 @@ function CatalogItemModal({ isNew, isFree, name, setName, kcal, setKcal, p, setP
         <div className="flex gap-3 mt-5">
           <button
             onClick={onCancel}
-            className="flex-1 rounded-xl border border-slate-600 text-slate-300 py-2.5 text-sm font-semibold hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-slate-400"
+            className="flex-1 rounded-xl border border-slate-600 text-slate-300 py-2.5 text-sm font-semibold hover:bg-slate-700"
           >
             Cancelar
           </button>
           <button
             onClick={onSave}
-            className="flex-1 rounded-xl bg-emerald-500 text-slate-900 py-2.5 text-sm font-bold flex items-center justify-center gap-2 hover:bg-emerald-400 focus-visible:ring-2 focus-visible:ring-emerald-300"
+            className="flex-1 rounded-xl bg-emerald-500 text-slate-900 py-2.5 text-sm font-bold flex items-center justify-center gap-2 hover:bg-emerald-400"
           >
             <Save className="w-4 h-4" /> Guardar
           </button>
@@ -2316,7 +2333,7 @@ function InstallGuideModal({ onClose }) {
       <div className="w-full max-w-md bg-slate-800 border border-slate-700 rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-1">
           <h2 className="text-lg font-bold text-slate-100">Instalar en tu iPhone</h2>
-          <button onClick={onClose} aria-label="Cerrar" className="p-2 rounded-full hover:bg-slate-700">
+          <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-slate-700">
             <X className="w-5 h-5 text-slate-400" />
           </button>
         </div>
@@ -2344,7 +2361,7 @@ function InstallGuideModal({ onClose }) {
 
         <button
           onClick={onClose}
-          className="w-full mt-6 rounded-xl bg-emerald-500 text-slate-900 py-2.5 text-sm font-bold hover:bg-emerald-400 focus-visible:ring-2 focus-visible:ring-emerald-300"
+          className="w-full mt-6 rounded-xl bg-emerald-500 text-slate-900 py-2.5 text-sm font-bold hover:bg-emerald-400"
         >
           Entendido
         </button>
@@ -2401,7 +2418,7 @@ function SettingsModal({ tempGoals, setTempGoals, onSave, onCancel, onReset, onR
       <div className="w-full max-w-md bg-slate-800 border border-slate-700 rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-lg font-bold text-slate-100">Ajustes de mi plan</h2>
-          <button onClick={onCancel} aria-label="Cerrar ajustes" className="p-2 rounded-full hover:bg-slate-700">
+          <button onClick={onCancel} aria-label="Cerrar ajustes" className="btn-icon hover:bg-slate-700">
             <X className="w-5 h-5 text-slate-400" />
           </button>
         </div>
@@ -2424,13 +2441,13 @@ function SettingsModal({ tempGoals, setTempGoals, onSave, onCancel, onReset, onR
         <div className="flex gap-3 mt-6">
           <button
             onClick={onReset}
-            className="flex-1 rounded-xl border border-slate-600 text-slate-300 py-2.5 text-sm font-semibold flex items-center justify-center gap-2 hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-slate-400"
+            className="flex-1 rounded-xl border border-slate-600 text-slate-300 py-2.5 text-sm font-semibold flex items-center justify-center gap-2 hover:bg-slate-700"
           >
             <RotateCcw className="w-4 h-4" /> Restaurar
           </button>
           <button
             onClick={onSave}
-            className="flex-1 rounded-xl bg-emerald-500 text-slate-900 py-2.5 text-sm font-bold flex items-center justify-center gap-2 hover:bg-emerald-400 focus-visible:ring-2 focus-visible:ring-emerald-300"
+            className="flex-1 rounded-xl bg-emerald-500 text-slate-900 py-2.5 text-sm font-bold flex items-center justify-center gap-2 hover:bg-emerald-400"
           >
             <Save className="w-4 h-4" /> Guardar
           </button>
@@ -2450,7 +2467,7 @@ function SettingsModal({ tempGoals, setTempGoals, onSave, onCancel, onReset, onR
             </div>
             <button
               onClick={onRecalculate}
-              className="shrink-0 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 px-3.5 py-2 text-sm font-semibold hover:bg-emerald-500/25 focus-visible:ring-2 focus-visible:ring-emerald-400"
+              className="shrink-0 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 px-3.5 py-2 text-sm font-semibold hover:bg-emerald-500/25"
             >
               Recalcular
             </button>
@@ -2539,13 +2556,13 @@ function SettingsModal({ tempGoals, setTempGoals, onSave, onCancel, onReset, onR
           <div className="flex gap-3">
             <button
               onClick={handleExport}
-              className="flex-1 rounded-xl border border-slate-600 text-slate-300 py-2.5 text-sm font-semibold flex items-center justify-center gap-2 hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-slate-400"
+              className="flex-1 rounded-xl border border-slate-600 text-slate-300 py-2.5 text-sm font-semibold flex items-center justify-center gap-2 hover:bg-slate-700"
             >
               <Download className="w-4 h-4" /> Exportar todo
             </button>
             <button
               onClick={handleImportClick}
-              className="flex-1 rounded-xl border border-slate-600 text-slate-300 py-2.5 text-sm font-semibold flex items-center justify-center gap-2 hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-slate-400"
+              className="flex-1 rounded-xl border border-slate-600 text-slate-300 py-2.5 text-sm font-semibold flex items-center justify-center gap-2 hover:bg-slate-700"
             >
               <Upload className="w-4 h-4" /> Restaurar copia
             </button>

@@ -26,7 +26,7 @@ function RoutineManagerModal({ routines, activeRoutineId, onSelect, onRename, on
       <div className="w-full max-w-md surface rounded-t-3xl sm:rounded-3xl p-5 max-h-[85vh] flex flex-col">
         <div className="flex items-center justify-between mb-1">
           <h2 className="text-lg font-bold text-slate-100">Mis rutinas</h2>
-          <button onClick={onClose} aria-label="Cerrar" className="p-2 rounded-full hover:bg-neutral-800">
+          <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-neutral-800">
             <X className="w-5 h-5 text-slate-400" />
           </button>
         </div>
@@ -94,11 +94,11 @@ function RoutineManagerModal({ routines, activeRoutineId, onSelect, onRename, on
                     <span className="block text-xs text-slate-500 mt-0.5">{trainingDays(r)} días de entreno por semana</span>
                   </span>
                 </button>
-                <button onClick={() => startRename(r)} aria-label="Renombrar rutina" className="p-2 rounded-full hover:bg-neutral-700 shrink-0">
+                <button onClick={() => startRename(r)} aria-label="Renombrar rutina" className="btn-icon hover:bg-neutral-700 shrink-0">
                   <Pencil className="w-4 h-4 text-slate-500" />
                 </button>
                 {routines.length > 1 && (
-                  <button onClick={() => setConfirmDeleteId(r.id)} aria-label="Eliminar rutina" className="p-2 rounded-full hover:bg-neutral-700 shrink-0">
+                  <button onClick={() => setConfirmDeleteId(r.id)} aria-label="Eliminar rutina" className="btn-icon hover:bg-neutral-700 shrink-0">
                     <Trash2 className="w-4 h-4 text-slate-500" />
                   </button>
                 )}
@@ -109,7 +109,7 @@ function RoutineManagerModal({ routines, activeRoutineId, onSelect, onRename, on
 
         <button
           onClick={onNew}
-          className="w-full mt-3 rounded-2xl border border-dashed border-entreno-500/40 text-entreno-300 py-3 text-sm font-semibold hover:bg-entreno-500/5 focus-visible:ring-2 focus-visible:ring-entreno-400 flex items-center justify-center gap-2"
+          className="w-full mt-3 rounded-2xl border border-dashed border-entreno-500/40 text-entreno-300 py-3 text-sm font-semibold hover:bg-entreno-500/5 flex items-center justify-center gap-2"
         >
           <Plus className="w-4 h-4" /> Nueva rutina
         </button>
@@ -127,11 +127,11 @@ function NewRoutineModal({ onCreate, onClose }) {
       <div className="w-full max-w-md surface rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-slate-100">Nueva rutina semanal</h2>
-          <button onClick={onClose} aria-label="Cerrar" className="p-2 rounded-full hover:bg-neutral-800">
+          <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-neutral-800">
             <X className="w-5 h-5 text-slate-400" />
           </button>
         </div>
-        <p className="text-xs font-semibold text-entreno-300 mb-2 uppercase tracking-wide">Distribución semanal</p>
+        <p className="label-section text-entreno-300 mb-2">Distribución semanal</p>
         <div className="space-y-2 mb-4">
           {ROUTINE_TEMPLATES.map((t) => (
             <button
@@ -154,7 +154,7 @@ function NewRoutineModal({ onCreate, onClose }) {
         />
         <button
           onClick={() => onCreate(templateId, name)}
-          className="w-full rounded-xl bg-entreno-500 text-neutral-900 py-3 text-sm font-bold hover:bg-entreno-400 focus-visible:ring-2 focus-visible:ring-entreno-300"
+          className="w-full rounded-xl bg-entreno-500 text-neutral-900 py-3 text-sm font-bold hover:bg-entreno-400"
         >
           Crear rutina
         </button>
@@ -171,10 +171,10 @@ function DayEditor({ day, exercises, exercisesById, onAddExercise, onRemoveExerc
       <div className="w-full max-w-md surface rounded-t-3xl sm:rounded-3xl p-5 max-h-[85vh] flex flex-col">
         <div className="flex items-center justify-between mb-1">
           <div>
-            <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">{day.weekday}</p>
+            <p className="label-section text-slate-500">{day.weekday}</p>
             <h2 className="text-lg font-bold text-slate-100">{day.name}</h2>
           </div>
-          <button onClick={onClose} aria-label="Cerrar" className="p-2 rounded-full hover:bg-neutral-800">
+          <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-neutral-800">
             <X className="w-5 h-5 text-slate-400" />
           </button>
         </div>
@@ -198,7 +198,7 @@ function DayEditor({ day, exercises, exercisesById, onAddExercise, onRemoveExerc
                   <button
                     onClick={() => onRemoveExercise(rex.id)}
                     aria-label="Quitar ejercicio"
-                    className="p-2 rounded-full hover:bg-neutral-700 shrink-0"
+                    className="btn-icon hover:bg-neutral-700 shrink-0"
                   >
                     <Trash2 className="w-4 h-4 text-slate-500" />
                   </button>
@@ -236,7 +236,7 @@ function DayEditor({ day, exercises, exercisesById, onAddExercise, onRemoveExerc
 
         <button
           onClick={() => setPickerOpen(true)}
-          className="w-full mt-3 rounded-2xl border border-dashed border-entreno-500/40 text-entreno-300 py-3 text-sm font-semibold hover:bg-entreno-500/5 focus-visible:ring-2 focus-visible:ring-entreno-400 flex items-center justify-center gap-2"
+          className="w-full mt-3 rounded-2xl border border-dashed border-entreno-500/40 text-entreno-300 py-3 text-sm font-semibold hover:bg-entreno-500/5 flex items-center justify-center gap-2"
         >
           <Plus className="w-4 h-4" /> Agregar ejercicio
         </button>
@@ -296,7 +296,7 @@ export default function WeekView({
           </p>
           <button
             onClick={() => setShowNewRoutine(true)}
-            className="rounded-xl bg-entreno-500 text-neutral-900 px-5 py-3 text-sm font-bold hover:bg-entreno-400 focus-visible:ring-2 focus-visible:ring-entreno-300"
+            className="rounded-xl bg-entreno-500 text-neutral-900 px-5 py-3 text-sm font-bold hover:bg-entreno-400"
           >
             + Crear rutina
           </button>
@@ -327,7 +327,7 @@ export default function WeekView({
             <Dumbbell className="w-4 h-4 text-entreno-400" />
           </div>
           <div className="min-w-0 text-left">
-            <p className="text-[10px] uppercase tracking-wide text-slate-500 font-semibold">Rutina activa</p>
+            <p className="label-section text-slate-500">Rutina activa</p>
             <p className="text-sm font-bold text-slate-100 truncate">{activeRoutine.name}</p>
           </div>
         </div>
@@ -358,7 +358,7 @@ export default function WeekView({
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">{day.weekday}</p>
+                  <p className="label-section text-slate-500">{day.weekday}</p>
                   <p className={`text-sm font-bold truncate ${day.isRest ? 'text-slate-400' : 'text-slate-100'}`}>
                     {day.name}
                   </p>
@@ -377,7 +377,7 @@ export default function WeekView({
                     <button
                       onClick={() => setEditingDayId(day.id)}
                       aria-label="Editar día"
-                      className="p-2.5 rounded-full hover:bg-neutral-700 focus-visible:ring-2 focus-visible:ring-entreno-400"
+                      className="btn-icon hover:bg-neutral-700"
                     >
                       <Settings2 className="w-4 h-4 text-slate-400" />
                     </button>
@@ -385,7 +385,7 @@ export default function WeekView({
                       onClick={() => onStartSession(day)}
                       disabled={exCount === 0}
                       aria-label="Empezar entrenamiento"
-                      className={`p-2.5 rounded-full focus-visible:ring-2 focus-visible:ring-entreno-400 ${
+                      className={`btn-icon ${
                         exCount === 0 ? 'bg-neutral-700 opacity-40' : 'bg-entreno-500 hover:bg-entreno-400'
                       }`}
                     >

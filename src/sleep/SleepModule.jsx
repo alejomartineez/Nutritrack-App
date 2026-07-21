@@ -60,7 +60,7 @@ function SleepDayNav({ label, isToday, onPrev, onNext }) {
       <button
         onClick={onPrev}
         aria-label="Día anterior"
-        className="p-2 rounded-xl text-indigo-300 hover:bg-indigo-900/60 focus-visible:ring-2 focus-visible:ring-violet-400"
+        className="p-2 rounded-xl text-indigo-300 hover:bg-indigo-900/60"
       >
         <ChevronLeft className="w-5 h-5" />
       </button>
@@ -69,7 +69,7 @@ function SleepDayNav({ label, isToday, onPrev, onNext }) {
         onClick={onNext}
         disabled={isToday}
         aria-label="Día siguiente"
-        className={`p-2 rounded-xl focus-visible:ring-2 focus-visible:ring-violet-400 ${
+        className={`p-2 rounded-xl ${
           isToday ? 'text-indigo-700 cursor-not-allowed' : 'text-indigo-300 hover:bg-indigo-900/60'
         }`}
       >
@@ -132,7 +132,7 @@ export default function SleepModule() {
         storageKey="sleep_intro_seen"
         slides={SLEEP_INTRO_SLIDES}
         dotActiveClass="bg-sueno-400"
-        buttonClass="bg-sueno-500 hover:bg-sueno-400 text-slate-900 focus-visible:ring-sueno-300"
+        buttonClass="bg-sueno-500 hover:bg-sueno-400 text-slate-900"
         finalLabel="Entendido"
       />
 

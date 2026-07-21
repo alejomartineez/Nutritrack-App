@@ -114,7 +114,7 @@ export default function BarcodeScanner({ onDetected, onCancel }) {
         <p className="text-sm font-semibold text-slate-200 flex items-center gap-2">
           <ScanLine className="w-4 h-4 text-emerald-400" /> Escaneá el código
         </p>
-        <button onClick={onCancel} aria-label="Cerrar escáner" className="p-2 rounded-full hover:bg-slate-800">
+        <button onClick={onCancel} aria-label="Cerrar escáner" className="btn-icon hover:bg-slate-800">
           <X className="w-5 h-5 text-slate-300" />
         </button>
       </div>
@@ -150,7 +150,7 @@ export default function BarcodeScanner({ onDetected, onCancel }) {
         </p>
         <button
           onClick={onCancel}
-          className="w-full rounded-2xl border border-slate-600 text-slate-300 font-semibold py-3 hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-slate-400"
+          className="w-full rounded-2xl border border-slate-600 text-slate-300 font-semibold py-3 hover:bg-slate-800"
         >
           Cancelar
         </button>

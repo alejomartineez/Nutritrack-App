@@ -102,7 +102,7 @@ export default function ProfileSetup({
         <div className="h-8 px-5 flex justify-end">
           <button
             onClick={onSkip}
-            className="text-sm font-semibold text-slate-400 hover:text-slate-200 focus-visible:ring-2 focus-visible:ring-emerald-400 rounded px-2 py-1"
+            className="text-sm font-semibold text-slate-400 hover:text-slate-200 rounded px-2 py-1"
           >
             {dismissLabel}
           </button>
@@ -156,7 +156,7 @@ export default function ProfileSetup({
                 <button
                   key={o.value}
                   onClick={() => setActivityLevel(o.value)}
-                  className={`w-full flex items-center justify-between rounded-xl border px-4 py-2.5 text-left transition-colors focus-visible:ring-2 focus-visible:ring-emerald-400 ${
+                  className={`w-full flex items-center justify-between rounded-xl border px-4 py-2.5 text-left transition-colors ${
                     activityLevel === o.value
                       ? 'bg-emerald-500/10 border-emerald-500/40'
                       : 'bg-slate-800/60 border-slate-700 hover:border-slate-600'
@@ -224,7 +224,7 @@ export default function ProfileSetup({
           <button
             onClick={handleConfirm}
             disabled={!isComplete}
-            className={`w-full flex items-center justify-center gap-2 rounded-2xl font-bold py-3.5 transition-colors focus-visible:ring-2 focus-visible:ring-emerald-300 ${
+            className={`w-full flex items-center justify-center gap-2 rounded-2xl font-bold py-3.5 transition-colors ${
               isComplete
                 ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-900'
                 : 'bg-slate-800 text-slate-500 cursor-not-allowed'
@@ -246,7 +246,7 @@ export default function ProfileSetup({
 function Field({ label, children }) {
   return (
     <div className="space-y-2">
-      <p className="text-xs font-bold uppercase tracking-wide text-slate-400">{label}</p>
+      <p className="label-section">{label}</p>
       {children}
     </div>
   );
@@ -256,7 +256,7 @@ function SegButton({ active, onClick, children }) {
   return (
     <button
       onClick={onClick}
-      className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-emerald-400 ${
+      className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition-colors ${
         active
           ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
           : 'bg-slate-800/60 border-slate-700 text-slate-300 hover:border-slate-600'
@@ -270,7 +270,7 @@ function SegButton({ active, onClick, children }) {
 function NumberField({ label, unit, value, onChange, invalid, placeholder }) {
   return (
     <div className="space-y-1.5">
-      <p className="text-xs font-bold uppercase tracking-wide text-slate-400">{label}</p>
+      <p className="label-section">{label}</p>
       <div
         className={`rounded-xl border bg-slate-800/60 px-3 py-2.5 flex items-baseline gap-1 ${
           invalid ? 'border-red-500/50' : 'border-slate-700 focus-within:border-emerald-500/50'
@@ -295,7 +295,7 @@ function MacroPill({ label, value, color }) {
   return (
     <div className="rounded-xl surface px-2 py-2 text-center">
       <p className={`font-mono text-base font-bold ${color}`}>{value}</p>
-      <p className="text-[10px] uppercase tracking-wide text-slate-500 mt-0.5">{label}</p>
+      <p className="label-section text-slate-500 mt-0.5">{label}</p>
     </div>
   );
 }

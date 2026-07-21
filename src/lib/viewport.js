@@ -1,28 +1,30 @@
 import { useEffect, useState } from 'react';
 
 // ---------------------------------------------------------------------------
-// Utilidades de viewport.
+// Detección de teclado virtual.
 //
-// El problema que resuelven: en iOS Safari, cuando se abre el teclado, el
-// *visual viewport* (lo que realmente ves) se achica, pero el *layout viewport*
-// (contra el que se posiciona `position: fixed`) queda igual. Una barra fija con
-// `bottom: 0` queda anclada detrás del teclado, y Safari la reposiciona por su
-// cuenta mientras scrolleás — aparece flotando en medio de la pantalla.
+// Contexto del problema: en iOS, una barra `position: fixed; bottom: 0` queda
+// anclada al *layout viewport*, que con el teclado abierto sigue midiendo la
+// pantalla entera. La barra queda detrás del teclado y, peor, Safari despega
+// los elementos fijos durante el scroll y los reacomoda solo — así que termina
+// apareciendo en medio de la pantalla. La única solución confiable es
+// esconderla mientras el teclado está abierto.
 //
-// Se intentó perseguir al teclado subiendo la barra con un transform, y no
-// alcanza: durante el scroll Safari despega los elementos fijos y los reacomoda
-// a su antojo, así que la barra igual termina en el medio. La única solución
-// confiable es esconderla mientras el teclado está abierto.
+// Historial de intentos fallidos, para no repetirlos:
+//
+//   1. Subir la barra con un transform del alto del teclado. No sirve: durante
+//      el scroll iOS la reposiciona igual.
+//   2. Medir `innerHeight - (vv.offsetTop + vv.height)`. Mal: `offsetTop` es
+//      posición de scroll, así que al scrollear la cuenta daba cada vez menos
+//      y la barra reaparecía.
+//   3. Medir `innerHeight - vv.height`. Funciona en Safari, pero NO en la PWA
+//      instalada (standalone), donde iOS sí achica el layout viewport y la
+//      diferencia da casi cero.
+//
+// Conclusión: no hay una medición de viewport que valga en todos los modos. El
+// foco sí es inequívoco — si hay un campo de texto enfocado en un dispositivo
+// táctil, hay teclado. Eso es lo que se usa como señal principal.
 // ---------------------------------------------------------------------------
-
-/**
- * Mínimo de píxeles tapados para considerar que hay un teclado.
- *
- * No alcanza con `> 0`: al scrollear, Safari colapsa y expande su propia barra
- * de herramientas, y eso también achica el viewport visual (~50-90px). Un
- * teclado siempre tapa bastante más que esto.
- */
-const KEYBOARD_MIN_INSET = 120;
 
 const TEXTLESS_INPUT_TYPES = ['button', 'submit', 'reset', 'checkbox', 'radio', 'range', 'file', 'color'];
 
@@ -33,54 +35,45 @@ const isTextField = (el) =>
     (el.tagName === 'INPUT' && !TEXTLESS_INPUT_TYPES.includes(el.type)));
 
 /**
- * true cuando hay un teclado virtual abierto tapando el fondo del viewport.
+ * ¿Este dispositivo abre un teclado virtual al enfocar un campo?
  *
- * Devuelve false en desktop y en Android, donde el layout viewport sí se achica
- * con el teclado y por lo tanto el posicionamiento fijo ya funciona bien solo.
+ * Se combinan dos señales independientes en vez de confiar en una sola: en un
+ * iPhone `maxTouchPoints` es 5 y `pointer: coarse` da true, así que con que
+ * ande cualquiera de las dos alcanza. Se evalúa en cada evento (y no una vez al
+ * montar) para que el comportamiento no quede congelado si el navegador reporta
+ * distinto más tarde.
+ */
+const hasVirtualKeyboard = () =>
+  navigator.maxTouchPoints > 0 || window.matchMedia('(pointer: coarse)').matches;
+
+/**
+ * true cuando hay un teclado virtual abierto.
+ *
+ * Se apoya en el foco, no en medir el viewport: es la única señal que se
+ * comporta igual en Safari y en la PWA instalada. En desktop devuelve siempre
+ * false (no hay teclado virtual que tape nada), así que enfocar el buscador no
+ * esconde la barra ahí.
  */
 export function useKeyboardOpen() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    const vv = window.visualViewport;
-    const touch = window.matchMedia('(pointer: coarse)').matches;
-
-    // OJO: acá NO se resta `vv.offsetTop`, y es a propósito.
-    //
-    // `offsetTop` es cuánto se desplazó el viewport visual dentro del layout
-    // viewport, o sea posición de scroll — no tiene nada que ver con si hay un
-    // teclado. Restarlo hacía que, al scrollear con el teclado abierto, la
-    // cuenta diera cada vez menos "tapado" hasta cruzar el umbral: el hook
-    // creía que el teclado se había cerrado y mostraba la barra en medio de la
-    // pantalla. La diferencia de alturas sola es estable durante el scroll,
-    // porque `vv.height` solo cambia cuando aparece o desaparece algo (teclado
-    // o barra de Safari).
-    const measure = () => !!vv && window.innerHeight - vv.height > KEYBOARD_MIN_INSET;
-
-    const update = () => setOpen(measure());
-
-    // Respaldo: en un dispositivo táctil, un campo de texto enfocado implica
-    // teclado. Es inmune a cualquier rareza del viewport, y cubre el arranque
-    // (el foco llega antes que el `resize`). Al desenfocar se vuelve a medir.
     const onFocusIn = (e) => {
-      if (touch && isTextField(e.target)) setOpen(true);
+      if (hasVirtualKeyboard() && isTextField(e.target)) setOpen(true);
     };
 
-    update();
-    if (vv) {
-      vv.addEventListener('resize', update);
-      vv.addEventListener('scroll', update);
-    }
-    document.addEventListener('focusin', onFocusIn);
-    document.addEventListener('focusout', update);
+    // `focusout` llega antes de que el teclado termine de bajar, pero eso está
+    // bien: la barra reaparece con su fade mientras el teclado se va.
+    const onFocusOut = () => setOpen(false);
 
+    // Por si al montar ya hay algo enfocado (vuelta de un modal, autofocus).
+    if (hasVirtualKeyboard() && isTextField(document.activeElement)) setOpen(true);
+
+    document.addEventListener('focusin', onFocusIn);
+    document.addEventListener('focusout', onFocusOut);
     return () => {
-      if (vv) {
-        vv.removeEventListener('resize', update);
-        vv.removeEventListener('scroll', update);
-      }
       document.removeEventListener('focusin', onFocusIn);
-      document.removeEventListener('focusout', update);
+      document.removeEventListener('focusout', onFocusOut);
     };
   }, []);
 

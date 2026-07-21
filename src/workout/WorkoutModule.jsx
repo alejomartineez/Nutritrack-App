@@ -206,7 +206,7 @@ export default function WorkoutModule() {
         storageKey="workout_intro_seen"
         slides={WORKOUT_INTRO_SLIDES}
         dotActiveClass="bg-entreno-400"
-        buttonClass="bg-entreno-500 hover:bg-entreno-400 text-neutral-900 focus-visible:ring-entreno-300"
+        buttonClass="bg-entreno-500 hover:bg-entreno-400 text-neutral-900"
         finalLabel="Entendido"
       />
 

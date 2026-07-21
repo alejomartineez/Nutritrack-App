@@ -85,7 +85,7 @@ function SetRow({ set, index, onOpenPad, onUpdate, onRemove, onComplete }) {
       <button
         onClick={onComplete}
         aria-label="Marcar serie completa"
-        className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center focus-visible:ring-2 focus-visible:ring-entreno-400 ${
+        className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center ${
           set.completed ? 'bg-entreno-500 text-neutral-900' : 'bg-neutral-700 text-slate-400 hover:bg-neutral-600'
         }`}
       >
@@ -161,14 +161,14 @@ function ExerciseCard({
             <button
               onClick={() => setNotesOpen((v) => !v)}
               aria-label="Notas rápidas"
-              className={`p-2 rounded-full hover:bg-neutral-800 ${sessionExercise.notes ? 'text-entreno-400' : 'text-slate-500'}`}
+              className={`btn-icon hover:bg-neutral-800 ${sessionExercise.notes ? 'text-entreno-400' : 'text-slate-500'}`}
             >
               <StickyNote className="w-4 h-4" />
             </button>
-            <button onClick={() => setPickerOpen(true)} aria-label="Sustituir ejercicio" className="p-2 rounded-full hover:bg-neutral-800 text-slate-500">
+            <button onClick={() => setPickerOpen(true)} aria-label="Sustituir ejercicio" className="btn-icon hover:bg-neutral-800 text-slate-500">
               <Repeat className="w-4 h-4" />
             </button>
-            <button onClick={() => setCollapsed((c) => !c)} aria-label="Colapsar" className="p-2 rounded-full hover:bg-neutral-800 text-slate-500">
+            <button onClick={() => setCollapsed((c) => !c)} aria-label="Colapsar" className="btn-icon hover:bg-neutral-800 text-slate-500">
               {collapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
             </button>
           </div>
@@ -274,7 +274,7 @@ export default function InWorkoutSession({
     <div className="space-y-4">
       <div className="rounded-2xl surface-accent surface-accent-entreno p-4 flex items-center justify-between">
         <div>
-          <p className="text-xs uppercase tracking-wide text-entreno-400 font-bold">{session.dayName}</p>
+          <p className="label-section text-entreno-400">{session.dayName}</p>
           <p className="text-sm text-slate-300 mt-0.5">{elapsedMin} min · {totalCompletedSets} series completadas</p>
         </div>
         <div className="flex items-center gap-2">
@@ -286,7 +286,7 @@ export default function InWorkoutSession({
           </button>
           <button
             onClick={onFinish}
-            className="px-4 py-2.5 rounded-xl bg-entreno-500 text-neutral-900 text-sm font-bold flex items-center gap-1.5 hover:bg-entreno-400 focus-visible:ring-2 focus-visible:ring-entreno-300"
+            className="px-4 py-2.5 rounded-xl bg-entreno-500 text-neutral-900 text-sm font-bold flex items-center gap-1.5 hover:bg-entreno-400"
           >
             <Flag className="w-4 h-4" /> Finalizar
           </button>

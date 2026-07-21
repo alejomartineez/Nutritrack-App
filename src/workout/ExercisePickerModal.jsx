@@ -30,7 +30,7 @@ export default function ExercisePickerModal({ title, exercises, onSelect, onCrea
       <div className="w-full max-w-md surface rounded-t-3xl sm:rounded-3xl p-5 max-h-[85vh] flex flex-col">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-bold text-slate-100">{title || 'Elegí un ejercicio'}</h2>
-          <button onClick={onClose} aria-label="Cerrar" className="p-2 rounded-full hover:bg-neutral-800">
+          <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-neutral-800">
             <X className="w-5 h-5 text-slate-400" />
           </button>
         </div>
@@ -66,7 +66,7 @@ export default function ExercisePickerModal({ title, exercises, onSelect, onCrea
             <button
               key={ex.id}
               onClick={() => onSelect(ex.id)}
-              className="w-full text-left rounded-2xl bg-neutral-800/60 border border-neutral-700 p-3.5 flex items-center justify-between gap-3 hover:border-entreno-500/50 focus-visible:ring-2 focus-visible:ring-entreno-400"
+              className="w-full text-left rounded-2xl bg-neutral-800/60 border border-neutral-700 p-3.5 flex items-center justify-between gap-3 hover:border-entreno-500/50"
             >
               <div className="min-w-0">
                 <p className="text-sm font-medium text-slate-200">{ex.name}</p>
@@ -85,7 +85,7 @@ export default function ExercisePickerModal({ title, exercises, onSelect, onCrea
         {!showNewForm ? (
           <button
             onClick={() => setShowNewForm(true)}
-            className="w-full mt-3 rounded-2xl border border-dashed border-entreno-500/40 text-entreno-300 py-3 text-sm font-semibold hover:bg-entreno-500/5 focus-visible:ring-2 focus-visible:ring-entreno-400 flex items-center justify-center gap-2"
+            className="w-full mt-3 rounded-2xl border border-dashed border-entreno-500/40 text-entreno-300 py-3 text-sm font-semibold hover:bg-entreno-500/5 flex items-center justify-center gap-2"
           >
             <Plus className="w-4 h-4" /> Crear ejercicio personalizado
           </button>

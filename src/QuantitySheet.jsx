@@ -33,8 +33,8 @@ export default function QuantitySheet({ food, mode = 'plan', onConfirm, onCancel
 
   const accent =
     mode === 'plan'
-      ? { ring: 'focus-visible:ring-emerald-400', chip: 'bg-emerald-500 text-slate-900', btn: 'bg-emerald-500 hover:bg-emerald-400 text-slate-900', border: 'border-emerald-500/30' }
-      : { ring: 'focus-visible:ring-amber-400', chip: 'bg-amber-500 text-slate-900', btn: 'bg-amber-500 hover:bg-amber-400 text-slate-900', border: 'border-amber-500/30' };
+      ? { ring: '', chip: 'bg-emerald-500 text-slate-900', btn: 'bg-emerald-500 hover:bg-emerald-400 text-slate-900', border: 'border-emerald-500/30' }
+      : { ring: '', chip: 'bg-amber-500 text-slate-900', btn: 'bg-amber-500 hover:bg-amber-400 text-slate-900', border: 'border-amber-500/30' };
 
   const pick = (value) => {
     setQty(value);
@@ -66,7 +66,7 @@ export default function QuantitySheet({ food, mode = 'plan', onConfirm, onCancel
                 key={value}
                 onClick={() => pick(value)}
                 aria-pressed={active}
-                className={`py-2.5 rounded-xl text-sm font-semibold transition-colors focus-visible:ring-2 ${accent.ring} ${
+                className={`py-2.5 rounded-xl text-sm font-semibold transition-colors ${accent.ring} ${
                   active ? accent.chip : 'bg-slate-900 border border-slate-700 text-slate-300 hover:border-slate-600'
                 }`}
               >
@@ -103,14 +103,14 @@ export default function QuantitySheet({ food, mode = 'plan', onConfirm, onCancel
         <div className="flex gap-3 mt-5">
           <button
             onClick={onCancel}
-            className="flex-1 rounded-xl border border-slate-600 text-slate-300 font-semibold py-3 hover:bg-slate-700/50 focus-visible:ring-2 focus-visible:ring-slate-400"
+            className="flex-1 rounded-xl border border-slate-600 text-slate-300 font-semibold py-3 hover:bg-slate-700/50"
           >
             Cancelar
           </button>
           <button
             onClick={() => valid && onConfirm(amount)}
             disabled={!valid}
-            className={`flex-1 rounded-xl font-bold py-3 flex items-center justify-center gap-2 transition-colors focus-visible:ring-2 ${accent.ring} ${
+            className={`flex-1 rounded-xl font-bold py-3 flex items-center justify-center gap-2 transition-colors ${accent.ring} ${
               valid ? accent.btn : 'bg-slate-700 text-slate-500 cursor-not-allowed'
             }`}
           >

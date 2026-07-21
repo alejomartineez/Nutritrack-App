@@ -54,7 +54,7 @@ export default function SleepDashboard({ sleepLogs, goalHours, onSelectDay }) {
                 onClick={onSelectDay ? () => onSelectDay(d.key) : undefined}
                 aria-label={onSelectDay ? `Editar ${d.label} (${d.hours}h)` : undefined}
                 className={`flex-1 flex flex-col items-center gap-1.5 ${
-                  onSelectDay ? 'rounded-lg hover:bg-indigo-900/40 focus-visible:ring-2 focus-visible:ring-violet-400 py-1 -my-1' : ''
+                  onSelectDay ? 'rounded-lg hover:bg-indigo-900/40 py-1 -my-1' : ''
                 }`}
               >
                 <div className="w-full h-28 flex items-end">
@@ -83,11 +83,11 @@ export default function SleepDashboard({ sleepLogs, goalHours, onSelectDay }) {
         </div>
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div className="rounded-xl bg-indigo-900/40 border border-indigo-500/20 px-3 py-2.5">
-            <p className="text-[10px] uppercase text-indigo-400 font-semibold">Hora de acostarse</p>
+            <p className="label-section">Hora de acostarse</p>
             <p className={`font-semibold mt-0.5 ${bedtimeConsistency.color}`}>{bedtimeConsistency.label}</p>
           </div>
           <div className="rounded-xl bg-indigo-900/40 border border-indigo-500/20 px-3 py-2.5">
-            <p className="text-[10px] uppercase text-indigo-400 font-semibold">Hora de despertar</p>
+            <p className="label-section">Hora de despertar</p>
             <p className={`font-semibold mt-0.5 ${wakeConsistency.color}`}>{wakeConsistency.label}</p>
           </div>
         </div>

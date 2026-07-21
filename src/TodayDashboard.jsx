@@ -50,7 +50,7 @@ function SummaryCard({ onClick, accentClasses, icon, title, main, sub }) {
       <div className="flex items-center justify-between gap-1">
         <div className="flex items-center gap-1.5 min-w-0">
           {icon}
-          <span className="text-[10px] uppercase tracking-wide font-bold truncate">{title}</span>
+          <span className="label-section text-inherit truncate">{title}</span>
         </div>
         <ChevronRight className="w-3.5 h-3.5 opacity-50 shrink-0" />
       </div>
