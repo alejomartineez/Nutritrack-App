@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { CalendarClock, LayoutDashboard, Sparkles, ChevronLeft, ChevronRight, MoonStar } from 'lucide-react';
 import ModuleIntro from '../ModuleIntro';
+import SubTabs from '../lib/SubTabs';
 import SleepLogForm from './SleepLogForm';
 import SleepDashboard from './SleepDashboard';
 import SleepInsights from './SleepInsights';
@@ -8,20 +9,23 @@ import {
   loadSleepLogs,
   saveSleepLogs,
   loadSleepGoalHours,
+  saveSleepGoalHours,
   upsertSleepLog,
   localDateKey,
   addDaysToKey,
 } from './sleepStorage';
 
+// Mismo esqueleto que Entreno (Hoy · Semana · Progreso): las tres pestañas van
+// de "lo que hago ahora" a "cómo vengo" a "qué significa".
 const TABS = [
-  { id: 'registro', label: 'Registro', icon: CalendarClock },
+  { id: 'hoy', label: 'Hoy', icon: CalendarClock },
   { id: 'semana', label: 'Semana', icon: LayoutDashboard },
   { id: 'insights', label: 'Insights', icon: Sparkles },
 ];
 
 const sleepBadge = (Icon) => (
-  <div className="flex items-center justify-center w-28 h-28 rounded-full bg-violet-500/10 border border-violet-500/30">
-    <Icon className="w-12 h-12 text-violet-400" />
+  <div className="flex items-center justify-center w-28 h-28 rounded-full bg-sueno-500/10 border border-sueno-500/30">
+    <Icon className="w-12 h-12 text-sueno-400" />
   </div>
 );
 
@@ -33,16 +37,16 @@ const SLEEP_INTRO_SLIDES = [
     text: 'Registrá cuánto y cómo dormís para entender tu energía día a día.',
   },
   {
-    key: 'registro',
+    key: 'hoy',
     visual: sleepBadge(CalendarClock),
     title: 'Registrá tu noche',
-    text: 'Anotá a qué hora te acostaste, cuándo te despertaste y cómo amaneciste. Toma segundos.',
+    text: 'A qué hora te acostaste, cuándo te despertaste y cómo amaneciste. Toma segundos.',
   },
   {
     key: 'insights',
     visual: sleepBadge(Sparkles),
     title: 'Descubrí tus patrones',
-    text: 'En "Semana" ves tus horas de sueño de un vistazo, y en "Insights", consejos según lo que vas registrando.',
+    text: 'En «Semana» ves tus horas de un vistazo. En «Insights», qué factores te ayudan y a qué hora te conviene acostarte.',
   },
 ];
 
@@ -57,21 +61,15 @@ const dayLabelFor = (key, todayKey) => {
 function SleepDayNav({ label, isToday, onPrev, onNext }) {
   return (
     <div className="flex items-center justify-between surface rounded-2xl px-2 py-1.5">
-      <button
-        onClick={onPrev}
-        aria-label="Día anterior"
-        className="p-2 rounded-xl text-indigo-300 hover:bg-indigo-900/60"
-      >
+      <button onClick={onPrev} aria-label="Día anterior" className="btn-icon text-ink-300 hover:bg-ink-700">
         <ChevronLeft className="w-5 h-5" />
       </button>
-      <span className="text-sm font-bold text-indigo-100">{label}</span>
+      <span className="text-sm font-bold text-ink-100">{label}</span>
       <button
         onClick={onNext}
         disabled={isToday}
         aria-label="Día siguiente"
-        className={`p-2 rounded-xl ${
-          isToday ? 'text-indigo-700 cursor-not-allowed' : 'text-indigo-300 hover:bg-indigo-900/60'
-        }`}
+        className={`btn-icon ${isToday ? 'text-ink-700 cursor-not-allowed' : 'text-ink-300 hover:bg-ink-700'}`}
       >
         <ChevronRight className="w-5 h-5" />
       </button>
@@ -83,7 +81,7 @@ export default function SleepModule() {
   const [loaded, setLoaded] = useState(false);
   const [sleepLogs, setSleepLogs] = useState({});
   const [goalHours, setGoalHours] = useState(8);
-  const [subTab, setSubTab] = useState('registro');
+  const [subTab, setSubTab] = useState('hoy');
 
   const todayKey = localDateKey();
   // Día que se está registrando/editando (por defecto hoy; se puede retroceder).
@@ -95,7 +93,9 @@ export default function SleepModule() {
     const logs = loadSleepLogs();
     setSleepLogs(logs);
     setGoalHours(loadSleepGoalHours());
-    setSubTab(logs[localDateKey()] ? 'semana' : 'registro');
+    // Si ya registraste lo de hoy, abrir el formulario otra vez no aporta:
+    // se entra directo a la semana.
+    setSubTab(logs[localDateKey()] ? 'semana' : 'hoy');
     setLoaded(true);
   }, []);
 
@@ -114,13 +114,18 @@ export default function SleepModule() {
     setSubTab('semana');
   };
 
+  const handleChangeGoal = (hours) => {
+    setGoalHours(hours);
+    saveSleepGoalHours(hours);
+  };
+
   const openDayInForm = (key) => {
     setSelectedKey(key);
-    setSubTab('registro');
+    setSubTab('hoy');
   };
 
   const goToTab = (id) => {
-    if (id === 'registro') setSelectedKey(todayKey); // la pestaña "Registro" siempre abre hoy
+    if (id === 'hoy') setSelectedKey(todayKey); // la pestaña "Hoy" siempre abre hoy
     setSubTab(id);
   };
 
@@ -132,25 +137,13 @@ export default function SleepModule() {
         storageKey="sleep_intro_seen"
         slides={SLEEP_INTRO_SLIDES}
         dotActiveClass="bg-sueno-400"
-        buttonClass="bg-sueno-500 hover:bg-sueno-400 text-slate-900"
+        buttonClass="bg-sueno-500 hover:bg-sueno-400 text-ink-900"
         finalLabel="Entendido"
       />
 
-      <div className="grid grid-cols-3 gap-2 surface rounded-2xl p-1">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => goToTab(tab.id)}
-            className={`py-2.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 transition-colors ${
-              subTab === tab.id ? 'bg-violet-500 text-slate-900' : 'text-indigo-400'
-            }`}
-          >
-            <tab.icon className="w-4 h-4" /> {tab.label}
-          </button>
-        ))}
-      </div>
+      <SubTabs tabs={TABS} value={subTab} onChange={goToTab} accent="sueno" />
 
-      {subTab === 'registro' && (
+      {subTab === 'hoy' && (
         <>
           <SleepDayNav
             label={dayLabelFor(selectedKey, todayKey)}
@@ -170,10 +163,15 @@ export default function SleepModule() {
       )}
 
       {subTab === 'semana' && (
-        <SleepDashboard sleepLogs={sleepLogs} goalHours={goalHours} onSelectDay={openDayInForm} />
+        <SleepDashboard
+          sleepLogs={sleepLogs}
+          goalHours={goalHours}
+          onSelectDay={openDayInForm}
+          onChangeGoal={handleChangeGoal}
+        />
       )}
 
-      {subTab === 'insights' && <SleepInsights sleepLogs={sleepLogs} />}
+      {subTab === 'insights' && <SleepInsights sleepLogs={sleepLogs} goalHours={goalHours} />}
     </div>
   );
 }

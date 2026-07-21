@@ -263,8 +263,16 @@
      tiempo) se siente como un latigazo. easeOutCubic reparte mucho mejor y,
      con algo más de duración, el cambio de sección se lee como un deslizamiento
      en vez de un salto. */
-  .anim-tab-forward { animation: tab-forward 0.38s cubic-bezier(0.33, 1, 0.68, 1) both; }
-  .anim-tab-back    { animation: tab-back 0.38s cubic-bezier(0.33, 1, 0.68, 1) both; }
+  /* `backwards` y no `both`: con `both` el elemento se queda con el
+     `transform` del último keyframe (una matriz identidad, pero `transform`
+     al fin), y un ancestro con transform es bloque contenedor de
+     `position: fixed`. Resultado: TODO modal abierto dentro de una pestaña de
+     módulo —el alta de rutina, el editor de día, el selector de ejercicios—
+     se anclaba a la pestaña en vez de a la pantalla y quedaba recortado.
+     El último keyframe ya es `transform: none`, así que soltar el fill final
+     no cambia nada visualmente. */
+  .anim-tab-forward { animation: tab-forward 0.38s cubic-bezier(0.33, 1, 0.68, 1) backwards; }
+  .anim-tab-back    { animation: tab-back 0.38s cubic-bezier(0.33, 1, 0.68, 1) backwards; }
 
   /* Feedback táctil: mini "hundido" al presionar cualquier control. */
   button:active { transform: scale(0.98); }

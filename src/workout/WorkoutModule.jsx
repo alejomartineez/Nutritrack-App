@@ -1,10 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, BarChart3, Dumbbell } from 'lucide-react';
+import { CalendarDays, BarChart3, Dumbbell, Flame } from 'lucide-react';
 import ModuleIntro from '../ModuleIntro';
+import SubTabs from '../lib/SubTabs';
 import WeekView from './WeekView';
+import TodayView from './TodayView';
 import InWorkoutSession from './InWorkoutSession';
-import Analytics from './Analytics';
+import ProgressView from './ProgressView';
 import {
+  getRoutineDayForDate,
+  getSessionsForDate,
+  getRecentSessions,
+  computeWeekPlan,
+  summarizeSession,
   loadExercises,
   saveExercises,
   loadRoutines,
@@ -44,22 +51,39 @@ const WORKOUT_INTRO_SLIDES = [
     text: 'Creá una rutina semanal, registrá tus series y mirá cómo progresás con el tiempo.',
   },
   {
+    key: 'hoy',
+    visual: workoutBadge(Flame),
+    title: 'Todo empieza en «Hoy»',
+    text: 'Te dice qué te toca hoy y arranca el entreno de un toque. Si es día de descanso, también.',
+  },
+  {
     key: 'semana',
     visual: workoutBadge(CalendarDays),
     title: 'Tu semana de entreno',
-    text: 'Elegí una plantilla, armá tus días y empezá el entreno de hoy con un toque.',
+    text: 'Elegí una plantilla y armá los ejercicios de cada día. Se configura una vez.',
   },
   {
-    key: 'analiticas',
+    key: 'progreso',
     visual: workoutBadge(BarChart3),
     title: 'Mirá tu progreso',
-    text: 'Volumen, récords y evolución de cada ejercicio a medida que vas registrando sesiones.',
+    text: 'Volumen, series por músculo, récords y el historial completo de tus sesiones.',
   },
 ];
 
+const TABS = [
+  { id: 'hoy', label: 'Hoy', icon: Flame },
+  { id: 'semana', label: 'Semana', icon: CalendarDays },
+  { id: 'progreso', label: 'Progreso', icon: BarChart3 },
+];
+
 export default function WorkoutModule() {
-  const [subTab, setSubTab] = useState('semana'); // 'semana' | 'analiticas'
+  const [subTab, setSubTab] = useState('hoy'); // 'hoy' | 'semana' | 'progreso'
   const [loaded, setLoaded] = useState(false);
+  // El editor de día y el alta de rutina se abren tanto desde "Semana" como
+  // desde el hero de "Hoy", así que el estado vive acá y WeekView lo recibe
+  // controlado.
+  const [editingDayId, setEditingDayId] = useState(null);
+  const [showNewRoutine, setShowNewRoutine] = useState(false);
 
   const [exercises, setExercises] = useState([]);
   const [routines, setRoutines] = useState([]);
@@ -100,6 +124,16 @@ export default function WorkoutModule() {
 
   const exercisesById = useMemo(() => Object.fromEntries(exercises.map((e) => [e.id, e])), [exercises]);
   const activeRoutine = useMemo(() => routines.find((r) => r.id === activeRoutineId) || null, [routines, activeRoutineId]);
+
+  // Estado de hoy y de la semana, compartido entre "Hoy" y "Semana".
+  const todayDay = useMemo(() => getRoutineDayForDate(activeRoutine), [activeRoutine]);
+  const todaySessions = useMemo(() => getSessionsForDate(sessions), [sessions]);
+  const weekPlan = useMemo(() => computeWeekPlan(activeRoutine, sessions), [activeRoutine, sessions]);
+  const lastSession = useMemo(() => getRecentSessions(sessions, 1)[0] || null, [sessions]);
+  const lastSessionSummary = useMemo(
+    () => (lastSession ? summarizeSession(lastSession, exercisesById) : null),
+    [lastSession, exercisesById]
+  );
 
   const updateActiveRoutine = (updater) => {
     setRoutines((prev) => prev.map((r) => (r.id === activeRoutineId ? updater(r) : r)));
@@ -210,24 +244,29 @@ export default function WorkoutModule() {
         finalLabel="Entendido"
       />
 
-      <div className="grid grid-cols-2 gap-2 surface rounded-2xl p-1">
-        <button
-          onClick={() => setSubTab('semana')}
-          className={`py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors ${
-            subTab === 'semana' ? 'bg-entreno-500 text-neutral-900' : 'text-slate-400'
-          }`}
-        >
-          <CalendarDays className="w-4 h-4" /> Semana
-        </button>
-        <button
-          onClick={() => setSubTab('analiticas')}
-          className={`py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors ${
-            subTab === 'analiticas' ? 'bg-entreno-500 text-neutral-900' : 'text-slate-400'
-          }`}
-        >
-          <BarChart3 className="w-4 h-4" /> Analíticas
-        </button>
-      </div>
+      <SubTabs tabs={TABS} value={subTab} onChange={setSubTab} accent="entreno" />
+
+      {subTab === 'hoy' && (
+        <TodayView
+          activeRoutine={activeRoutine}
+          todayDay={todayDay}
+          todaySessions={todaySessions}
+          lastSession={lastSession}
+          lastSessionSummary={lastSessionSummary}
+          weekPlan={weekPlan}
+          summarize={(session) => summarizeSession(session, exercisesById)}
+          onStartSession={handleStartSession}
+          onEditDay={(day) => {
+            setSubTab('semana');
+            setEditingDayId(day.id);
+          }}
+          onCreateRoutine={() => {
+            setSubTab('semana');
+            setShowNewRoutine(true);
+          }}
+          onGoToWeek={() => setSubTab('semana')}
+        />
+      )}
 
       {subTab === 'semana' && (
         <WeekView
@@ -236,6 +275,11 @@ export default function WorkoutModule() {
           activeRoutineId={activeRoutineId}
           setActiveRoutineId={setActiveRoutineId}
           exercises={exercises}
+          weekPlan={weekPlan}
+          editingDayId={editingDayId}
+          setEditingDayId={setEditingDayId}
+          showNewRoutine={showNewRoutine}
+          setShowNewRoutine={setShowNewRoutine}
           onCreateRoutine={handleCreateRoutine}
           onRenameRoutine={handleRenameRoutine}
           onDeleteRoutine={handleDeleteRoutine}
@@ -247,7 +291,14 @@ export default function WorkoutModule() {
         />
       )}
 
-      {subTab === 'analiticas' && <Analytics sessionsMap={sessions} exercisesById={exercisesById} />}
+      {subTab === 'progreso' && (
+        <ProgressView
+          sessionsMap={sessions}
+          exercisesById={exercisesById}
+          activeRoutine={activeRoutine}
+          onGoToToday={() => setSubTab('hoy')}
+        />
+      )}
     </div>
   );
 }

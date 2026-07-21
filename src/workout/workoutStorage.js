@@ -225,6 +225,187 @@ const startOfWeek = (date) => {
   return d;
 };
 
+// ------------------------------ Día de hoy --------------------------------
+//
+// La rutina guarda sus 7 días en orden de WEEKDAY_LABELS (lunes primero),
+// mientras que `Date.getDay()` devuelve domingo=0. Todo lo que mapea una fecha
+// a un día de rutina pasa por acá para no repetir el corrimiento.
+
+/** Índice 0-6 del día de la semana con LUNES como 0. */
+export const weekdayIndex = (date = new Date()) => (date.getDay() + 6) % 7;
+
+/** El día de la rutina que corresponde a una fecha (o null si no hay rutina). */
+export const getRoutineDayForDate = (routine, date = new Date()) =>
+  routine?.days?.[weekdayIndex(date)] || null;
+
+/** Sesiones ya finalizadas de una fecha concreta, de la más reciente a la más vieja. */
+export const getSessionsForDate = (sessionsMap, dateKey = localDateKey()) =>
+  Object.values(sessionsMap)
+    .filter((s) => s.date === dateKey && s.endedAt)
+    .sort((a, b) => b.endedAt - a.endedAt);
+
+/** Sesiones finalizadas, de la más reciente a la más vieja. */
+export const getRecentSessions = (sessionsMap, limit = Infinity) =>
+  Object.values(sessionsMap)
+    .filter((s) => s.endedAt)
+    .sort((a, b) => b.endedAt - a.endedAt)
+    .slice(0, limit);
+
+/**
+ * Números de cabecera de una sesión. Solo cuenta series completadas que no
+ * sean calentamiento, igual que el resto de las analíticas: si el
+ * calentamiento sumara volumen, dos sesiones idénticas darían distinto según
+ * cuánto calentaste.
+ */
+export const summarizeSession = (session, exercisesById = {}) => {
+  let volume = 0;
+  let effectiveSets = 0;
+  const muscleGroups = [];
+
+  session.exercises.forEach((ex) => {
+    const done = ex.sets.filter((s) => s.completed && s.type !== 'warmup');
+    if (done.length === 0) return;
+    effectiveSets += done.length;
+    done.forEach((s) => {
+      volume += (Number(s.weight) || 0) * (Number(s.reps) || 0);
+    });
+    const group = exercisesById[ex.exerciseId]?.muscleGroup;
+    if (group && !muscleGroups.includes(group)) muscleGroups.push(group);
+  });
+
+  return {
+    volume: Math.round(volume),
+    effectiveSets,
+    exercisesDone: session.exercises.filter((ex) => ex.sets.some((s) => s.completed)).length,
+    durationMin: session.endedAt ? Math.max(1, Math.round((session.endedAt - session.startedAt) / 60000)) : null,
+    muscleGroups,
+  };
+};
+
+/**
+ * Los 7 días de la semana en curso cruzados con lo que efectivamente se
+ * entrenó. Es lo que alimenta la tira de puntos de la pestaña "Hoy": de un
+ * vistazo se ve qué tocaba, qué se hizo y qué se salteó.
+ */
+export const computeWeekPlan = (routine, sessionsMap, referenceDate = new Date()) => {
+  const weekStart = startOfWeek(referenceDate);
+  const todayKey = localDateKey(referenceDate);
+
+  return Array.from({ length: 7 }, (_, i) => {
+    const date = new Date(weekStart);
+    date.setDate(date.getDate() + i);
+    const key = localDateKey(date);
+    const day = routine?.days?.[i] || null;
+    const sessions = getSessionsForDate(sessionsMap, key);
+
+    return {
+      key,
+      weekday: WEEKDAY_LABELS[i],
+      short: WEEKDAY_LABELS[i].slice(0, 1),
+      dayName: day?.name || null,
+      dayId: day?.id || null,
+      isRest: day ? day.isRest : false,
+      exerciseCount: day?.exercises?.length || 0,
+      isToday: key === todayKey,
+      isPast: key < todayKey,
+      isFuture: key > todayKey,
+      trained: sessions.length > 0,
+      sessions,
+    };
+  });
+};
+
+/**
+ * Adherencia por semana: cuántos días de entreno programaba la rutina vs en
+ * cuántos se registró sesión. Reemplaza al "volumen y ya": se puede levantar
+ * menos kilos una semana y aun así haber cumplido, y eso es lo que sostiene
+ * el hábito.
+ */
+export const computeWeeklyAdherence = (routine, sessionsMap, weeksBack = 4, referenceDate = new Date()) => {
+  const plannedPerWeek = routine ? routine.days.filter((d) => !d.isRest).length : 0;
+  const weeks = [];
+
+  for (let i = weeksBack - 1; i >= 0; i--) {
+    const ref = new Date(referenceDate);
+    ref.setDate(ref.getDate() - i * 7);
+    const weekStart = startOfWeek(ref);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+
+    // Días distintos con sesión, no sesiones: dos entrenos el mismo día no
+    // cuentan como dos días cumplidos.
+    const daysTrained = new Set(
+      Object.values(sessionsMap)
+        .filter((s) => s.endedAt)
+        .filter((s) => {
+          const d = new Date(`${s.date}T00:00:00`);
+          return d >= weekStart && d < weekEnd;
+        })
+        .map((s) => s.date)
+    ).size;
+
+    weeks.push({ weekStart: localDateKey(weekStart), planned: plannedPerWeek, done: daysTrained });
+  }
+  return weeks;
+};
+
+/** Volumen efectivo (peso × reps, sin calentamiento) en [start, end). */
+const volumeInRange = (sessionsMap, start, end) => {
+  let volume = 0;
+  Object.values(sessionsMap).forEach((session) => {
+    const date = new Date(`${session.date}T00:00:00`);
+    if (date < start || date >= end) return;
+    session.exercises.forEach((ex) => {
+      ex.sets.forEach((s) => {
+        if (s.completed && s.type !== 'warmup') volume += (Number(s.weight) || 0) * (Number(s.reps) || 0);
+      });
+    });
+  });
+  return Math.round(volume);
+};
+
+/**
+ * Volumen de la semana en curso y variación contra la anterior.
+ *
+ * La comparación es contra los MISMOS días de la semana pasada, no contra la
+ * semana entera: un martes lleva dos días de entreno y la semana anterior
+ * lleva siete, así que comparar los totales daba siempre un desplome del 80%
+ * y el número no significaba nada hasta el domingo.
+ */
+export const computeVolumeTrend = (sessionsMap, referenceDate = new Date()) => {
+  const weekStart = startOfWeek(referenceDate);
+  const daysElapsed = weekdayIndex(referenceDate) + 1;
+
+  const currentEnd = new Date(weekStart);
+  currentEnd.setDate(currentEnd.getDate() + daysElapsed);
+
+  const previousStart = new Date(weekStart);
+  previousStart.setDate(previousStart.getDate() - 7);
+  const previousEnd = new Date(previousStart);
+  previousEnd.setDate(previousEnd.getDate() + daysElapsed);
+
+  const current = volumeInRange(sessionsMap, weekStart, currentEnd);
+  const previous = volumeInRange(sessionsMap, previousStart, previousEnd);
+  const pctChange = previous > 0 ? Math.round(((current - previous) / previous) * 100) : null;
+
+  return { current, previous, pctChange, daysElapsed };
+};
+
+/** Evolución del 1RM estimado de un ejercicio, sesión a sesión (para sparklines). */
+export const computeExerciseProgress = (sessionsMap, exerciseId) =>
+  getRecentSessions(sessionsMap)
+    .slice()
+    .reverse()
+    .map((session) => {
+      const best = session.exercises
+        .filter((ex) => ex.exerciseId === exerciseId)
+        .flatMap((ex) => ex.sets)
+        .filter((s) => s.completed && s.type !== 'warmup')
+        .reduce((max, s) => Math.max(max, epley1RM(s.weight, s.reps)), 0);
+      return best > 0 ? { date: session.date, estOneRM: best } : null;
+    })
+    .filter(Boolean);
+
 export const computeWeeklyEffectiveSets = (sessionsMap, exercisesById, referenceDate = new Date()) => {
   const weekStart = startOfWeek(referenceDate);
   const weekEnd = new Date(weekStart);

@@ -276,11 +276,20 @@ export default function WeekView({
   onUpdateTarget,
   onCreateCustomExercise,
   onStartSession,
-  hasSessionToday,
+  // Controlados desde WorkoutModule: la pestaña "Hoy" también abre estos
+  // diálogos, así que el estado no puede vivir acá adentro.
+  editingDayId,
+  setEditingDayId,
+  showNewRoutine,
+  setShowNewRoutine,
+  weekPlan = [],
 }) {
-  const [showNewRoutine, setShowNewRoutine] = useState(false);
-  const [editingDayId, setEditingDayId] = useState(null);
   const [showRoutineManager, setShowRoutineManager] = useState(false);
+
+  const planByDayId = useMemo(
+    () => Object.fromEntries(weekPlan.filter((d) => d.dayId).map((d) => [d.dayId, d])),
+    [weekPlan]
+  );
 
   const exercisesById = useMemo(() => Object.fromEntries(exercises.map((e) => [e.id, e])), [exercises]);
 
@@ -342,6 +351,10 @@ export default function WeekView({
       <div className="space-y-2.5">
         {activeRoutine.days.map((day) => {
           const exCount = day.exercises.length;
+          const plan = planByDayId[day.id];
+          const isToday = plan?.isToday ?? false;
+          const trained = plan?.trained ?? false;
+
           return (
             <div
               key={day.id}
@@ -352,44 +365,54 @@ export default function WeekView({
                 // border-neutral-800 (que es el color de card, no de borde), así
                 // que el contenedor directamente no se veía.
                 day.isRest
-                  ? 'border border-dashed border-slate-700/80 bg-slate-950/40'
-                  : 'surface border-l-2 border-l-entreno-600'
+                  ? `border border-dashed bg-ink-950/40 ${isToday ? 'border-ink-500' : 'border-ink-700/80'}`
+                  : `surface border-l-2 ${isToday ? 'border-l-entreno-400 ring-1 ring-entreno-500/30' : 'border-l-entreno-600'}`
               }`}
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="label-section text-slate-500">{day.weekday}</p>
-                  <p className={`text-sm font-bold truncate ${day.isRest ? 'text-slate-400' : 'text-slate-100'}`}>
+                  <p className="label-section flex items-center gap-1.5">
+                    {day.weekday}
+                    {isToday && <span className="text-entreno-400 font-bold tracking-normal normal-case">· Hoy</span>}
+                  </p>
+                  <p className={`text-sm font-bold truncate ${day.isRest ? 'text-ink-400' : 'text-ink-100'}`}>
                     {day.name}
                   </p>
                   {day.isRest ? (
-                    <p className="text-xs text-slate-600 mt-0.5">Sin entrenamiento programado</p>
+                    <p className="text-xs text-ink-600 mt-0.5">Sin entrenamiento programado</p>
                   ) : (
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      {exCount === 0 ? 'Sin ejercicios todavía' : `${exCount} ejercicio${exCount === 1 ? '' : 's'}`}
+                    <p className="text-xs mt-0.5 flex items-center gap-1.5">
+                      {trained && (
+                        <span className="inline-flex items-center gap-1 text-brand-400 font-semibold">
+                          <Check className="w-3 h-3" strokeWidth={3} /> Entrenado
+                        </span>
+                      )}
+                      <span className="text-ink-500">
+                        {exCount === 0 ? 'Sin ejercicios todavía' : `${exCount} ejercicio${exCount === 1 ? '' : 's'}`}
+                      </span>
                     </p>
                   )}
                 </div>
                 {day.isRest ? (
-                  <Moon className="w-5 h-5 text-slate-500 shrink-0" />
+                  <Moon className="w-5 h-5 text-ink-500 shrink-0" />
                 ) : (
                   <div className="flex items-center gap-1.5 shrink-0">
                     <button
                       onClick={() => setEditingDayId(day.id)}
-                      aria-label="Editar día"
-                      className="btn-icon hover:bg-neutral-700"
+                      aria-label={`Editar ${day.name}`}
+                      className="btn-icon hover:bg-ink-700"
                     >
-                      <Settings2 className="w-4 h-4 text-slate-400" />
+                      <Settings2 className="w-4 h-4 text-ink-400" />
                     </button>
                     <button
                       onClick={() => onStartSession(day)}
                       disabled={exCount === 0}
-                      aria-label="Empezar entrenamiento"
+                      aria-label={`Empezar ${day.name}`}
                       className={`btn-icon ${
-                        exCount === 0 ? 'bg-neutral-700 opacity-40' : 'bg-entreno-500 hover:bg-entreno-400'
+                        exCount === 0 ? 'bg-ink-700 opacity-40' : 'bg-entreno-500 hover:bg-entreno-400'
                       }`}
                     >
-                      <Play className={`w-4 h-4 ${exCount === 0 ? 'text-slate-400' : 'text-neutral-900'}`} fill="currentColor" />
+                      <Play className={`w-4 h-4 ${exCount === 0 ? 'text-ink-400' : 'text-ink-900'}`} fill="currentColor" />
                     </button>
                   </div>
                 )}

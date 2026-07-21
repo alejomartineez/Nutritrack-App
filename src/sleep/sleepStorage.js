@@ -1,4 +1,4 @@
-import { DEFAULT_SLEEP_GOAL_HOURS } from './sleepData';
+import { DEFAULT_SLEEP_GOAL_HOURS, ALL_SLEEP_FACTORS } from './sleepData';
 
 // ---------------------------------------------------------------------------
 // PERSISTENCIA (localStorage — mismo enfoque offline-first que nutrición y
@@ -142,6 +142,164 @@ export const computeWeeklyStats = (logsMap, goalHours = DEFAULT_SLEEP_GOAL_HOURS
   };
 };
 
+// --------------------------- Análisis del propio sueño -----------------------
+//
+// Todo lo de esta sección se calcula SOLO con los registros de sueño. Las
+// correlaciones de más abajo cruzan módulos y por eso tardan semanas en
+// desbloquearse; estas empiezan a dar respuestas a los pocos días, que es lo
+// que hace que valga la pena registrar el detalle.
+
+const average = (arr) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0);
+const round1 = (n) => Math.round(n * 10) / 10;
+
+/** Registros de los últimos `days` días, del más viejo al más nuevo. */
+export const getRecentLogs = (logsMap, days = 30, referenceDate = new Date()) => {
+  const cutoff = localDateKey(new Date(referenceDate.getTime() - (days - 1) * 86400000));
+  const todayKey = localDateKey(referenceDate);
+  return Object.values(logsMap)
+    .filter((log) => log.date >= cutoff && log.date <= todayKey && log.totalSleepMinutes > 0)
+    .sort((a, b) => a.date.localeCompare(b.date));
+};
+
+/** Cifras de cabecera del período: noches, promedio, energía y cumplimiento de meta. */
+export const computeSleepSummary = (logsMap, goalHours = DEFAULT_SLEEP_GOAL_HOURS, days = 30, referenceDate = new Date()) => {
+  const logs = getRecentLogs(logsMap, days, referenceDate);
+  if (logs.length === 0) {
+    return { nights: 0, avgHours: 0, avgQuality: null, goalHitRate: 0, goalHits: 0 };
+  }
+  const hours = logs.map((l) => l.totalSleepMinutes / 60);
+  const qualities = logs.map((l) => l.quality).filter((q) => q != null);
+  const goalHits = hours.filter((h) => h >= goalHours).length;
+
+  return {
+    nights: logs.length,
+    avgHours: round1(average(hours)),
+    avgQuality: qualities.length ? round1(average(qualities)) : null,
+    goalHits,
+    goalHitRate: Math.round((goalHits / logs.length) * 100),
+  };
+};
+
+/**
+ * Noches consecutivas cumpliendo la meta, contando hacia atrás desde hoy.
+ * Un hueco sin registro corta la racha igual que una noche corta: la racha
+ * mide el hábito, y no registrar es no tener el hábito.
+ */
+export const computeGoalStreak = (logsMap, goalHours = DEFAULT_SLEEP_GOAL_HOURS, referenceDate = new Date()) => {
+  let streak = 0;
+  let key = localDateKey(referenceDate);
+
+  // Si hoy todavía no se registró, la racha se mide desde ayer: registrar el
+  // sueño de la noche pasada es lo primero que hacés a la mañana, pero no
+  // necesariamente antes de abrir la app.
+  if (!logsMap[key]) key = addDaysToKey(key, -1);
+
+  while (logsMap[key] && logsMap[key].totalSleepMinutes / 60 >= goalHours) {
+    streak++;
+    key = addDaysToKey(key, -1);
+  }
+  return streak;
+};
+
+/**
+ * Impacto de cada factor marcado (cafeína tardía, pantallas, estrés…) sobre
+ * las horas dormidas y la energía al despertar: promedio de las noches con el
+ * factor vs las noches sin él.
+ *
+ * Es una comparación de medias, no una prueba estadística — con 4 noches de
+ * un lado no hay significancia posible. Por eso la UI la presenta como
+ * "lo que veo en tus datos" y muestra siempre el tamaño de muestra.
+ */
+export const computeFactorImpact = (logsMap, minOccurrences = 3, days = 90, referenceDate = new Date()) => {
+  const logs = getRecentLogs(logsMap, days, referenceDate).filter((l) => l.quality != null);
+
+  return ALL_SLEEP_FACTORS.map((factor) => {
+    const withFactor = logs.filter((l) => (l.factors || []).includes(factor.id));
+    const withoutFactor = logs.filter((l) => !(l.factors || []).includes(factor.id));
+
+    if (withFactor.length < minOccurrences || withoutFactor.length < minOccurrences) {
+      return { ...factor, available: false, nights: withFactor.length, needed: minOccurrences };
+    }
+
+    const qualityWith = average(withFactor.map((l) => l.quality));
+    const qualityWithout = average(withoutFactor.map((l) => l.quality));
+    const hoursWith = average(withFactor.map((l) => l.totalSleepMinutes / 60));
+    const hoursWithout = average(withoutFactor.map((l) => l.totalSleepMinutes / 60));
+
+    return {
+      ...factor,
+      available: true,
+      nights: withFactor.length,
+      nightsWithout: withoutFactor.length,
+      qualityWith: round1(qualityWith),
+      qualityWithout: round1(qualityWithout),
+      qualityDiff: round1(qualityWith - qualityWithout),
+      hoursDiff: round1(hoursWith - hoursWithout),
+    };
+  })
+    .filter((f) => f.available)
+    .sort((a, b) => Math.abs(b.qualityDiff) - Math.abs(a.qualityDiff));
+};
+
+/**
+ * ¿Te conviene acostarte temprano o tarde? Parte tus noches por la mediana de
+ * tu propia hora de acostarte y compara las dos mitades. Es relativo a vos, no
+ * a una hora "correcta" universal: alguien que se acuesta 1:00 todos los días
+ * igual puede descubrir que a las 0:30 duerme mejor.
+ */
+export const computeBedtimeComparison = (logsMap, minPerGroup = 3, days = 90, referenceDate = new Date()) => {
+  const logs = getRecentLogs(logsMap, days, referenceDate)
+    .filter((l) => l.quality != null && l.bedtime)
+    .map((l) => {
+      const mins = timeToMinutes(l.bedtime);
+      // Misma línea de tiempo continua que en computeWeeklyStats: 23:50 y 00:10
+      // están a 20 minutos, no a 23 horas y media.
+      return { ...l, bedMinutes: mins < 12 * 60 ? mins + 24 * 60 : mins };
+    })
+    .sort((a, b) => a.bedMinutes - b.bedMinutes);
+
+  if (logs.length < minPerGroup * 2) {
+    return { available: false, nights: logs.length, needed: minPerGroup * 2 };
+  }
+
+  const half = Math.floor(logs.length / 2);
+  const early = logs.slice(0, half);
+  const late = logs.slice(logs.length - half);
+
+  const formatBed = (mins) => {
+    const m = Math.round(mins) % (24 * 60);
+    return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+  };
+
+  const earlyQuality = average(early.map((l) => l.quality));
+  const lateQuality = average(late.map((l) => l.quality));
+  const earlyHours = average(early.map((l) => l.totalSleepMinutes / 60));
+  const lateHours = average(late.map((l) => l.totalSleepMinutes / 60));
+
+  return {
+    available: true,
+    nights: logs.length,
+    earlyBedtime: formatBed(average(early.map((l) => l.bedMinutes))),
+    lateBedtime: formatBed(average(late.map((l) => l.bedMinutes))),
+    earlyQuality: round1(earlyQuality),
+    lateQuality: round1(lateQuality),
+    earlyHours: round1(earlyHours),
+    lateHours: round1(lateHours),
+    better: Math.abs(earlyQuality - lateQuality) < 0.3 ? 'igual' : earlyQuality > lateQuality ? 'temprano' : 'tarde',
+  };
+};
+
+/** Mejor y peor noche del período, por energía al despertar y horas como desempate. */
+export const computeBestWorstNights = (logsMap, days = 30, referenceDate = new Date()) => {
+  const logs = getRecentLogs(logsMap, days, referenceDate).filter((l) => l.quality != null);
+  if (logs.length < 3) return { available: false, nights: logs.length };
+
+  const score = (l) => l.quality * 100 + l.totalSleepMinutes / 60;
+  const sorted = [...logs].sort((a, b) => score(b) - score(a));
+
+  return { available: true, nights: logs.length, best: sorted[0], worst: sorted[sorted.length - 1] };
+};
+
 // ------------------------- Correlaciones entre módulos -----------------------
 
 /** Parsea horas tipo "11:15 p. m." / "8:05 a.m." / "23:15" a minutos desde medianoche. */
@@ -183,8 +341,6 @@ const sessionVolume = (session) =>
       ex.sets.reduce((s, set) => s + (set.completed && set.type !== 'warmup' ? (Number(set.weight) || 0) * (Number(set.reps) || 0) : 0), 0),
     0
   );
-
-const average = (arr) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0);
 
 const MIN_SAMPLE_SIZE = 3;
 
