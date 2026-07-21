@@ -6,6 +6,7 @@ import {
   round1,
   computeTotals,
   kcalFromMacros,
+  kcalOf,
   hasMacros,
   computeStreak,
   computeMacroSegments,
@@ -80,10 +81,11 @@ describe('kcalFromMacros', () => {
     expect(kcalFromMacros({ p: 2, c: 17, f: 0, alc: 18.4 })).toBeCloseTo(204.8, 1);
   });
 
-  it('ignora el campo kcal guardado aunque esté descuadrado', () => {
-    // El caso real que motivó el cambio: item tipeado con 400 kcal cuyos
-    // macros dan 358. Manda el macro, no el número suelto.
+  it('es un cálculo puro: no mira el campo kcal del ítem', () => {
+    // Solo deriva. Quién gana entre el kcal cargado y este número lo decide
+    // `kcalOf`, no esta función.
     expect(kcalFromMacros({ kcal: 400, p: 20, c: 2, f: 30 })).toBe(358);
+    expect(kcalFromMacros({ kcal: 300 })).toBe(0);
   });
 
   it('trata macros faltantes y objeto vacío como cero', () => {
@@ -93,24 +95,53 @@ describe('kcalFromMacros', () => {
   });
 });
 
+describe('kcalOf', () => {
+  it('manda el kcal cargado aunque no cierre con los macros', () => {
+    // El caso real: "3 Huevos doble yema" cargado a 400 con macros que dan 358.
+    // La app respeta el 400 en vez de decidir por el usuario cuál dato está mal.
+    expect(kcalOf({ kcal: 400, p: 20, c: 2, f: 30 })).toBe(400);
+  });
+
+  it('cae a los macros cuando no hay kcal cargado', () => {
+    expect(kcalOf({ p: 20, c: 2, f: 30 })).toBe(358);
+    expect(kcalOf({ kcal: 0, p: 20, c: 2, f: 30 })).toBe(358);
+  });
+
+  it('conserva las calorías de un ítem sin macros', () => {
+    expect(kcalOf({ kcal: 250 })).toBe(250);
+  });
+
+  it('devuelve cero sin ningún dato', () => {
+    expect(kcalOf({})).toBe(0);
+    expect(kcalOf()).toBe(0);
+  });
+});
+
 describe('computeTotals', () => {
-  it('deriva las kcal de los macros, no del campo kcal', () => {
-    // Los `kcal` de abajo suman 800, pero los macros dan 765: gana el macro.
+  it('suma el kcal cargado de cada comida, no el derivado', () => {
+    // Los macros de abajo dan 765, pero los `kcal` cargados suman 800: mandan
+    // los cargados.
     const meals = [
       { kcal: 300, p: 20, c: 30, f: 10 },
       { kcal: 500, p: 40, c: 45, f: 15 },
     ];
-    expect(computeTotals(meals)).toEqual({ kcal: 765, p: 60, c: 75, f: 25, alc: 0 });
+    expect(computeTotals(meals)).toEqual({ kcal: 800, p: 60, c: 75, f: 25, alc: 0 });
   });
 
-  it('el total siempre cierra con 4p + 4c + 9f cuando no hay alcohol', () => {
+  it('deriva por comida solo las que no traen kcal', () => {
     const meals = [
-      { kcal: 400, p: 20, c: 2, f: 30 },
-      { kcal: 532, p: 26.6, c: 2.7, f: 39.9 },
-      { kcal: 310, p: 14, c: 30, f: 11 },
+      { kcal: 400, p: 20, c: 2, f: 30 }, // manda el 400
+      { p: 10, c: 10, f: 0 }, // sin kcal: deriva 80
     ];
-    const t = computeTotals(meals);
-    expect(t.kcal).toBeCloseTo(t.p * 4 + t.c * 4 + t.f * 9, 6);
+    expect(computeTotals(meals).kcal).toBe(480);
+  });
+
+  it('el total puede NO cerrar con 4p + 4c + 9f, y está bien', () => {
+    // Consecuencia asumida de respetar el dato del usuario: si lo que cargó no
+    // cuadra con sus macros, el total refleja lo que cargó.
+    const t = computeTotals([{ kcal: 400, p: 20, c: 2, f: 30 }]);
+    expect(t.kcal).toBe(400);
+    expect(t.p * 4 + t.c * 4 + t.f * 9).toBe(358);
   });
 
   it('devuelve ceros con lista vacía o sin argumento', () => {
@@ -119,18 +150,17 @@ describe('computeTotals', () => {
   });
 
   it('una comida sin macros conserva sus calorías en vez de desaparecer', () => {
-    // Derivar acá daba 0 y borraba comida real del contador. Un ítem sin macros
-    // está incompleto, no descuadrado: se arregla completándolo (la fila lo
-    // marca), no descontándolo del día.
+    // Un ítem sin macros está incompleto, no descuadrado: se arregla
+    // completándolo (la fila lo marca), no descontándolo del día.
     expect(computeTotals([{ kcal: 100 }])).toEqual({ kcal: 100, p: 0, c: 0, f: 0, alc: 0 });
   });
 
   it('mezcla ítems completos e incompletos sin perder ninguno', () => {
     const t = computeTotals([
-      { kcal: 400, p: 20, c: 2, f: 30 }, // completo: manda el macro (358)
-      { kcal: 250 }, // incompleto: manda su kcal
+      { kcal: 400, p: 20, c: 2, f: 30 },
+      { kcal: 250 }, // incompleto, pero sus calorías cuentan igual
     ]);
-    expect(t.kcal).toBe(608);
+    expect(t.kcal).toBe(650);
   });
 
   it('acumula el alcohol aparte y lo suma a las kcal', () => {
@@ -201,16 +231,16 @@ describe('computeMacroSegments', () => {
 });
 
 describe('scaleFood', () => {
-  // Ojo con las kcal esperadas: NO son el `kcal` del alimento por el factor,
-  // sino las que salen de los macros ya escalados. La banana de la base trae
-  // 105 kcal de etiqueta pero sus macros dan 116.8 (la fibra no aporta las 4
-  // kcal/g que le asigna Atwater), así que ×1 devuelve 117, no 105.
+  // Las kcal esperadas son el `kcal` del alimento POR EL FACTOR, no las que
+  // salen de los macros escalados. La banana trae 105 kcal de etiqueta y sus
+  // macros dan 116.8 (la fibra no aporta las 4 kcal/g que le asigna Atwater):
+  // ×1 devuelve 105, el dato de la etiqueta, no el derivado.
   const banana = { name: 'Banana (1 mediana)', kcal: 105, p: 1.3, c: 27, f: 0.4 };
   const nutella = { name: 'Nutella', kcal: 539, p: 6.3, c: 57.5, f: 30.9, basis: '100g' };
 
   it('multiplica una porción y anota la cantidad en el nombre', () => {
     const r = scaleFood(banana, 2);
-    expect(r.kcal).toBe(234); // 2.6×4 + 54×4 + 0.8×9
+    expect(r.kcal).toBe(210); // 105 × 2
     expect(r.p).toBe(2.6);
     expect(r.c).toBe(54);
     expect(r.name).toBe('Banana (1 mediana) ×2');
@@ -218,28 +248,33 @@ describe('scaleFood', () => {
 
   it('deja el nombre intacto con ×1', () => {
     const r = scaleFood(banana, 1);
-    expect(r.kcal).toBe(117);
+    expect(r.kcal).toBe(105);
     expect(r.name).toBe('Banana (1 mediana)');
   });
 
   it('admite fracciones de porción', () => {
     const r = scaleFood(banana, 0.5);
-    expect(r.kcal).toBe(59); // 58.6 redondeado
+    expect(r.kcal).toBe(53); // 52.5 redondeado
     expect(r.name).toBe('Banana (1 mediana) ×0.5');
   });
 
   it('escala por gramos cuando la base es 100g', () => {
     const r = scaleFood(nutella, 60);
-    expect(r.kcal).toBe(320); // 3.8×4 + 34.5×4 + 18.5×9
+    expect(r.kcal).toBe(323); // 539 × 0.6 = 323.4
     expect(r.p).toBe(3.8);
     expect(r.f).toBe(18.5);
     expect(r.name).toBe('Nutella (60 g)');
   });
 
   it('cae a la porción original si la cantidad es inválida', () => {
-    expect(scaleFood(banana, 0).kcal).toBe(117);
-    expect(scaleFood(banana, -3).kcal).toBe(117);
-    expect(scaleFood(banana, NaN).kcal).toBe(117);
+    expect(scaleFood(banana, 0).kcal).toBe(105);
+    expect(scaleFood(banana, -3).kcal).toBe(105);
+    expect(scaleFood(banana, NaN).kcal).toBe(105);
+  });
+
+  it('deriva de los macros escalados solo si el alimento no trae kcal', () => {
+    const sinKcal = { name: 'Ensalada', p: 5, c: 10, f: 2 };
+    expect(scaleFood(sinKcal, 2).kcal).toBe(156); // 10×4 + 20×4 + 4×9
   });
 
   it('un alimento sin macros escala su kcal, que es el único dato que tiene', () => {

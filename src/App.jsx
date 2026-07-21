@@ -36,6 +36,7 @@ import {
   computeStreak,
   computeMacroSegments,
   scaleFood,
+  kcalOf,
   kcalFromMacros,
   hasMacros,
 } from './lib/nutritionCalcs';
@@ -412,13 +413,13 @@ export default function NutriTrackApp() {
   const goToday = () => setSelectedDate(startOfDay(new Date()));
 
   // ------------------------- Acciones sobre el registro -------------------
-  // `kcal` se guarda derivado de los macros (ver kcalFromMacros): así lo que
-  // queda en localStorage ya cierra con lo que muestra el contador, y el campo
-  // no vuelve a divergir aunque el ítem de origen esté descuadrado.
+  // `kcal` se guarda con el valor del ítem de origen (ver kcalOf): lo que queda
+  // en localStorage es lo mismo que muestra el contador, y lo que el usuario
+  // cargó llega intacto hasta el registro.
   const buildEntry = (item) => ({
     id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     name: item.name,
-    kcal: Math.round(kcalFromMacros(item)),
+    kcal: Math.round(kcalOf(item)),
     p: item.p,
     c: item.c,
     f: item.f,
@@ -429,14 +430,14 @@ export default function NutriTrackApp() {
   const addPlanMeal = (item) => {
     const entry = buildEntry(item);
     setLog((prev) => ({ ...prev, planMeals: [...prev.planMeals, entry] }));
-    const entered = celebrateIfEnteringRange(totals.kcal + kcalFromMacros(item));
+    const entered = celebrateIfEnteringRange(totals.kcal + kcalOf(item));
     flashConfirm(entered ? '¡Entraste en tu rango de hoy! 🎯' : 'Comida agregada a tu registro ✓');
   };
 
   const addFreeMeal = (item) => {
     const entry = buildEntry(item);
     setLog((prev) => ({ ...prev, freeMeals: [...prev.freeMeals, entry] }));
-    const entered = celebrateIfEnteringRange(totals.kcal + kcalFromMacros(item));
+    const entered = celebrateIfEnteringRange(totals.kcal + kcalOf(item));
     flashConfirm(entered ? '¡Entraste en tu rango de hoy! 🎯' : 'Registrado fuera de plan, ¡disfrutalo con calma!');
   };
 
@@ -520,9 +521,12 @@ export default function NutriTrackApp() {
       id: editingEntry.id,
       time: editingEntry.time,
       name: editName.trim(),
-      // Con macros cargados el kcal se deriva (invariante de la app); sin
-      // macros se respeta lo que se tipeó, que es el único dato disponible.
-      kcal: hasMacros(macros) ? Math.round(kcalFromMacros(macros)) : kcalNum,
+      // Manda lo que se tipeó en el campo de calorías. Antes se descartaba
+      // cuando había macros y se guardaba el derivado: cargabas 400 y la fila
+      // aparecía con 358, sin ninguna señal de que la app hubiera cambiado el
+      // número. Si el campo quedó vacío o en 0 se deriva de los macros, que ahí
+      // sí son el único dato.
+      kcal: kcalNum > 0 ? kcalNum : Math.round(kcalFromMacros(macros)),
       ...macros,
     };
     setLog((prev) => ({
@@ -836,7 +840,7 @@ export default function NutriTrackApp() {
           // Derivado de macros igual que el contador de Mi Día, para que el
           // gráfico semanal y la racha midan exactamente lo mismo que la
           // pantalla de hoy. Los días viejos se recalculan solos al leerlos.
-          kcal = all.reduce((s, m) => s + kcalFromMacros(m), 0);
+          kcal = all.reduce((s, m) => s + kcalOf(m), 0);
           freeCount = free.length;
           hasData = all.length > 0 || (parsed.water || 0) > 0;
         }
@@ -1684,12 +1688,12 @@ function TabMiDia({
                       tener la clave del macro (no es 0, no existe), y round1()
                       de undefined imprimía "P NaNg". */}
                   <p className="text-xs text-slate-400 font-mono mt-0.5">
-                    {Math.round(kcalFromMacros(entry))} kcal · P {round1(entry.p || 0)}g · C{' '}
+                    {Math.round(kcalOf(entry))} kcal · P {round1(entry.p || 0)}g · C{' '}
                     {round1(entry.c || 0)}g · G {round1(entry.f || 0)}g
                     {entry.alc ? ` · Alc ${round1(entry.alc)}g` : ''}
                   </p>
-                  {/* Comida cargada sin macros: sus calorías cuentan igual (por
-                      eso el fallback en kcalFromMacros) pero no aportan a las
+                  {/* Comida cargada sin macros: sus calorías cuentan igual (son
+                      el valor que se tipeó, ver kcalOf) pero no aportan a las
                       barras de proteína/carbos/grasa, así que el día se lee
                       incompleto. Se avisa acá para poder completarla en vez de
                       dejarla en silencio. */}
@@ -1934,7 +1938,7 @@ function TabRegistrar({
                 <div className="min-w-0">
                   <p className="text-sm text-slate-200 truncate">{food.name}</p>
                   <p className="text-xs text-slate-500 font-mono mt-0.5">
-                    {Math.round(kcalFromMacros(food))} kcal · P {food.p}g · C {food.c}g · G {food.f}g
+                    {Math.round(kcalOf(food))} kcal · P {food.p}g · C {food.c}g · G {food.f}g
                   </p>
                 </div>
                 <PlusCircle
@@ -1980,7 +1984,7 @@ function TabRegistrar({
                     <div className="min-w-0">
                       <p className="text-sm text-slate-200 truncate">{food.name}</p>
                       <p className="text-xs text-slate-500 font-mono mt-0.5">
-                        {Math.round(kcalFromMacros(food))} kcal · P {food.p}g · C {food.c}g · G {food.f}g
+                        {Math.round(kcalOf(food))} kcal · P {food.p}g · C {food.c}g · G {food.f}g
                         <span className="text-slate-600"> · por 100g</span>
                       </p>
                     </div>
@@ -2010,7 +2014,7 @@ function TabRegistrar({
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-slate-200">{item.name}</p>
                     <p className="text-xs text-slate-500 font-mono mt-0.5">
-                      {Math.round(kcalFromMacros(item))} kcal · P {item.p}g · C {item.c}g · G {item.f}g
+                      {Math.round(kcalOf(item))} kcal · P {item.p}g · C {item.c}g · G {item.f}g
                     </p>
                   </div>
                   <PlusCircle className="w-5 h-5 text-emerald-400 shrink-0" />
@@ -2057,7 +2061,7 @@ function TabRegistrar({
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-slate-200">{item.name}</p>
                     <p className="text-xs text-slate-500 font-mono mt-0.5">
-                      {Math.round(kcalFromMacros(item))} kcal · P {item.p}g · C {item.c}g · G {item.f}g
+                      {Math.round(kcalOf(item))} kcal · P {item.p}g · C {item.c}g · G {item.f}g
                     </p>
                   </div>
                   <PlusCircle className="w-5 h-5 text-amber-400 shrink-0" />

@@ -44,51 +44,60 @@ export const round1 = (n) => Math.round(n * 10) / 10;
 /** Factores de Atwater: kcal que aporta cada gramo de macronutriente. */
 export const ATWATER = { protein: 4, carbs: 4, fat: 9, alcohol: 7 };
 
+export const hasMacros = (m = {}) => Boolean(m.p || m.c || m.f || m.alc);
+
 /**
- * Calorías de un ítem DERIVADAS de sus macros, no leídas de su campo `kcal`.
- *
- * Por qué: el campo `kcal` y los macros son dos datos independientes que se
- * cargan por separado, y nada garantizaba que cerraran entre sí. Un ítem del
- * catálogo tipeado como "400 kcal · P20 · C2 · G30" aportaba 400 al contador
- * del día pero solo 358 a las barras de macros, y la diferencia se multiplicaba
- * cada vez que se registraba. Derivando, el número grande de Mi Día es siempre
- * exactamente la suma de lo que se ve debajo.
+ * Calorías DERIVADAS de los macros por Atwater. Cálculo puro: no mira el campo
+ * `kcal` del ítem ni cae a él.
  *
  * `alc` (gramos de alcohol) es la única vía para calorías que no son P/C/G: el
  * etanol aporta 7 kcal/g y no aparece en ningún macro, así que sin este término
  * una cerveza pasaría de 205 a 76 kcal. Vale 0 para todo alimento sólido, con
  * lo cual para el 99% del catálogo esto es literalmente 4p + 4c + 9f.
  */
-export const hasMacros = (m = {}) => Boolean(m.p || m.c || m.f || m.alc);
+export const kcalFromMacros = (m = {}) =>
+  (m.p || 0) * ATWATER.protein +
+  (m.c || 0) * ATWATER.carbs +
+  (m.f || 0) * ATWATER.fat +
+  (m.alc || 0) * ATWATER.alcohol;
 
-export const kcalFromMacros = (m = {}) => {
-  // Sin NINGÚN macro cargado no hay nada que derivar, así que manda el `kcal`
-  // del ítem. Derivar acá daba 0 y hacía desaparecer comida real del contador:
-  // un ítem cargado a las apuradas con solo las calorías pasaba a valer nada.
-  // Ese caso no es una caloría "desalineada" (el problema que vinimos a
-  // resolver) sino un ítem incompleto, y se resuelve completándolo, no
-  // borrándolo. La fila lo marca para que se pueda arreglar.
-  if (!hasMacros(m)) return m.kcal || 0;
-  return (
-    (m.p || 0) * ATWATER.protein +
-    (m.c || 0) * ATWATER.carbs +
-    (m.f || 0) * ATWATER.fat +
-    (m.alc || 0) * ATWATER.alcohol
-  );
+/**
+ * Calorías de un ítem tal como las cuenta la app: **manda el valor cargado**, y
+ * los macros son el respaldo cuando no hay ninguno.
+ *
+ * Esta es la fuente única de verdad para todo lo que muestre o sume calorías.
+ *
+ * Por qué el valor cargado y no el derivado: `kcal` y macros son dos datos
+ * independientes y nada garantiza que cierren entre sí. Durante un tiempo la app
+ * derivaba siempre, para que el número grande de Mi Día fuera exactamente la
+ * suma de lo que se ve debajo. El problema es que eso decide por el usuario cuál
+ * de los dos datos está mal, y se equivoca seguido: en "3 Huevos doble yema"
+ * cargado como 400 kcal · P20 · C2 · G30, la app mostraba 358 —y el número real
+ * de 3 huevos doble yema ronda las 380, así que el dato flojo eran los macros,
+ * no las calorías—. Quien sabe cuál de los dos corregir es la persona que lo
+ * cargó, y para eso necesita que la app respete lo que tipeó.
+ *
+ * Consecuencia asumida: el total del día puede no coincidir con 4p + 4c + 9f.
+ * Es el precio de no pisar el dato del usuario, y es una decisión, no un bug.
+ */
+export const kcalOf = (m = {}) => {
+  const typed = Number(m.kcal);
+  if (Number.isFinite(typed) && typed > 0) return typed;
+  return kcalFromMacros(m);
 };
 
 /**
  * Suma los macros de todas las comidas del día (plan + libres).
  * Devuelve siempre un objeto completo aunque la lista esté vacía.
  *
- * `kcal` sale de `kcalFromMacros`, no del campo guardado en cada comida: ver
- * el porqué ahí arriba. El campo original se conserva intacto en localStorage,
- * así que esto es reversible y no hace falta migrar nada.
+ * `kcal` sale de `kcalOf`: manda lo que se cargó en cada comida, con los macros
+ * de respaldo. Los gramos se suman aparte, así que el total calórico puede no
+ * coincidir con 4p + 4c + 9f — ver la nota en `kcalOf`.
  */
 export const computeTotals = (meals = []) =>
   meals.reduce(
     (acc, m) => ({
-      kcal: acc.kcal + kcalFromMacros(m),
+      kcal: acc.kcal + kcalOf(m),
       p: acc.p + (m.p || 0),
       c: acc.c + (m.c || 0),
       f: acc.f + (m.f || 0),
@@ -228,15 +237,19 @@ export const scaleFood = (food, qty) => {
   // El alcohol solo viaja si el alimento lo trae, para no ensuciar con `alc: 0`
   // los ~200 alimentos sólidos del catálogo.
   if (food.alc) scaled.alc = round1(food.alc * safe);
-  // `kcal` se recalcula desde los macros ya escalados en vez de escalar el
-  // valor original: si el ítem venía descuadrado, escalarlo multiplicaba también
-  // el descuadre (los "3 Huevos doble yema" tenían +42 kcal de gap, y al
-  // registrarlos ×1.3 el gap pasaba a +55.7).
-  // Si el ítem no trae macros no hay nada que derivar, y ahí sí se escala el
-  // `kcal` original: es el único dato que tiene.
-  scaled.kcal = hasMacros(scaled)
-    ? Math.round(kcalFromMacros(scaled))
-    : Math.round((food.kcal || 0) * safe);
+  // `kcal` se escala igual que los macros, en vez de recalcularse desde ellos.
+  // Media porción de un ítem de 400 kcal son 200, sin importar qué digan sus
+  // macros: escalar es multiplicar lo que hay, no una oportunidad para corregir
+  // el dato. Si el ítem venía descuadrado, el desfase se multiplica —eso es
+  // consistente con respetar el valor cargado (ver `kcalOf`) y se arregla
+  // editando el ítem, no en el escalado—.
+  // Sin `kcal` propio no hay nada que escalar y se deriva de los macros ya
+  // escalados, que es el único dato disponible.
+  const baseKcal = Number(food.kcal);
+  scaled.kcal =
+    Number.isFinite(baseKcal) && baseKcal > 0
+      ? Math.round(baseKcal * safe)
+      : Math.round(kcalFromMacros(scaled));
   return scaled;
 };
 
