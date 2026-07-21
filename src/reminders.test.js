@@ -16,6 +16,17 @@ describe('buildReminderMessage', () => {
     );
   });
 
+  // Esta combinación —día vacío + includeWater:false— es exactamente la que usa
+  // el banner in-app, y era la única que no estaba cubierta. El banner tenía un
+  // `&& hasAny` en el sitio de llamada que la volvía inalcanzable: el aviso del
+  // día sin registrar no salía nunca. Los tests de acá pasaban igual porque
+  // probaban la función y no a quien la llama.
+  it('el aviso del día vacío sobrevive a includeWater:false (camino del banner)', () => {
+    expect(
+      buildReminderMessage({ planMeals: [], freeMeals: [] }, at(12), { includeWater: false })
+    ).toBe('Todavía no registraste ninguna comida hoy.');
+  });
+
   it('no avisa por comidas antes de las 11 (recién arranca el día)', () => {
     // sin agua tampoco, para aislar el caso de comidas
     expect(buildReminderMessage({ planMeals: [], water: 500 }, at(9))).toBeNull();

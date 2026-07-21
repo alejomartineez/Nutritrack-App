@@ -293,15 +293,27 @@ export default function NutriTrackApp() {
 
   // Chequeo periódico de recordatorios mientras la app esté abierta: si quedó
   // en segundo plano (Android/desktop) sale como notificación del sistema.
+  //
+  // El log entra por ref y NO por el array de dependencias. Estando en las
+  // dependencias, cada vaso de agua y cada comida desmontaba el efecto y
+  // arrancaba un `setInterval` nuevo desde cero: con un intervalo de 30 minutos
+  // y un uso normal de la app, el contador prácticamente nunca llegaba al final.
+  // La ref deja que el intervalo viva de verdad 30 minutos y que igual lea el
+  // log actualizado en cada chequeo.
+  const logRef = useRef(log);
+  useEffect(() => {
+    logRef.current = log;
+  }, [log]);
+
   useEffect(() => {
     if (!remindersEnabled || !isToday) return;
     const check = () => {
-      const msg = buildReminderMessage(log);
+      const msg = buildReminderMessage(logRef.current);
       if (msg) notifyInBackground(msg);
     };
     const id = setInterval(check, 30 * 60 * 1000);
     return () => clearInterval(id);
-  }, [remindersEnabled, isToday, log]);
+  }, [remindersEnabled, isToday]);
 
   // Cargar el registro correspondiente al día seleccionado cada vez que cambia
   useEffect(() => {
@@ -750,16 +762,29 @@ export default function NutriTrackApp() {
       msgs.push({ type: 'water', text: motivation.water });
     }
 
-    if (!hasAny) {
+    // Recordatorio activo: nudge visible al abrir la app (funciona también en
+    // iPhone, donde las notificaciones en segundo plano no están disponibles sin
+    // push server).
+    //
+    // Acá había un `&& hasAny` que volvía inalcanzable el aviso más importante.
+    // `buildReminderMessage` produce "todavía no registraste ninguna comida hoy"
+    // SOLO cuando no hay comidas, y la condición pedía que las hubiera: las dos
+    // ramas eran mutuamente excluyentes. Resultado: el día que te olvidabas de
+    // registrar por completo —justo cuando el recordatorio sirve— no aparecía
+    // nada. Con comidas cargadas el gate no cambiaba el resultado, por eso pasó
+    // desapercibido.
+    const reminderText =
+      remindersEnabled && isToday
+        ? buildReminderMessage(log, new Date(), { includeWater: false })
+        : null;
+
+    // El mensaje de día vacío se omite si el recordatorio ya está diciendo lo
+    // mismo: sin esto, un día sin registrar mostraba dos avisos encimados.
+    if (!hasAny && !reminderText) {
       msgs.push({ type: 'neutral', text: motivation.empty });
     }
 
-    // Recordatorio activo: nudge visible al abrir la app (funciona también en iPhone,
-    // donde las notificaciones en segundo plano no están disponibles sin push server)
-    if (remindersEnabled && isToday && hasAny) {
-      const reminderText = buildReminderMessage(log, new Date(), { includeWater: false });
-      if (reminderText) msgs.unshift({ type: 'reminder', text: reminderText });
-    }
+    if (reminderText) msgs.unshift({ type: 'reminder', text: reminderText });
     return msgs;
   }, [totals, goals, log, remindersEnabled, isToday, motivation]);
 
@@ -2594,8 +2619,16 @@ function SettingsModal({ tempGoals, setTempGoals, onSave, onCancel, onReset, onR
                 <Bell className="w-4 h-4 text-emerald-400" />
                 <h3 className="text-sm font-bold text-slate-100">Recordatorios</h3>
               </div>
+              {/* La copy dice exactamente lo que el interruptor hace. La anterior
+                  —"te avisamos si pasan varias horas..."— se leía como una
+                  notificación del sistema, y NutriTrack no tiene forma de
+                  mandarla: sin servidor de push no hay nada que despierte a la
+                  app, y en iPhone el sistema le congela los temporizadores
+                  apenas pasa a segundo plano. Prometer un aviso que no llega es
+                  peor que no ofrecerlo. */}
               <p className="text-xs text-slate-500 mt-1">
-                Te avisamos si pasan varias horas sin registrar comidas o agua.
+                Al abrir la app te avisamos si pasaron varias horas sin registrar. En iPhone no
+                llegan con la app cerrada: el sistema la suspende y no hay servidor que la despierte.
               </p>
             </div>
             <button
