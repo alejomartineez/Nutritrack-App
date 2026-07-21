@@ -41,19 +41,48 @@ export const formatDisplayDate = (date) => {
 /** Redondea a un decimal, evitando ruido de coma flotante en las sumas. */
 export const round1 = (n) => Math.round(n * 10) / 10;
 
+/** Factores de Atwater: kcal que aporta cada gramo de macronutriente. */
+export const ATWATER = { protein: 4, carbs: 4, fat: 9, alcohol: 7 };
+
+/**
+ * Calorías de un ítem DERIVADAS de sus macros, no leídas de su campo `kcal`.
+ *
+ * Por qué: el campo `kcal` y los macros son dos datos independientes que se
+ * cargan por separado, y nada garantizaba que cerraran entre sí. Un ítem del
+ * catálogo tipeado como "400 kcal · P20 · C2 · G30" aportaba 400 al contador
+ * del día pero solo 358 a las barras de macros, y la diferencia se multiplicaba
+ * cada vez que se registraba. Derivando, el número grande de Mi Día es siempre
+ * exactamente la suma de lo que se ve debajo.
+ *
+ * `alc` (gramos de alcohol) es la única vía para calorías que no son P/C/G: el
+ * etanol aporta 7 kcal/g y no aparece en ningún macro, así que sin este término
+ * una cerveza pasaría de 205 a 76 kcal. Vale 0 para todo alimento sólido, con
+ * lo cual para el 99% del catálogo esto es literalmente 4p + 4c + 9f.
+ */
+export const kcalFromMacros = (m = {}) =>
+  (m.p || 0) * ATWATER.protein +
+  (m.c || 0) * ATWATER.carbs +
+  (m.f || 0) * ATWATER.fat +
+  (m.alc || 0) * ATWATER.alcohol;
+
 /**
  * Suma los macros de todas las comidas del día (plan + libres).
  * Devuelve siempre un objeto completo aunque la lista esté vacía.
+ *
+ * `kcal` sale de `kcalFromMacros`, no del campo guardado en cada comida: ver
+ * el porqué ahí arriba. El campo original se conserva intacto en localStorage,
+ * así que esto es reversible y no hace falta migrar nada.
  */
 export const computeTotals = (meals = []) =>
   meals.reduce(
     (acc, m) => ({
-      kcal: acc.kcal + (m.kcal || 0),
+      kcal: acc.kcal + kcalFromMacros(m),
       p: acc.p + (m.p || 0),
       c: acc.c + (m.c || 0),
       f: acc.f + (m.f || 0),
+      alc: acc.alc + (m.alc || 0),
     }),
-    { kcal: 0, p: 0, c: 0, f: 0 }
+    { kcal: 0, p: 0, c: 0, f: 0, alc: 0 }
   );
 
 /**
@@ -177,14 +206,22 @@ export const scaleFood = (food, qty) => {
     ? food.name
     : `${food.name} ×${round1(safe)}`;
 
-  return {
+  const scaled = {
     ...food,
     name,
-    kcal: Math.round((food.kcal || 0) * safe),
     p: round1((food.p || 0) * safe),
     c: round1((food.c || 0) * safe),
     f: round1((food.f || 0) * safe),
   };
+  // El alcohol solo viaja si el alimento lo trae, para no ensuciar con `alc: 0`
+  // los ~200 alimentos sólidos del catálogo.
+  if (food.alc) scaled.alc = round1(food.alc * safe);
+  // `kcal` se recalcula desde los macros ya escalados en vez de escalar el
+  // valor original: si el ítem venía descuadrado, escalarlo multiplicaba también
+  // el descuadre (los "3 Huevos doble yema" tenían +42 kcal de gap, y al
+  // registrarlos ×1.3 el gap pasaba a +55.7).
+  scaled.kcal = Math.round(kcalFromMacros(scaled));
+  return scaled;
 };
 
 /**

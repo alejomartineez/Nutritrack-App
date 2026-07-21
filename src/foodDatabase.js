@@ -216,9 +216,13 @@ export const FOOD_DB = [
   { id: 'db181', name: 'Jugo de naranja exprimido (1 vaso, 250ml)', kcal: 110, p: 1.8, c: 26, f: 0.5 },
   { id: 'db182', name: 'Gaseosa común (1 vaso, 250ml)', kcal: 105, p: 0, c: 26, f: 0 },
   { id: 'db183', name: 'Gaseosa light/zero (1 vaso)', kcal: 2, p: 0, c: 0.3, f: 0 },
-  { id: 'db184', name: 'Cerveza (1 lata, 473ml)', kcal: 205, p: 2, c: 17, f: 0 },
-  { id: 'db185', name: 'Vino tinto (1 copa, 150ml)', kcal: 125, p: 0.1, c: 4, f: 0 },
-  { id: 'db186', name: 'Fernet con cola (1 vaso)', kcal: 220, p: 0, c: 30, f: 0 },
+  // `alc` = gramos de etanol. Es el único campo que aporta calorías fuera de
+  // P/C/G (7 kcal/g) y existe porque el contador del día se deriva de los
+  // macros: sin él una cerveza contaría 76 kcal en vez de 205. Los valores
+  // salen de ml × graduación × 0.789 (densidad del etanol).
+  { id: 'db184', name: 'Cerveza (1 lata, 473ml)', kcal: 205, p: 2, c: 17, f: 0, alc: 18.4 },
+  { id: 'db185', name: 'Vino tinto (1 copa, 150ml)', kcal: 125, p: 0.1, c: 4, f: 0, alc: 15.5 },
+  { id: 'db186', name: 'Fernet con cola (1 vaso)', kcal: 220, p: 0, c: 30, f: 0, alc: 14.3 },
   { id: 'db187', name: 'Licuado de banana con leche (1 vaso)', kcal: 180, p: 7, c: 32, f: 3 },
   { id: 'db188', name: 'Agua saborizada (1 vaso, 250ml)', kcal: 45, p: 0, c: 11, f: 0 },
   { id: 'db189', name: 'Bebida isotónica (1 vaso, 250ml)', kcal: 60, p: 0, c: 15, f: 0 },

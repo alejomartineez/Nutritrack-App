@@ -36,6 +36,7 @@ import {
   computeStreak,
   computeMacroSegments,
   scaleFood,
+  kcalFromMacros,
 } from './lib/nutritionCalcs';
 import QuantitySheet from './QuantitySheet';
 import { useCountUp, prefersReducedMotion } from './lib/motion';
@@ -398,33 +399,31 @@ export default function NutriTrackApp() {
   const goToday = () => setSelectedDate(startOfDay(new Date()));
 
   // ------------------------- Acciones sobre el registro -------------------
+  // `kcal` se guarda derivado de los macros (ver kcalFromMacros): así lo que
+  // queda en localStorage ya cierra con lo que muestra el contador, y el campo
+  // no vuelve a divergir aunque el ítem de origen esté descuadrado.
+  const buildEntry = (item) => ({
+    id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    name: item.name,
+    kcal: Math.round(kcalFromMacros(item)),
+    p: item.p,
+    c: item.c,
+    f: item.f,
+    ...(item.alc ? { alc: item.alc } : {}),
+    time: nowHM(),
+  });
+
   const addPlanMeal = (item) => {
-    const entry = {
-      id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-      name: item.name,
-      kcal: item.kcal,
-      p: item.p,
-      c: item.c,
-      f: item.f,
-      time: nowHM(),
-    };
+    const entry = buildEntry(item);
     setLog((prev) => ({ ...prev, planMeals: [...prev.planMeals, entry] }));
-    const entered = celebrateIfEnteringRange(totals.kcal + item.kcal);
+    const entered = celebrateIfEnteringRange(totals.kcal + kcalFromMacros(item));
     flashConfirm(entered ? '¡Entraste en tu rango de hoy! 🎯' : 'Comida agregada a tu registro ✓');
   };
 
   const addFreeMeal = (item) => {
-    const entry = {
-      id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-      name: item.name,
-      kcal: item.kcal,
-      p: item.p,
-      c: item.c,
-      f: item.f,
-      time: nowHM(),
-    };
+    const entry = buildEntry(item);
     setLog((prev) => ({ ...prev, freeMeals: [...prev.freeMeals, entry] }));
-    const entered = celebrateIfEnteringRange(totals.kcal + item.kcal);
+    const entered = celebrateIfEnteringRange(totals.kcal + kcalFromMacros(item));
     flashConfirm(entered ? '¡Entraste en tu rango de hoy! 🎯' : 'Registrado fuera de plan, ¡disfrutalo con calma!');
   };
 
@@ -798,7 +797,10 @@ export default function NutriTrackApp() {
           const plan = parsed.planMeals || [];
           const free = parsed.freeMeals || [];
           const all = [...plan, ...free];
-          kcal = all.reduce((s, m) => s + m.kcal, 0);
+          // Derivado de macros igual que el contador de Mi Día, para que el
+          // gráfico semanal y la racha midan exactamente lo mismo que la
+          // pantalla de hoy. Los días viejos se recalculan solos al leerlos.
+          kcal = all.reduce((s, m) => s + kcalFromMacros(m), 0);
           freeCount = free.length;
           hasData = all.length > 0 || (parsed.water || 0) > 0;
         }
@@ -1556,8 +1558,13 @@ function TabMiDia({
                     <span className="text-[11px] text-slate-500">{entry.time}</span>
                   </div>
                   <p className="text-sm text-slate-200 truncate mt-0.5">{entry.name}</p>
+                  {/* El alcohol solo se muestra cuando existe (3 ítems del
+                      catálogo). Sin él la fila de una cerveza dice "205 kcal ·
+                      P 2 · C 17 · G 0", que a ojo no cierra: las 129 kcal que
+                      faltan son etanol y no viven en ningún macro. */}
                   <p className="text-xs text-slate-400 font-mono mt-0.5">
-                    {Math.round(entry.kcal)} kcal · P {round1(entry.p)}g · C {round1(entry.c)}g · G {round1(entry.f)}g
+                    {Math.round(kcalFromMacros(entry))} kcal · P {round1(entry.p)}g · C {round1(entry.c)}g · G {round1(entry.f)}g
+                    {entry.alc ? ` · Alc ${round1(entry.alc)}g` : ''}
                   </p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
@@ -1791,7 +1798,7 @@ function TabRegistrar({
                 <div className="min-w-0">
                   <p className="text-sm text-slate-200 truncate">{food.name}</p>
                   <p className="text-xs text-slate-500 font-mono mt-0.5">
-                    {food.kcal} kcal · P {food.p}g · C {food.c}g · G {food.f}g
+                    {Math.round(kcalFromMacros(food))} kcal · P {food.p}g · C {food.c}g · G {food.f}g
                   </p>
                 </div>
                 <PlusCircle
@@ -1837,7 +1844,7 @@ function TabRegistrar({
                     <div className="min-w-0">
                       <p className="text-sm text-slate-200 truncate">{food.name}</p>
                       <p className="text-xs text-slate-500 font-mono mt-0.5">
-                        {food.kcal} kcal · P {food.p}g · C {food.c}g · G {food.f}g
+                        {Math.round(kcalFromMacros(food))} kcal · P {food.p}g · C {food.c}g · G {food.f}g
                         <span className="text-slate-600"> · por 100g</span>
                       </p>
                     </div>
@@ -1867,7 +1874,7 @@ function TabRegistrar({
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-slate-200">{item.name}</p>
                     <p className="text-xs text-slate-500 font-mono mt-0.5">
-                      {item.kcal} kcal · P {item.p}g · C {item.c}g · G {item.f}g
+                      {Math.round(kcalFromMacros(item))} kcal · P {item.p}g · C {item.c}g · G {item.f}g
                     </p>
                   </div>
                   <PlusCircle className="w-5 h-5 text-emerald-400 shrink-0" />
@@ -1914,7 +1921,7 @@ function TabRegistrar({
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-slate-200">{item.name}</p>
                     <p className="text-xs text-slate-500 font-mono mt-0.5">
-                      {item.kcal} kcal · P {item.p}g · C {item.c}g · G {item.f}g
+                      {Math.round(kcalFromMacros(item))} kcal · P {item.p}g · C {item.c}g · G {item.f}g
                     </p>
                   </div>
                   <PlusCircle className="w-5 h-5 text-amber-400 shrink-0" />
