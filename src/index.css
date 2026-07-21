@@ -323,6 +323,13 @@
      la luz cuando la hoja sube desde abajo, y es lo que la separa del velo en el
      punto donde se tocan. */
   .sheet {
+    /* Al llegar al final del scroll de la hoja, el gesto NO sigue en la página
+       de atrás. Es la otra mitad del bloqueo de fondo que hace src/lib/Sheet.jsx
+       (ahí se corta el gesto sobre el velo; acá se corta el encadenamiento desde
+       adentro del panel). Va por `overscroll-behavior` justamente para no tener
+       que tocar el alto del documento, que en iOS es lo que dispara el clampeo
+       de scroll —ver el comentario del `main` en App.jsx—. */
+    overscroll-behavior: contain;
     background-color: rgba(18, 23, 28, 0.92);
     background-image: linear-gradient(
       to bottom,

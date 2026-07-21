@@ -105,6 +105,27 @@ export default function BarcodeScanner({ onDetected, onCancel }) {
     };
   }, [onDetected]);
 
+  // Escape cancela el escaneo.
+  //
+  // Va en un efecto propio, separado del de la cámara: `onCancel` llega como
+  // flecha inline desde App, así que cambia de identidad en cada render, y
+  // sumarlo a las dependencias del efecto de arriba reiniciaría la cámara —pedir
+  // `getUserMedia` de nuevo, el destello del video, todo— cada vez que el padre
+  // se renderiza. Acá reenganchar un listener de teclado no cuesta nada.
+  //
+  // No usa Sheet porque el escáner es una toma de pantalla completa y opaca, no
+  // una hoja sobre velo: no comparte nada de ese comportamiento salvo esto. Las
+  // otras dos pantallas completas —la intro y el cálculo del plan— NO cierran
+  // con Escape a propósito: son pasos de un alta, y descartarlos con una tecla
+  // suelta es más fácil de hacer sin querer que de deshacer.
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') onCancel();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [onCancel]);
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-900 flex flex-col" role="dialog" aria-modal="true" aria-label="Escanear código de barras">
       <div

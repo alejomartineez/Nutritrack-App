@@ -54,12 +54,25 @@ const collectNutritionLogs = () => {
   return logs;
 };
 
+// Versión 2: suma `freeCatalog`, `profile`, `modules` y la sesión de entreno en
+// curso. Los archivos v1 se restauran igual —cada campo se escribe solo si
+// viene— así que un backup viejo sigue sirviendo, nada más que sin esas partes.
 export const buildFullBackup = () => ({
-  version: 1,
+  version: 2,
   exportedAt: new Date().toISOString(),
   nutrition: {
     goals: readJSON('nutri_goals', null),
     catalog: readJSON('nutri_catalog', null),
+    // El catálogo de fuera de plan es tan del usuario como el del plan: son los
+    // gustos que fue cargando a mano. Faltaba acá, así que el backup —que
+    // existe justamente para cambiar de teléfono— los descartaba en silencio.
+    freeCatalog: readJSON('nutri_free_catalog', null),
+    // Sin el perfil, en el teléfono nuevo "Recalcular mi plan" abre el
+    // formulario vacío y hay que volver a cargar peso, altura y objetivo.
+    profile: readJSON('nutri_profile', null),
+    // Qué módulos tenías encendidos: es configuración, y restaurar sin ella
+    // deja la app con pestañas que el usuario ya había apagado.
+    modules: readJSON('nutri_modules', null),
     logs: collectNutritionLogs(),
   },
   workout: {
@@ -67,6 +80,9 @@ export const buildFullBackup = () => ({
     routines: readJSON('workout_routines', null),
     activeRoutineId: readJSON('workout_active_routine_id', null),
     sessions: readJSON('workout_sessions', null),
+    // Un entrenamiento a medio hacer también es dato: si exportás justo entre
+    // series, sin esto se pierde la sesión entera al restaurar.
+    activeSession: readJSON('workout_active_session', null),
   },
   sleep: {
     logs: readJSON('sleep_logs', null),
@@ -105,6 +121,9 @@ export const restoreFullBackup = (data) => {
   if (data.nutrition) {
     writeJSON('nutri_goals', data.nutrition.goals);
     writeJSON('nutri_catalog', data.nutrition.catalog);
+    writeJSON('nutri_free_catalog', data.nutrition.freeCatalog);
+    writeJSON('nutri_profile', data.nutrition.profile);
+    writeJSON('nutri_modules', data.nutrition.modules);
     Object.entries(data.nutrition.logs || {}).forEach(([dateKey, log]) => {
       writeJSON(`${NUTRI_LOG_PREFIX}${dateKey}`, log);
     });
@@ -115,6 +134,7 @@ export const restoreFullBackup = (data) => {
     writeJSON('workout_routines', data.workout.routines);
     writeJSON('workout_active_routine_id', data.workout.activeRoutineId);
     writeJSON('workout_sessions', data.workout.sessions);
+    writeJSON('workout_active_session', data.workout.activeSession);
   }
 
   if (data.sleep) {

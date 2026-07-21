@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { X, Search, Plus } from 'lucide-react';
 import { MUSCLE_GROUPS, EQUIPMENT_TYPES } from './workoutData';
+import Sheet from '../lib/Sheet';
 
 export default function ExercisePickerModal({ title, exercises, onSelect, onCreateCustom, onClose, defaultMuscleGroup }) {
   const [query, setQuery] = useState('');
@@ -26,10 +27,10 @@ export default function ExercisePickerModal({ title, exercises, onSelect, onCrea
   };
 
   return (
-    <div className="fixed inset-0 z-[55] flex items-end sm:items-center justify-center scrim px-0 sm:px-4">
+    <Sheet onClose={onClose} z="z-[55]" labelledBy="picker-ejercicio-titulo">
       <div className="w-full max-w-md sheet rounded-t-3xl sm:rounded-3xl p-5 max-h-[85vh] flex flex-col">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-bold text-slate-100">{title || 'Elegí un ejercicio'}</h2>
+          <h2 id="picker-ejercicio-titulo" className="text-lg font-bold text-slate-100">{title || 'Elegí un ejercicio'}</h2>
           <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-neutral-800">
             <X className="w-5 h-5 text-slate-400" />
           </button>
@@ -41,7 +42,7 @@ export default function ExercisePickerModal({ title, exercises, onSelect, onCrea
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Buscar ejercicio..."
-            className="w-full bg-neutral-800 border border-neutral-700 rounded-xl pl-9 pr-3 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-entreno-400"
+            className="w-full bg-neutral-800 border border-neutral-700 rounded-xl pl-9 pr-3 py-2.5 text-sm text-slate-100 placeholder-slate-500"
           />
         </div>
 
@@ -95,13 +96,13 @@ export default function ExercisePickerModal({ title, exercises, onSelect, onCrea
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="Nombre del ejercicio"
-              className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-entreno-400"
+              className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-500"
             />
             <div className="grid grid-cols-2 gap-2">
               <select
                 value={newMuscle}
                 onChange={(e) => setNewMuscle(e.target.value)}
-                className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-entreno-400"
+                className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-slate-100"
               >
                 {MUSCLE_GROUPS.map((m) => (
                   <option key={m} value={m}>{m}</option>
@@ -110,7 +111,7 @@ export default function ExercisePickerModal({ title, exercises, onSelect, onCrea
               <select
                 value={newEquipment}
                 onChange={(e) => setNewEquipment(e.target.value)}
-                className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-entreno-400"
+                className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-slate-100"
               >
                 {EQUIPMENT_TYPES.map((eq) => (
                   <option key={eq} value={eq}>{eq}</option>
@@ -134,6 +135,6 @@ export default function ExercisePickerModal({ title, exercises, onSelect, onCrea
           </div>
         )}
       </div>
-    </div>
+    </Sheet>
   );
 }

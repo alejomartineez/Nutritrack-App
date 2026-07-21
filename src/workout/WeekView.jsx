@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Dumbbell, Plus, Play, Trash2, ChevronDown, Moon, Settings2, X, Check, Pencil } from 'lucide-react';
 import { ROUTINE_TEMPLATES } from './workoutData';
 import ExercisePickerModal from './ExercisePickerModal';
+import Sheet from '../lib/Sheet';
 
 function RoutineManagerModal({ routines, activeRoutineId, onSelect, onRename, onDelete, onNew, onClose }) {
   const [renamingId, setRenamingId] = useState(null);
@@ -22,10 +23,10 @@ function RoutineManagerModal({ routines, activeRoutineId, onSelect, onRename, on
   const trainingDays = (r) => r.days.filter((d) => !d.isRest).length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center scrim px-0 sm:px-4">
+    <Sheet onClose={onClose} labelledBy="rutinas-titulo">
       <div className="w-full max-w-md sheet rounded-t-3xl sm:rounded-3xl p-5 max-h-[85vh] flex flex-col">
         <div className="flex items-center justify-between mb-1">
-          <h2 className="text-lg font-bold text-slate-100">Mis rutinas</h2>
+          <h2 id="rutinas-titulo" className="text-lg font-bold text-slate-100">Mis rutinas</h2>
           <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-neutral-800">
             <X className="w-5 h-5 text-slate-400" />
           </button>
@@ -44,7 +45,7 @@ function RoutineManagerModal({ routines, activeRoutineId, onSelect, onRename, on
                     value={renameValue}
                     onChange={(e) => setRenameValue(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && commitRename()}
-                    className="flex-1 min-w-0 bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-entreno-400"
+                    className="flex-1 min-w-0 bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-slate-100"
                   />
                   <button onClick={commitRename} className="px-3 py-2 rounded-lg bg-entreno-500 text-neutral-900 text-xs font-bold shrink-0">
                     Guardar
@@ -114,7 +115,7 @@ function RoutineManagerModal({ routines, activeRoutineId, onSelect, onRename, on
           <Plus className="w-4 h-4" /> Nueva rutina
         </button>
       </div>
-    </div>
+    </Sheet>
   );
 }
 
@@ -123,10 +124,10 @@ function NewRoutineModal({ onCreate, onClose }) {
   const [name, setName] = useState('');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center scrim px-0 sm:px-4">
+    <Sheet onClose={onClose} labelledBy="nueva-rutina-titulo">
       <div className="w-full max-w-md sheet rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-slate-100">Nueva rutina semanal</h2>
+          <h2 id="nueva-rutina-titulo" className="text-lg font-bold text-slate-100">Nueva rutina semanal</h2>
           <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-neutral-800">
             <X className="w-5 h-5 text-slate-400" />
           </button>
@@ -150,7 +151,7 @@ function NewRoutineModal({ onCreate, onClose }) {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Nombre de la rutina (opcional)"
-          className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-entreno-400 mb-4"
+          className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder-slate-500 mb-4"
         />
         <button
           onClick={() => onCreate(templateId, name)}
@@ -159,7 +160,7 @@ function NewRoutineModal({ onCreate, onClose }) {
           Crear rutina
         </button>
       </div>
-    </div>
+    </Sheet>
   );
 }
 
@@ -167,12 +168,12 @@ function DayEditor({ day, exercises, exercisesById, onAddExercise, onRemoveExerc
   const [pickerOpen, setPickerOpen] = useState(false);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center scrim px-0 sm:px-4">
+    <Sheet onClose={onClose} labelledBy="editor-dia-titulo">
       <div className="w-full max-w-md sheet rounded-t-3xl sm:rounded-3xl p-5 max-h-[85vh] flex flex-col">
         <div className="flex items-center justify-between mb-1">
           <div>
             <p className="label-section text-slate-500">{day.weekday}</p>
-            <h2 className="text-lg font-bold text-slate-100">{day.name}</h2>
+            <h2 id="editor-dia-titulo" className="text-lg font-bold text-slate-100">{day.name}</h2>
           </div>
           <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-neutral-800">
             <X className="w-5 h-5 text-slate-400" />
@@ -210,7 +211,7 @@ function DayEditor({ day, exercises, exercisesById, onAddExercise, onRemoveExerc
                     min="1"
                     value={rex.targetSets}
                     onChange={(e) => onUpdateTarget(rex.id, { targetSets: parseInt(e.target.value) || 1 })}
-                    className="w-14 bg-neutral-900 border border-neutral-700 rounded-lg px-2 py-1 text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-entreno-400"
+                    className="w-14 bg-neutral-900 border border-neutral-700 rounded-lg px-2 py-1 text-slate-100 font-mono"
                   />
                   <label className="text-slate-500 ml-1">Reps</label>
                   <input
@@ -218,7 +219,7 @@ function DayEditor({ day, exercises, exercisesById, onAddExercise, onRemoveExerc
                     min="1"
                     value={rex.targetRepsMin}
                     onChange={(e) => onUpdateTarget(rex.id, { targetRepsMin: parseInt(e.target.value) || 1 })}
-                    className="w-12 bg-neutral-900 border border-neutral-700 rounded-lg px-2 py-1 text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-entreno-400"
+                    className="w-12 bg-neutral-900 border border-neutral-700 rounded-lg px-2 py-1 text-slate-100 font-mono"
                   />
                   <span className="text-slate-600">-</span>
                   <input
@@ -226,7 +227,7 @@ function DayEditor({ day, exercises, exercisesById, onAddExercise, onRemoveExerc
                     min="1"
                     value={rex.targetRepsMax}
                     onChange={(e) => onUpdateTarget(rex.id, { targetRepsMax: parseInt(e.target.value) || 1 })}
-                    className="w-12 bg-neutral-900 border border-neutral-700 rounded-lg px-2 py-1 text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-entreno-400"
+                    className="w-12 bg-neutral-900 border border-neutral-700 rounded-lg px-2 py-1 text-slate-100 font-mono"
                   />
                 </div>
               </div>
@@ -258,7 +259,7 @@ function DayEditor({ day, exercises, exercisesById, onAddExercise, onRemoveExerc
           />
         )}
       </div>
-    </div>
+    </Sheet>
   );
 }
 

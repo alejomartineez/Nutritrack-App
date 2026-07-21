@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { X, PlusCircle } from 'lucide-react';
 import { scaleFood } from './lib/nutritionCalcs';
+import Sheet from './lib/Sheet';
 
 // ---------------------------------------------------------------------------
 // HOJA DE CANTIDAD
@@ -33,8 +34,8 @@ export default function QuantitySheet({ food, mode = 'plan', onConfirm, onCancel
 
   const accent =
     mode === 'plan'
-      ? { ring: '', chip: 'bg-emerald-500 text-slate-900', btn: 'bg-emerald-500 hover:bg-emerald-400 text-slate-900', border: 'sheet-plan' }
-      : { ring: '', chip: 'bg-amber-500 text-slate-900', btn: 'bg-amber-500 hover:bg-amber-400 text-slate-900', border: 'sheet-free' };
+      ? { chip: 'bg-emerald-500 text-slate-900', btn: 'bg-emerald-500 hover:bg-emerald-400 text-slate-900', border: 'sheet-plan' }
+      : { chip: 'bg-amber-500 text-slate-900', btn: 'bg-amber-500 hover:bg-amber-400 text-slate-900', border: 'sheet-free' };
 
   const pick = (value) => {
     setQty(value);
@@ -42,13 +43,13 @@ export default function QuantitySheet({ food, mode = 'plan', onConfirm, onCancel
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center scrim px-0 sm:px-4">
+    <Sheet onClose={onCancel} labelledBy="cantidad-titulo">
       <div
         className={`w-full max-w-md sheet ${accent.border} rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto`}
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }}
       >
         <div className="flex items-start justify-between gap-3 mb-1">
-          <h2 className="text-lg font-bold text-slate-100 min-w-0">{food.name}</h2>
+          <h2 id="cantidad-titulo" className="text-lg font-bold text-slate-100 min-w-0">{food.name}</h2>
           <button onClick={onCancel} aria-label="Cerrar" className="p-2 -mt-1 -mr-2 rounded-full hover:bg-slate-700 shrink-0">
             <X className="w-5 h-5 text-slate-400" />
           </button>
@@ -66,7 +67,7 @@ export default function QuantitySheet({ food, mode = 'plan', onConfirm, onCancel
                 key={value}
                 onClick={() => pick(value)}
                 aria-pressed={active}
-                className={`py-2.5 rounded-xl text-sm font-semibold transition-colors ${accent.ring} ${
+                className={`py-2.5 rounded-xl text-sm font-semibold transition-colors ${
                   active ? accent.chip : 'bg-slate-900 border border-slate-700 text-slate-300 hover:border-slate-600'
                 }`}
               >
@@ -86,7 +87,7 @@ export default function QuantitySheet({ food, mode = 'plan', onConfirm, onCancel
             onChange={(e) => setCustom(e.target.value)}
             inputMode="decimal"
             placeholder={isGrams ? 'Ej: 75' : 'Ej: 1.25'}
-            className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 ${accent.ring.replace('focus-visible:', 'focus:')}`}
+            className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder-slate-500`}
           />
         </label>
 
@@ -110,7 +111,7 @@ export default function QuantitySheet({ food, mode = 'plan', onConfirm, onCancel
           <button
             onClick={() => valid && onConfirm(amount)}
             disabled={!valid}
-            className={`flex-1 rounded-xl font-bold py-3 flex items-center justify-center gap-2 transition-colors ${accent.ring} ${
+            className={`flex-1 rounded-xl font-bold py-3 flex items-center justify-center gap-2 transition-colors ${
               valid ? accent.btn : 'bg-slate-700 text-slate-500 cursor-not-allowed'
             }`}
           >
@@ -119,6 +120,6 @@ export default function QuantitySheet({ food, mode = 'plan', onConfirm, onCancel
           </button>
         </div>
       </div>
-    </div>
+    </Sheet>
   );
 }

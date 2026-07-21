@@ -135,7 +135,7 @@ export default function WeightTracker() {
             onChange={(e) => setInput(e.target.value)}
             placeholder={latest ? String(latest.kg) : 'kg'}
             inputMode="decimal"
-            className="w-20 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono text-center focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            className="w-20 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono text-center"
           />
           <button
             onClick={submit}

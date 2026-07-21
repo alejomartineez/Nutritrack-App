@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Delete, Check } from 'lucide-react';
+import Sheet from '../lib/Sheet';
 
 /**
  * Teclado numérico propio en hoja inferior (bottom sheet), pensado para usar
@@ -24,11 +25,11 @@ export default function NumberPad({ label, value, onChange, onClose, quickSteps 
   const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'back'];
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center scrim" onClick={onClose}>
-      <div
-        className="w-full max-w-md sheet sheet-entreno rounded-t-3xl p-4 pb-6"
-        onClick={(e) => e.stopPropagation()}
-      >
+    // Ya cerraba tocando el velo, así que mantiene ese comportamiento. El
+    // `stopPropagation` del panel dejó de hacer falta: Sheet compara el target
+    // contra el velo en vez de escuchar el click que burbujea.
+    <Sheet onClose={onClose} closeOnBackdrop z="z-[60]" align="bottom" label={label}>
+      <div className="w-full max-w-md sheet sheet-entreno rounded-t-3xl p-4 pb-6">
         <div className="flex items-center justify-between mb-3">
           <p className="label-section text-entreno-400">{label}</p>
           <button onClick={onClose} aria-label="Cerrar teclado" className="btn-icon hover:bg-neutral-800">
@@ -85,6 +86,6 @@ export default function NumberPad({ label, value, onChange, onClose, quickSteps 
           <Check className="w-5 h-5" /> Listo
         </button>
       </div>
-    </div>
+    </Sheet>
   );
 }

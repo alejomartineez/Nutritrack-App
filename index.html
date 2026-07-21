@@ -2,7 +2,13 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+    <!-- Sin `maximum-scale=1`: bloquear el zoom con pellizco le saca a quien ve
+         poco la única forma de agrandar la pantalla (falla WCAG 1.4.4). El motivo
+         de siempre para ponerlo —que iOS Safari haga zoom al enfocar un input de
+         menos de 16px— no aplica en la PWA instalada, que es como se usa esta app:
+         en modo standalone iOS no hace ese zoom. En Safari suelto puede aparecer,
+         y es un mal menor frente a impedir el zoom a todo el mundo. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Mi Plan Nutricional</title>
     <meta name="description" content="Seguimiento diario de tu plan nutricional: calorías, macros, agua y comidas fuera de plan." />
 

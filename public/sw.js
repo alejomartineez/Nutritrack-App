@@ -8,7 +8,11 @@
 //     el nombre, o sea inmutables, así que servir de caché es seguro y rápido.
 //
 // Subir CACHE_NAME en cada cambio de esta lógica limpia las cachés viejas.
-const CACHE_NAME = 'nutritrack-v4';
+// v5: íconos nuevos. Los íconos son de las pocas rutas SIN hash en el nombre,
+// así que la rama cache-first de abajo seguiría sirviendo los viejos para
+// siempre; subir el nombre de la caché es lo que fuerza que se vuelvan a pedir.
+// v6: se agrega el handler de `notificationclick`.
+const CACHE_NAME = 'nutritrack-v6';
 const APP_SHELL = ['/', '/index.html', '/manifest.json'];
 
 self.addEventListener('install', (event) => {
@@ -22,6 +26,27 @@ self.addEventListener('activate', (event) => {
       .keys()
       .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
       .then(() => self.clients.claim()) // toma control de las pestañas ya abiertas
+  );
+});
+
+// Tocar un recordatorio trae la app al frente en vez de no hacer nada.
+//
+// Los recordatorios como notificación del sistema solo salen en Android/escritorio
+// (ver notifyInBackground en src/reminders.js); en iPhone son banner in-app. Sin
+// este handler, en esas plataformas el toque abría —según el navegador— una
+// pestaña suelta o nada. Acá se reutiliza una ventana ya abierta de la app si la
+// hay, y solo se abre una nueva si no quedaba ninguna.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if (client.url.startsWith(self.location.origin) && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      return self.clients.openWindow ? self.clients.openWindow('/') : undefined;
+    })
   );
 });
 

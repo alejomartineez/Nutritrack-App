@@ -180,7 +180,7 @@ function ExerciseCard({
             onChange={(e) => onUpdateNotes(e.target.value)}
             placeholder="Técnica, ajuste de máquina, molestias..."
             rows={2}
-            className="w-full mt-2 bg-neutral-800 border border-neutral-700 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-entreno-400"
+            className="w-full mt-2 bg-neutral-800 border border-neutral-700 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500"
           />
         )}
       </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import {
   Home, PlusCircle, TrendingUp, Settings, Droplet, Droplets, Trash2, X, Check,
   ChevronRight, ChevronLeft, ChevronDown, Sparkles, Lightbulb, Award, Plus, Minus,
@@ -6,8 +6,14 @@ import {
   Download, Share, SquarePlus, Upload, ShieldCheck, Search, Bell, Clock, LayoutGrid, Calculator,
   Loader2, Barcode, ScanLine, AlertCircle,
 } from 'lucide-react';
-import WorkoutModule from './workout/WorkoutModule';
-import SleepModule from './sleep/SleepModule';
+// Entreno y Sueño se cargan a demanda (React.lazy): son módulos opcionales
+// —se apagan desde Ajustes— y pesan bastante (rutinas, sesión en vivo, gráficos,
+// formularios de sueño). Quien solo usa nutrición no los descarga nunca; quien
+// los usa, se bajan al abrir la pestaña por primera vez y quedan en caché.
+// Los helpers de storage que necesitan Mi Día (DailyRings, TodayDashboard) se
+// importan aparte y son chicos, así que siguen en el bundle inicial.
+const WorkoutModule = lazy(() => import('./workout/WorkoutModule'));
+const SleepModule = lazy(() => import('./sleep/SleepModule'));
 import TodayDashboard from './TodayDashboard';
 import DailyRings, { hasAnyActivity } from './DailyRings';
 import Onboarding from './Onboarding';
@@ -43,13 +49,13 @@ import {
 import QuantitySheet from './QuantitySheet';
 import { useCountUp, prefersReducedMotion } from './lib/motion';
 import { useKeyboardOpen } from './lib/viewport';
+import { useTodayKey } from './lib/today';
+import Sheet from './lib/Sheet';
 import { theme, macroColors, celebrationColors } from './lib/theme';
 
 // ---------------------------------------------------------------------------
 // DATOS BASE DEL PLAN
 // ---------------------------------------------------------------------------
-
-const TODAY_KEY = dateKeyOf(new Date());
 
 const DEFAULT_GOALS = { calories: 1610, protein: 116.5, carbs: 159, fat: 56.5, water: 2000 };
 const TOLERANCE = { calories: 100, protein: 10, carbs: 10, fat: 10 };
@@ -191,6 +197,11 @@ export default function NutriTrackApp() {
 
   const [goals, setGoals] = useState(DEFAULT_GOALS);
   const [log, setLog] = useState(emptyLog());
+  // A qué día pertenece el `log` que está en memoria. Va como estado y no como
+  // ref a propósito: tiene que cambiar en el mismo commit que el log para que el
+  // efecto de persistencia no pueda verlos desincronizados (ver el comentario
+  // largo en ese efecto).
+  const [logDateKey, setLogDateKey] = useState(null);
   const [tipIndex, setTipIndex] = useState(0);
   // Una frase al azar por tipo, fijada al abrir la app (no parpadea al registrar).
   const [motivation] = useState(() => ({
@@ -243,8 +254,24 @@ export default function NutriTrackApp() {
 
   const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()));
   const dateKey = dateKeyOf(selectedDate);
-  const isToday = dateKey === TODAY_KEY;
-  const loadedDateKeyRef = useRef(null);
+  // Se recalcula solo al cruzar la medianoche (ver src/lib/today.js): la PWA no
+  // se cierra nunca, así que "hoy" no puede ser una constante de módulo.
+  const todayKey = useTodayKey();
+  const isToday = dateKey === todayKey;
+
+  // Cruzó la medianoche con la app abierta. Si estabas parado en el día de hoy,
+  // la vista pasa sola al día nuevo —que es lo que esperás al mirar la app a la
+  // mañana—; si estabas revisando un día pasado, se queda donde estaba, porque
+  // ahí el día que mirás lo elegiste vos.
+  const prevTodayKeyRef = useRef(todayKey);
+  useEffect(() => {
+    const prevTodayKey = prevTodayKeyRef.current;
+    prevTodayKeyRef.current = todayKey;
+    if (prevTodayKey === todayKey) return;
+    setSelectedDate((current) =>
+      dateKeyOf(current) === prevTodayKey ? startOfDay(new Date()) : current
+    );
+  }, [todayKey]);
 
   const [registerMode, setRegisterMode] = useState('plan'); // 'plan' | 'libre'
   const [customName, setCustomName] = useState('');
@@ -285,6 +312,46 @@ export default function NutriTrackApp() {
     requestPersistentStorage();
   }, []);
 
+  // Accesos directos del sistema (mantener apretado el ícono) y deep-links. Los
+  // shortcuts del manifest abren la app con `?tab=` o `?action=` y acá se
+  // traducen a una pantalla. Corre una sola vez, al montar.
+  //
+  // Nota de plataforma: iOS todavía no muestra estos accesos directos —son de
+  // Android y de Chrome/Edge de escritorio—, pero el deep-link igual funciona
+  // en iOS si se llega por URL, así que no está de más.
+  useEffect(() => {
+    let params;
+    try {
+      params = new URLSearchParams(window.location.search);
+    } catch {
+      return;
+    }
+    const tab = params.get('tab');
+    const action = params.get('action');
+    if (!tab && !action) return;
+
+    if (action === 'scan') {
+      // Escanear vive dentro de Registrar: se abre esa pestaña y encima la cámara.
+      setActiveTab('registrar');
+      setScanning(true);
+    } else if (tab === 'entreno' && modules.entreno) {
+      setActiveTab('entreno');
+    } else if (tab === 'sueno' && modules.sueno) {
+      setActiveTab('sueno');
+    } else if (tab === 'dia' || tab === 'registrar' || tab === 'progreso') {
+      setActiveTab(tab);
+    }
+
+    // Se limpia el query para que un refresh —o compartir el link— no repita la
+    // acción, y para que la barra de direcciones quede prolija.
+    try {
+      window.history.replaceState(null, '', window.location.pathname);
+    } catch {
+      // sin History API se sigue igual; el único costo es que un refresh repita.
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const toggleReminders = async () => {
     const next = !remindersEnabled;
     if (next) await requestNotificationPermission();
@@ -316,7 +383,9 @@ export default function NutriTrackApp() {
     return () => clearInterval(id);
   }, [remindersEnabled, isToday]);
 
-  // Cargar el registro correspondiente al día seleccionado cada vez que cambia
+  // Cargar el registro correspondiente al día seleccionado cada vez que cambia.
+  // `logDateKey` viaja con el log en el MISMO commit: es lo que le permite al
+  // efecto de abajo saber a qué día pertenece de verdad lo que tiene en la mano.
   useEffect(() => {
     try {
       const storedLog = localStorage.getItem(`nutri_log_${dateKey}`);
@@ -324,19 +393,41 @@ export default function NutriTrackApp() {
     } catch (e) {
       setLog(emptyLog());
     }
-    loadedDateKeyRef.current = dateKey;
+    setLogDateKey(dateKey);
   }, [dateKey]);
 
-  // Persistir el registro del día que está actualmente seleccionado
+  // Persistir el registro del día que está actualmente seleccionado.
+  //
+  // La condición compara el día del LOG contra el día seleccionado. Antes se
+  // comparaba contra una ref que el efecto de carga actualizaba justo arriba, y
+  // eso no protegía nada: los dos efectos corren en el mismo commit y en orden
+  // de declaración, así que al cambiar de día pasaba esto:
+  //
+  //   1. Cambia `dateKey` (navegás a otro día, o cruza la medianoche).
+  //   2. Corre el efecto de carga: pide el log nuevo y pone la ref en el día
+  //      nuevo. El `setLog` todavía no se aplicó — sigue pendiente.
+  //   3. Corre este efecto: la ref YA dice el día nuevo, así que pasa el
+  //      chequeo... y escribe el `log` de su clausura, que es el del día VIEJO,
+  //      bajo la clave del día nuevo.
+  //
+  // Un tick después el re-render lo pisaba con el valor correcto, así que en
+  // condiciones normales no se veía. Pero durante esa ventana el dato estaba mal
+  // en disco: cualquier lectura ajena (la racha de DailyRings, que lee
+  // localStorage directo) se llevaba el valor corrupto y se quedaba con él, y si
+  // la app moría ahí —en iPhone, deslizarla apenas cambiado el día— la comida
+  // duplicada quedaba escrita para siempre.
+  //
+  // Con `logDateKey` no hay carrera posible: se setea junto al log, en el mismo
+  // commit, así que el par (log, día) siempre es coherente.
   useEffect(() => {
     if (!loaded) return;
-    if (loadedDateKeyRef.current !== dateKey) return; // evita pisar datos mientras se carga otro día
+    if (logDateKey !== dateKey) return; // el log en memoria es todavía de otro día
     try {
       localStorage.setItem(`nutri_log_${dateKey}`, JSON.stringify(log));
     } catch (e) {
       // almacenamiento no disponible, se continúa sin persistir
     }
-  }, [log, dateKey, loaded]);
+  }, [log, logDateKey, dateKey, loaded]);
 
   // Persistir metas
   useEffect(() => {
@@ -549,9 +640,15 @@ export default function NutriTrackApp() {
     }));
   };
 
+  // El timeout se guarda y se cancela: sin eso, registrar dos comidas seguidas
+  // dejaba viva la cuenta regresiva de la primera, que borraba el mensaje de la
+  // segunda a mitad de camino. Cuanto más rápido cargabas, menos duraba el
+  // aviso —justo al revés de lo que hace falta—.
+  const confirmTimeoutRef = useRef(null);
   const flashConfirm = (text) => {
     setConfirmMsg(text);
-    setTimeout(() => setConfirmMsg(''), 2200);
+    clearTimeout(confirmTimeoutRef.current);
+    confirmTimeoutRef.current = setTimeout(() => setConfirmMsg(''), 2200);
   };
 
   // Celebra (confeti) si esta comida cruza las calorías de fuera a dentro del
@@ -851,7 +948,10 @@ export default function NutriTrackApp() {
       days.push({ key, label, kcal, freeCount, hasData });
     }
     return days;
-  }, [log, loaded]);
+    // `todayKey` está en las dependencias porque la ventana de 7 días se cuenta
+    // hacia atrás desde hoy: al cruzar la medianoche el gráfico y la racha se
+    // corren un día, aunque el log no haya cambiado.
+  }, [log, loaded, todayKey]);
 
   // Racha de días consecutivos (terminando hoy) dentro del rango de calorías
   const streak = useMemo(
@@ -1119,9 +1219,21 @@ export default function NutriTrackApp() {
             />
           )}
 
-          {activeTab === 'entreno' && modules.entreno && <WorkoutModule />}
+          {/* El fallback lleva el acento del módulo (el árbol ya está dentro de
+              `module-entreno`/`module-sueno` por la key de arriba). Es un flash
+              breve solo la primera vez que se abre la pestaña; después el chunk
+              queda en caché y la carga es instantánea. */}
+          {activeTab === 'entreno' && modules.entreno && (
+            <Suspense fallback={<ModuleLoading accentClass="text-entreno-400" />}>
+              <WorkoutModule />
+            </Suspense>
+          )}
 
-          {activeTab === 'sueno' && modules.sueno && <SleepModule />}
+          {activeTab === 'sueno' && modules.sueno && (
+            <Suspense fallback={<ModuleLoading accentClass="text-sueno-400" />}>
+              <SleepModule />
+            </Suspense>
+          )}
           </div>
         </main>
 
@@ -1352,6 +1464,17 @@ function NavButton({
         {label}
       </span>
     </button>
+  );
+}
+
+// Fallback mientras se descarga el chunk de un módulo opcional (React.lazy).
+// Ocupa alto para que la pantalla no salte cuando llega el contenido real.
+function ModuleLoading({ accentClass = 'text-slate-400' }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-24 gap-3" role="status" aria-live="polite">
+      <Loader2 className={`w-6 h-6 animate-spin ${accentClass}`} />
+      <p className="text-xs text-slate-500">Cargando…</p>
+    </div>
   );
 }
 
@@ -1913,7 +2036,7 @@ function TabRegistrar({
               value={foodQuery}
               onChange={(e) => setFoodQuery(e.target.value)}
               placeholder="Buscar alimento (banana, milanesa, arroz...)"
-              className="w-full surface rounded-2xl pl-9 pr-3 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              className="w-full surface rounded-2xl pl-9 pr-3 py-3 text-sm text-slate-100 placeholder-slate-500"
             />
           </div>
           {/* Escanear el paquete evita tipear los macros de un producto envasado */}
@@ -2102,7 +2225,7 @@ function TabRegistrar({
                 value={customName}
                 onChange={(e) => setCustomName(e.target.value)}
                 placeholder="¿Qué comiste?"
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-500"
               />
               <div className="grid grid-cols-2 gap-2">
                 <input
@@ -2110,28 +2233,28 @@ function TabRegistrar({
                   onChange={(e) => setCustomKcal(e.target.value)}
                   placeholder="Kcal"
                   inputMode="decimal"
-                  className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-500"
                 />
                 <input
                   value={customP}
                   onChange={(e) => setCustomP(e.target.value)}
                   placeholder="Proteínas (g)"
                   inputMode="decimal"
-                  className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-500"
                 />
                 <input
                   value={customC}
                   onChange={(e) => setCustomC(e.target.value)}
                   placeholder="Carbohidratos (g)"
                   inputMode="decimal"
-                  className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-500"
                 />
                 <input
                   value={customF}
                   onChange={(e) => setCustomF(e.target.value)}
                   placeholder="Grasas (g)"
                   inputMode="decimal"
-                  className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-500"
                 />
               </div>
               <button
@@ -2262,17 +2385,15 @@ function GoalChip({ label, value }) {
 }
 
 function EditEntryModal({ isPlan, name, setName, kcal, setKcal, p, setP, c, setC, f, setF, onSave, onCancel }) {
-  const accent = isPlan ? 'emerald' : 'amber';
   const accentText = isPlan ? 'text-emerald-300' : 'text-amber-300';
   const accentBorder = isPlan ? 'sheet-plan' : 'sheet-free';
   const accentBg = isPlan ? 'bg-emerald-500' : 'bg-amber-500';
-  const accentRing = isPlan ? '' : '';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center scrim px-0 sm:px-4">
+    <Sheet onClose={onCancel} labelledBy="editar-comida-titulo">
       <div className={`w-full max-w-md sheet ${accentBorder} rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto`}>
         <div className="flex items-center justify-between mb-1">
-          <h2 className="text-lg font-bold text-slate-100">Editar comida</h2>
+          <h2 id="editar-comida-titulo" className="text-lg font-bold text-slate-100">Editar comida</h2>
           <button onClick={onCancel} aria-label="Cerrar edición" className="btn-icon hover:bg-slate-700">
             <X className="w-5 h-5 text-slate-400" />
           </button>
@@ -2287,7 +2408,7 @@ function EditEntryModal({ isPlan, name, setName, kcal, setKcal, p, setP, c, setC
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 focus:outline-none focus:ring-2 ${accentRing}`}
+              className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100`}
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -2298,7 +2419,7 @@ function EditEntryModal({ isPlan, name, setName, kcal, setKcal, p, setP, c, setC
                 inputMode="decimal"
                 value={kcal}
                 onChange={(e) => setKcal(e.target.value)}
-                className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono focus:outline-none focus:ring-2 ${accentRing}`}
+                className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono`}
               />
             </div>
             <div>
@@ -2308,7 +2429,7 @@ function EditEntryModal({ isPlan, name, setName, kcal, setKcal, p, setP, c, setC
                 inputMode="decimal"
                 value={p}
                 onChange={(e) => setP(e.target.value)}
-                className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono focus:outline-none focus:ring-2 ${accentRing}`}
+                className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono`}
               />
             </div>
             <div>
@@ -2318,7 +2439,7 @@ function EditEntryModal({ isPlan, name, setName, kcal, setKcal, p, setP, c, setC
                 inputMode="decimal"
                 value={c}
                 onChange={(e) => setC(e.target.value)}
-                className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono focus:outline-none focus:ring-2 ${accentRing}`}
+                className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono`}
               />
             </div>
             <div>
@@ -2328,7 +2449,7 @@ function EditEntryModal({ isPlan, name, setName, kcal, setKcal, p, setP, c, setC
                 inputMode="decimal"
                 value={f}
                 onChange={(e) => setF(e.target.value)}
-                className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono focus:outline-none focus:ring-2 ${accentRing}`}
+                className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono`}
               />
             </div>
           </div>
@@ -2343,27 +2464,27 @@ function EditEntryModal({ isPlan, name, setName, kcal, setKcal, p, setP, c, setC
           </button>
           <button
             onClick={onSave}
-            className={`flex-1 rounded-xl ${accentBg} text-slate-900 py-2.5 text-sm font-bold flex items-center justify-center gap-2 ${accentRing}`}
+            className={`flex-1 rounded-xl ${accentBg} text-slate-900 py-2.5 text-sm font-bold flex items-center justify-center gap-2`}
           >
             <Save className="w-4 h-4" /> Guardar
           </button>
         </div>
       </div>
-    </div>
+    </Sheet>
   );
 }
 
 function CatalogItemModal({ isNew, isFree, name, setName, kcal, setKcal, p, setP, c, setC, f, setF, onSave, onCancel, onDelete }) {
   const noun = isFree ? 'fuera de plan' : 'del plan';
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center scrim px-0 sm:px-4">
+    <Sheet onClose={onCancel} labelledBy="opcion-catalogo-titulo">
       <div
         className={`w-full max-w-md sheet rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto ${
           isFree ? 'sheet-free' : 'sheet-plan'
         }`}
       >
         <div className="flex items-center justify-between mb-1">
-          <h2 className="text-lg font-bold text-slate-100">
+          <h2 id="opcion-catalogo-titulo" className="text-lg font-bold text-slate-100">
             {isNew ? `Nueva opción ${noun}` : `Editar opción ${noun}`}
           </h2>
           <button onClick={onCancel} aria-label="Cerrar" className="btn-icon hover:bg-slate-700">
@@ -2381,7 +2502,7 @@ function CatalogItemModal({ isNew, isFree, name, setName, kcal, setKcal, p, setP
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ej: Tostadas con palta"
-              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 placeholder-slate-500"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -2392,7 +2513,7 @@ function CatalogItemModal({ isNew, isFree, name, setName, kcal, setKcal, p, setP
                 inputMode="decimal"
                 value={kcal}
                 onChange={(e) => setKcal(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono"
               />
             </div>
             <div>
@@ -2402,7 +2523,7 @@ function CatalogItemModal({ isNew, isFree, name, setName, kcal, setKcal, p, setP
                 inputMode="decimal"
                 value={p}
                 onChange={(e) => setP(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono"
               />
             </div>
             <div>
@@ -2412,7 +2533,7 @@ function CatalogItemModal({ isNew, isFree, name, setName, kcal, setKcal, p, setP
                 inputMode="decimal"
                 value={c}
                 onChange={(e) => setC(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono"
               />
             </div>
             <div>
@@ -2422,7 +2543,7 @@ function CatalogItemModal({ isNew, isFree, name, setName, kcal, setKcal, p, setP
                 inputMode="decimal"
                 value={f}
                 onChange={(e) => setF(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono"
               />
             </div>
           </div>
@@ -2452,7 +2573,7 @@ function CatalogItemModal({ isNew, isFree, name, setName, kcal, setKcal, p, setP
           </button>
         </div>
       </div>
-    </div>
+    </Sheet>
   );
 }
 
@@ -2476,10 +2597,13 @@ function InstallGuideModal({ onClose }) {
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center scrim px-0 sm:px-4">
+    // Toca el velo y se cierra: es una guía de solo lectura, no hay nada que
+    // perder por cerrarla sin querer. Las hojas con datos a medio cargar no
+    // llevan esto.
+    <Sheet onClose={onClose} closeOnBackdrop labelledBy="instalar-titulo">
       <div className="w-full max-w-md sheet rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-1">
-          <h2 className="text-lg font-bold text-slate-100">Instalar en tu iPhone</h2>
+          <h2 id="instalar-titulo" className="text-lg font-bold text-slate-100">Instalar en tu iPhone</h2>
           <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-slate-700">
             <X className="w-5 h-5 text-slate-400" />
           </button>
@@ -2513,7 +2637,7 @@ function InstallGuideModal({ onClose }) {
           Entendido
         </button>
       </div>
-    </div>
+    </Sheet>
   );
 }
 
@@ -2561,10 +2685,10 @@ function SettingsModal({ tempGoals, setTempGoals, onSave, onCancel, onReset, onR
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center scrim px-0 sm:px-4">
+    <Sheet onClose={onCancel} labelledBy="ajustes-titulo">
       <div className="w-full max-w-md sheet rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold text-slate-100">Ajustes de mi plan</h2>
+          <h2 id="ajustes-titulo" className="text-lg font-bold text-slate-100">Ajustes de mi plan</h2>
           <button onClick={onCancel} aria-label="Cerrar ajustes" className="btn-icon hover:bg-slate-700">
             <X className="w-5 h-5 text-slate-400" />
           </button>
@@ -2579,7 +2703,7 @@ function SettingsModal({ tempGoals, setTempGoals, onSave, onCancel, onReset, onR
                 step={f.step}
                 value={tempGoals[f.key]}
                 onChange={(e) => setTempGoals((prev) => ({ ...prev, [f.key]: e.target.value }))}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono"
               />
             </div>
           ))}
@@ -2728,6 +2852,6 @@ function SettingsModal({ tempGoals, setTempGoals, onSave, onCancel, onReset, onR
           )}
         </div>
       </div>
-    </div>
+    </Sheet>
   );
 }
