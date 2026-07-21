@@ -179,15 +179,20 @@
   }
 
   /* Cambio de pestaña: el contenido nuevo entra desde el lado hacia el que te
-     moviste en la barra (adelante = por la derecha). El recorrido es corto a
-     propósito —18px—: lo que vende el movimiento es la curva, no la distancia,
-     y un desplazamiento largo se siente lento cuando cambiás de tab seguido. */
+     moviste en la barra (adelante = por la derecha).
+
+     La opacidad termina antes que el desplazamiento (al 65%): el tramo final es
+     movimiento puro sobre contenido ya opaco, que es lo que se percibe como
+     "asentarse" en vez de "aparecer de golpe". El recorrido es corto —12px—
+     porque lo que vende el movimiento es la curva, no la distancia. */
   @keyframes tab-forward {
-    from { opacity: 0; transform: translate3d(18px, 0, 0); }
+    from { opacity: 0; transform: translate3d(12px, 0, 0); }
+    65%  { opacity: 1; }
     to   { opacity: 1; transform: none; }
   }
   @keyframes tab-back {
-    from { opacity: 0; transform: translate3d(-18px, 0, 0); }
+    from { opacity: 0; transform: translate3d(-12px, 0, 0); }
+    65%  { opacity: 1; }
     to   { opacity: 1; transform: none; }
   }
 
@@ -199,8 +204,13 @@
   .anim-fade-in-up  { animation: fade-in-up 0.42s cubic-bezier(0.16, 1, 0.3, 1) both; }
   .anim-glow        { animation: celebrate-glow 1.1s ease-out; }
   .confetti-piece   { animation: confetti-fall 1s ease-out forwards; }
-  .anim-tab-forward { animation: tab-forward 0.26s cubic-bezier(0.16, 1, 0.3, 1) both; }
-  .anim-tab-back    { animation: tab-back 0.26s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  /* Estas dos NO usan la curva expo de arriba: con un cambio de pantalla entera
+     el arranque violento del expo (≈88% del recorrido en el primer 30% del
+     tiempo) se siente como un latigazo. easeOutCubic reparte mucho mejor y,
+     con algo más de duración, el cambio de sección se lee como un deslizamiento
+     en vez de un salto. */
+  .anim-tab-forward { animation: tab-forward 0.38s cubic-bezier(0.33, 1, 0.68, 1) both; }
+  .anim-tab-back    { animation: tab-back 0.38s cubic-bezier(0.33, 1, 0.68, 1) both; }
 
   /* Feedback táctil: mini "hundido" al presionar cualquier control. */
   button:active { transform: scale(0.98); }

@@ -143,6 +143,12 @@ export default function NutriTrackApp() {
     if (next === activeTab) return;
     setTabDir(TAB_ORDER.indexOf(next) >= TAB_ORDER.indexOf(activeTab) ? 'forward' : 'back');
     setActiveTab(next);
+    // Arrancar la sección nueva desde arriba. Sin esto, al pasar de una pestaña
+    // larga a una corta el navegador recortaba el scroll por su cuenta: un salto
+    // de cientos de píxeles justo mientras corría el deslizamiento, que era lo
+    // que hacía sentir brusco el cambio. Va sin `smooth` a propósito, para no
+    // pelearse con la animación de entrada.
+    window.scrollTo({ top: 0, behavior: 'auto' });
   };
   const [showSettings, setShowSettings] = useState(false);
   const [showInstallGuide, setShowInstallGuide] = useState(false);
