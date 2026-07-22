@@ -46,10 +46,15 @@ export default function RestTimer({ durationSec, onDismiss }) {
       className={`fixed bottom-24 inset-x-0 flex flex-col items-center px-4 z-40 pointer-events-none`}
     >
       <div
-        className={`w-full max-w-md rounded-2xl border px-4 py-3 flex items-center justify-between gap-3 pointer-events-auto shadow-lg transition-colors ${
+        // Mismo material que los avisos flotantes de la app (ver .toast en
+        // index.css): es chrome que flota sobre el contenido, así que usa el
+        // vidrio fino con filtro y el canto teñido con el acento del módulo. Al
+        // llegar a cero pasa a relleno sólido a propósito —ahí ya no es un aviso
+        // discreto, es lo único que importa en pantalla—.
+        className={`w-full max-w-md rounded-2xl px-4 py-3 flex items-center justify-between gap-3 pointer-events-auto transition-colors ${
           isDone
-            ? 'bg-entreno-500 border-entreno-400 animate-pulse motion-reduce:animate-none'
-            : 'bg-neutral-900/95 border-entreno-500/40'
+            ? 'border border-entreno-400 bg-entreno-500 shadow-lg animate-pulse motion-reduce:animate-none'
+            : 'toast toast-entreno'
         }`}
       >
         {/* min-w-0 + truncate: los tres controles de la derecha ahora ocupan

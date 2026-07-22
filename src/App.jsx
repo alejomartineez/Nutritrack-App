@@ -138,6 +138,9 @@ const nowHM = () =>
  *  la transición; incluye las opcionales (sueño/entreno) aunque estén apagadas. */
 const TAB_ORDER = ['dia', 'registrar', 'sueno', 'entreno', 'progreso'];
 
+/** Duración de la salida de un aviso. Tiene que coincidir con `.anim-toast-out`. */
+const TOAST_EXIT_MS = 220;
+
 // ---------------------------------------------------------------------------
 // COMPONENTE PRINCIPAL
 // ---------------------------------------------------------------------------
@@ -282,7 +285,13 @@ export default function NutriTrackApp() {
   const [showCustomForm, setShowCustomForm] = useState(false);
 
   const [tempGoals, setTempGoals] = useState(DEFAULT_GOALS);
+  // Aviso flotante. Va en tres piezas porque tiene que poder SALIR animado:
+  // `leaving` cambia la clase de animación mientras el texto sigue montado, y
+  // `seq` es la key —sin ella, dos avisos idénticos seguidos no vuelven a
+  // animarse y el segundo registro no da ninguna señal de haber pasado.
   const [confirmMsg, setConfirmMsg] = useState('');
+  const [confirmLeaving, setConfirmLeaving] = useState(false);
+  const [confirmSeq, setConfirmSeq] = useState(0);
 
   const [editingEntry, setEditingEntry] = useState(null); // { id, isPlan, time }
   const [editName, setEditName] = useState('');
@@ -292,7 +301,9 @@ export default function NutriTrackApp() {
   const [editF, setEditF] = useState('');
 
   const [pendingDelete, setPendingDelete] = useState(null); // { entry, isPlan }
+  const [undoLeaving, setUndoLeaving] = useState(false);
   const undoTimeoutRef = useRef(null);
+  const undoLeaveRef = useRef(null);
   const [celebrate, setCelebrate] = useState(false); // confeti al entrar en rango de calorías
   const celebrateTimeoutRef = useRef(null);
 
@@ -567,8 +578,13 @@ export default function NutriTrackApp() {
       freeMeals: !isPlan ? prev.freeMeals.filter((m) => m.id !== id) : prev.freeMeals,
     }));
     clearTimeout(undoTimeoutRef.current);
+    clearTimeout(undoLeaveRef.current);
     setPendingDelete({ entry, isPlan });
-    undoTimeoutRef.current = setTimeout(() => setPendingDelete(null), 5000);
+    setUndoLeaving(false);
+    // Igual que el aviso de confirmación: primero sale animado, después se
+    // desmonta (ver flashConfirm).
+    undoLeaveRef.current = setTimeout(() => setUndoLeaving(true), 5000);
+    undoTimeoutRef.current = setTimeout(() => setPendingDelete(null), 5000 + TOAST_EXIT_MS);
   };
 
   const undoDelete = () => {
@@ -580,7 +596,9 @@ export default function NutriTrackApp() {
       freeMeals: !isPlan ? [...prev.freeMeals, entry] : prev.freeMeals,
     }));
     clearTimeout(undoTimeoutRef.current);
-    setPendingDelete(null);
+    clearTimeout(undoLeaveRef.current);
+    setUndoLeaving(true);
+    undoTimeoutRef.current = setTimeout(() => setPendingDelete(null), TOAST_EXIT_MS);
   };
 
   const openEditEntry = (entry, isPlan) => {
@@ -645,10 +663,18 @@ export default function NutriTrackApp() {
   // segunda a mitad de camino. Cuanto más rápido cargabas, menos duraba el
   // aviso —justo al revés de lo que hace falta—.
   const confirmTimeoutRef = useRef(null);
+  const confirmLeaveRef = useRef(null);
   const flashConfirm = (text) => {
-    setConfirmMsg(text);
     clearTimeout(confirmTimeoutRef.current);
-    confirmTimeoutRef.current = setTimeout(() => setConfirmMsg(''), 2200);
+    clearTimeout(confirmLeaveRef.current);
+    setConfirmMsg(text);
+    setConfirmLeaving(false);
+    setConfirmSeq((n) => n + 1);
+    // Dos tiempos: primero se dispara la salida, y recién cuando terminó se
+    // desmonta. Desmontar directo era lo que hacía que el aviso desapareciera
+    // de un frame al otro después de haber entrado con animación.
+    confirmLeaveRef.current = setTimeout(() => setConfirmLeaving(true), 2200);
+    confirmTimeoutRef.current = setTimeout(() => setConfirmMsg(''), 2200 + TOAST_EXIT_MS);
   };
 
   // Celebra (confeti) si esta comida cruza las calorías de fuera a dentro del
@@ -1074,30 +1100,63 @@ export default function NutriTrackApp() {
           )}
         </header>
 
-        {/* CONFIRMACIÓN FLOTANTE
+        {/* AVISOS FLOTANTES (confirmación y deshacer)
+            ANTES ESTABAN EN EL FLUJO, Y ESE ERA EL PROBLEMA. Insertados entre
+            el header y el contenido, cada aviso empujaba la pantalla entera
+            ~44px hacia abajo al aparecer y la devolvía al desaparecer: la lista
+            de comidas saltaba dos veces por cada registro. Y como cambiaban el
+            alto del documento, estando scrolleado disparaban además el clampeo
+            de scroll de iOS (el mismo mecanismo contado en el comentario del
+            `main`, más abajo).
+
+            Ahora la capa es `fixed` (ver .toast-layer en index.css): flota
+            debajo del header, no ocupa lugar y no puede mover nada. Que sea la
+            capa la que está siempre montada —y no cada aviso— es lo que hace
+            que `aria-live` funcione: un live region tiene que existir ANTES de
+            que le cambie el contenido para que el lector lo anuncie.
+
             Entrada de una sola vez en vez de `animate-pulse`: el pulso de
             Tailwind late para siempre —un "guardado" resuelto no debería seguir
             pidiendo atención— y además ignora prefers-reduced-motion, que el
             resto de las animaciones de la app sí respeta. */}
-        {confirmMsg && (
-          <div className="mx-5 mb-2 -mt-1 px-4 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-sm flex items-center gap-2 anim-fade-in-up">
-            <Check className="w-4 h-4 shrink-0" />
-            <span>{confirmMsg}</span>
-          </div>
-        )}
-
-        {/* DESHACER ELIMINACIÓN */}
-        {pendingDelete && (
-          <div className="mx-5 mb-2 -mt-1 px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-sm flex items-center justify-between gap-3">
-            <span>Comida eliminada</span>
-            <button
-              onClick={undoDelete}
-              className="text-emerald-400 font-semibold shrink-0 rounded px-1"
+        <div className="toast-layer" aria-live="polite">
+          {confirmMsg && (
+            <div
+              key={confirmSeq}
+              // `rounded-2xl` y no cápsula: la mitad de los avisos entra en una
+              // línea y la otra mitad en dos, y una cápsula de dos renglones se
+              // ve deforme. Con el radio de las cards queda bien en los dos
+              // casos, y de paso no suma un radio nuevo al inventario.
+              //
+              // `pointer-events-none` (le gana al `auto` de `.toast`): este
+              // aviso no tiene nada que tocar y tapa el header entero cuando el
+              // texto es largo. Sin esto, durante 2,2s un toque al engranaje de
+              // Ajustes se lo comía el aviso y no pasaba nada.
+              className={`toast toast-ok pointer-events-none rounded-2xl px-4 py-2.5 leading-snug text-brand-300 text-sm flex items-center gap-2 ${
+                confirmLeaving ? 'anim-toast-out' : 'anim-toast-in'
+              }`}
             >
-              Deshacer
-            </button>
-          </div>
-        )}
+              <Check className="w-4 h-4 shrink-0" />
+              <span>{confirmMsg}</span>
+            </div>
+          )}
+
+          {pendingDelete && (
+            <div
+              className={`toast rounded-2xl pl-4 pr-2 py-2 text-ink-200 text-sm flex items-center gap-3 ${
+                undoLeaving ? 'anim-toast-out' : 'anim-toast-in'
+              }`}
+            >
+              <span>Comida eliminada</span>
+              <button
+                onClick={undoDelete}
+                className="text-brand-400 font-semibold shrink-0 rounded-full px-3 py-1"
+              >
+                Deshacer
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* CONTENIDO */}
         {/* EL COLCHÓN DE ABAJO ES CONSTANTE, Y NO PUEDE DEJAR DE SERLO.

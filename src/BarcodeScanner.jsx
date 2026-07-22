@@ -127,7 +127,7 @@ export default function BarcodeScanner({ onDetected, onCancel }) {
   }, [onCancel]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900 flex flex-col" role="dialog" aria-modal="true" aria-label="Escanear código de barras">
+    <div className="fixed inset-0 z-50 bg-slate-900 flex flex-col anim-screen-in" role="dialog" aria-modal="true" aria-label="Escanear código de barras">
       <div
         className="flex items-center justify-between px-5 pb-3"
         style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.25rem)' }}

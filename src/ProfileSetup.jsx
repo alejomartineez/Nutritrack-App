@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { Calculator, Check, ChevronRight, Flame, Info } from 'lucide-react';
 import { computePlanFromProfile } from './lib/nutritionCalcs';
+import { useExitGhost } from './lib/exitGhost';
 
 // ---------------------------------------------------------------------------
 // PASO DE PERFIL (cálculo del plan calórico)
@@ -43,6 +44,10 @@ export default function ProfileSetup({
   submitLabel = 'Usar este plan',
   dismissLabel = 'Omitir',
 }) {
+  // Salida animada al guardar u omitir (ver lib/exitGhost.js).
+  const rootRef = useRef(null);
+  useExitGhost(rootRef, 'screen-ghost');
+
   const [sex, setSex] = useState(initialProfile?.sex ?? 'hombre');
   const [age, setAge] = useState(initialProfile?.age != null ? String(initialProfile.age) : '');
   const [weight, setWeight] = useState(initialProfile?.weightKg != null ? String(initialProfile.weightKg) : '');
@@ -86,7 +91,8 @@ export default function ProfileSetup({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-slate-900 text-slate-100 flex justify-center"
+      ref={rootRef}
+      className="fixed inset-0 z-50 bg-slate-900 text-slate-100 flex justify-center anim-screen-in"
       role="dialog"
       aria-modal="true"
       aria-label="Calculá tu plan"

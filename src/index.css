@@ -29,6 +29,14 @@
        apagaba ESTE zoom pero de paso le sacaba el pellizco a quien ve poco
        (WCAG 1.4.4). Acá se van los saltos molestos y el pellizco queda. */
     touch-action: manipulation;
+
+    /* EL FLASH GRIS DEL TOQUE. iOS pinta un rectángulo gris translúcido sobre
+       cualquier cosa tocable mientras la mantenés apretada, y encima lo pinta
+       sobre la CAJA del elemento, así que en un botón redondo aparece un
+       cuadrado. Es la señal más barata de "esto es una página web y no una
+       app". El feedback de toque ya lo da el `scale` de `button:active`, que
+       sigue la forma real del control. */
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
@@ -86,6 +94,22 @@
   ::selection {
     background-color: theme('colors.brand.500');
     color: theme('colors.ink.900');
+  }
+
+  /* Los controles no se seleccionan ni abren el menú de iOS.
+     Mantener apretado un botón —cosa que pasa sola cuando dudás medio segundo
+     antes de soltar— seleccionaba su etiqueta en azul y levantaba el menú de
+     "Copiar / Buscar". En una app instalada eso no existe; el texto de un
+     control no es contenido, es interfaz. El contenido (nombres de comida,
+     cifras, notas) sigue siendo seleccionable: la regla apunta solo a
+     controles. */
+  button,
+  [role='button'],
+  .label-section,
+  .nav-label {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
   }
 
   /* Scrollbar discreta, para que no rompa el fondo oscuro en desktop. */
@@ -212,8 +236,12 @@
         luz del filo hacia adentro, y un rebote más débil desde el canto de abajo
         —el vidrio grueso devuelve algo de luz por donde apoya—.
 
-     El borde exterior queda casi al mínimo a propósito: el bisel ya está dibujado
-     con insets y un borde marcado encima lo aplana. */
+     5. EL CANTO NO BRILLA PAREJO. El borde uniforme se fue a favor de un aro en
+     degradado (`::after`, más abajo): fuerte arriba, casi nulo a los costados,
+     con un rebote tenue abajo. Un vidrio real no tiene el mismo brillo en todo
+     el perímetro —la luz viene de algún lado— y un aro parejo es justo lo que
+     delata a un "rectángulo con opacidad". El aro va en un pseudo-elemento y no
+     en `border` porque un borde también se pinta parejo. */
   .nav-floating {
     background-color: rgba(28, 34, 41, 0.22);
     background-image: linear-gradient(
@@ -224,15 +252,50 @@
     );
     backdrop-filter: blur(44px) saturate(190%) brightness(0.45);
     -webkit-backdrop-filter: blur(44px) saturate(190%) brightness(0.45);
-    border: 1px solid rgba(255, 255, 255, 0.13);
     box-shadow:
       inset 0 1px 0 0 rgba(255, 255, 255, 0.40),
-      inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.09),
       inset 0 -1px 0 0 rgba(0, 0, 0, 0.55),
       inset 0 18px 30px -22px rgba(255, 255, 255, 0.55),
       inset 0 -20px 26px -26px rgba(255, 255, 255, 0.22),
       0 16px 40px -10px rgba(0, 0, 0, 0.85),
       0 6px 14px -6px rgba(0, 0, 0, 0.6);
+  }
+
+  /* EL ARO EN DEGRADADO — el canto que capta la luz.
+     Truco del borde con gradiente: se pinta el degradado en toda la caja y se
+     enmascara con dos capas, una recortada al `content-box`, componiendo por
+     exclusión. Queda solo el marco de 1px, que es lo único que se ve.
+
+     Va dentro de `@supports` a propósito: si `mask-composite` no existiera, el
+     degradado se pintaría ENTERO encima de la barra —un panel claro tapando los
+     íconos—. El fallo tiene que ser "no hay aro", no "hay una mancha". Sin el
+     pseudo, el `inset 0 0 0 1px` del box-shadow ya deja un aro parejo tenue.
+
+     Es paint puro, sin `backdrop-filter` propio: por eso puede ser hijo de
+     `.nav-floating` sin caer en el problema de los filtros anidados. */
+  @supports ((mask-composite: exclude) or (-webkit-mask-composite: xor)) {
+    .nav-floating::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 1px;
+      pointer-events: none;
+      background-image: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.46) 0%,
+        rgba(255, 255, 255, 0.14) 18%,
+        rgba(255, 255, 255, 0.05) 52%,
+        rgba(255, 255, 255, 0.20) 100%
+      );
+      -webkit-mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+      -webkit-mask-clip: content-box, border-box;
+      -webkit-mask-composite: xor;
+      mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+      mask-clip: content-box, border-box;
+      mask-composite: exclude;
+    }
   }
 
   /* Sin soporte de backdrop-filter no hay vidrio posible: lo que se ve es un
@@ -272,6 +335,37 @@
      algo que se siente con masa, y es la firma del tab bar de iOS. */
   .nav-indicator-track {
     transition: transform 0.44s cubic-bezier(0.34, 1.42, 0.5, 1);
+  }
+
+  /* EL REFLEJO QUE VIAJA CON LA PASTILLA.
+     Un halo suave, bastante más grande que la pastilla y sin bordes, que va
+     montado en el mismo carril: cuando cambiás de pestaña, la luz se corre por
+     el vidrio en vez de aparecer de golpe en el destino. Es lo que hace que el
+     material parezca reaccionar al gesto y no solo alojar un rectángulo que se
+     mueve.
+
+     Sale gratis: como cuelga del carril, lo mueve el mismo `transform` que ya
+     estaba animado —una sola capa compuesta, cero repintado por frame—. La
+     alternativa "correcta" (un radial-gradient en la barra con la posición
+     animada) obliga a repintar el degradado en cada frame Y a recalcular el
+     `backdrop-filter` debajo: es justo el tipo de cosa que hace tironear la
+     animación en un iPhone.
+
+     Va antes que la pastilla en orden de pintado (es el ::before del carril),
+     así que el halo queda POR DEBAJO del relleno de color: es luz sobre el
+     vidrio, no una segunda pastilla. */
+  .nav-indicator-track::before {
+    content: '';
+    position: absolute;
+    inset: -85% -55%;
+    border-radius: 999px;
+    pointer-events: none;
+    background-image: radial-gradient(
+      closest-side,
+      rgba(255, 255, 255, 0.085) 0%,
+      rgba(255, 255, 255, 0.03) 45%,
+      rgba(255, 255, 255, 0) 100%
+    );
   }
 
   /* Pastilla activa — lente sobre el vidrio.
@@ -385,6 +479,90 @@
   .sheet-plan    { border-color: rgba(38, 165, 120, 0.32); }
   .sheet-free    { border-color: rgba(188, 136, 64, 0.32); }
   .sheet-entreno { border-color: rgba(176, 116, 63, 0.32); }
+
+  /* AVISOS FLOTANTES — la capa que NO empuja el layout.
+     Antes los dos avisos (el "Comida agregada ✓" y el "Deshacer") se
+     insertaban en el flujo, entre el header y el contenido. Cada vez que
+     aparecía uno, TODA la pantalla bajaba ~44px y volvía a subir 2,2s después;
+     si además estabas scrolleado, el documento cambiaba de alto y el navegador
+     recortaba el scroll —el mismo mecanismo que rompió el buscador, contado en
+     el comentario del `main` en App.jsx—. Registrar dos comidas seguidas hacía
+     saltar la lista dos veces.
+
+     La capa es `fixed`: no ocupa lugar en el flujo, así que el aviso puede
+     entrar y salir sin mover un pixel de lo que hay debajo ni tocar el alto del
+     documento.
+
+     VA ARRIBA, ENCIMA DEL HEADER, Y NO DEBAJO. Probado abajo del header, el
+     aviso caía justo sobre el navegador de fecha y se leía como un error de
+     maquetación: dos controles en el mismo lugar. Encima del header tapa el
+     título, que es texto fijo y decorativo, y es además el gesto de siempre en
+     iOS —el aviso baja desde arriba y se va—. La otra alternativa, flotando
+     sobre la barra de navegación, quedaba descartada por el teclado: los
+     elementos anclados abajo son justo los que iOS reubica solo mientras acomoda
+     el foco (ver src/lib/viewport.js).
+
+     Cápsula de ancho automático, no una barra de lado a lado: ocupa lo que mide
+     su texto, así el engranaje de Ajustes y los bordes del header siguen a la
+     vista y se lee como algo que flota, no como una franja que se metió en el
+     layout.
+
+     `pointer-events: none` en la capa y `auto` en el aviso: la franja
+     transparente a los costados no se come los toques del contenido, pero el
+     botón "Deshacer" sigue siendo tocable. */
+  .toast-layer {
+    position: fixed;
+    /* Medido con el aviso más largo de la app ("Registrado fuera de plan,
+       ¡disfrutalo con calma!", dos líneas, 60px): a 1.6rem el borde de abajo
+       quedaba pegado al navegador de fecha. A 1.15rem sobran 8px en el peor
+       caso y el aviso de una línea sigue cayendo sobre el título. */
+    top: calc(env(safe-area-inset-top, 0px) + 1.15rem);
+    left: 0;
+    right: 0;
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0 1.25rem;
+    pointer-events: none;
+  }
+
+  /* Vidrio fino, con filtro. Es chrome flotante y no cuelga de ninguna capa que
+     ya tenga `backdrop-filter`, así que acá el filtro propio es legítimo (a
+     diferencia de `.sheet`, que vive dentro del velo).
+
+     Mismo criterio que la barra de navegación: `brightness` PARA ABAJO. El
+     aviso pasa por encima de cualquier cosa —incluido el CTA verde, que es la
+     superficie más clara de la app— y el material tiene que oscurecer lo que
+     haya detrás para que el texto claro siempre tenga dónde apoyarse. Medido
+     contra ese peor caso, el texto de marca queda en 7.2:1; sobre fondo normal,
+     ~8.6:1. */
+  .toast {
+    pointer-events: auto;
+    max-width: 100%;
+    background-color: rgba(20, 25, 30, 0.42);
+    background-image: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.10) 0%,
+      rgba(255, 255, 255, 0) 60%
+    );
+    backdrop-filter: blur(28px) saturate(180%) brightness(0.5);
+    -webkit-backdrop-filter: blur(28px) saturate(180%) brightness(0.5);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.22),
+      0 12px 28px -10px rgba(0, 0, 0, 0.75);
+  }
+
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .toast { background-color: rgba(18, 22, 26, 0.97); }
+  }
+
+  /* El hairline toma el tono del aviso; el material queda igual. Mismo criterio
+     que `.sheet-plan` / `.sheet-free`: se tiñe el canto, no la superficie. */
+  .toast-ok      { border-color: rgba(38, 165, 120, 0.34); }
+  .toast-entreno { border-color: rgba(176, 116, 63, 0.34); }
 
   /* Header pegajoso con desenfoque progresivo.
      El vidrio no lo pinta el header sino un ::before: si el desenfoque fuera del
@@ -518,6 +696,81 @@
     to   { opacity: 1; transform: none; }
   }
 
+  /* HOJAS: ENTRADA Y SALIDA.
+     Hasta ahora las hojas y sus velos aparecían y desaparecían de un frame al
+     otro. Era lo que más delataba a la app: en iOS una hoja SIEMPRE viaja, y el
+     velo se funde con ella. Un panel que aparece instantáneamente se lee como
+     un cambio de pantalla, no como una capa que se levanta.
+
+     La curva es la de las hojas de iOS: arranque decidido y frenada larguísima,
+     SIN rebote. El overshoot es la firma de la pastilla del nav (un objeto
+     chico con inercia); una superficie del tamaño de la pantalla que se pasa de
+     largo y vuelve se siente elástica, no pesada.
+
+     El velo entra un poco antes y sale un poco después que el panel: así la
+     profundidad se establece primero y se deshace último, y la hoja nunca se ve
+     recortada sobre contenido nítido. */
+  @keyframes scrim-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes scrim-out {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+  }
+  @keyframes sheet-in {
+    from { opacity: 0.4; transform: translate3d(0, 100%, 0); }
+    35%  { opacity: 1; }
+    to   { opacity: 1; transform: none; }
+  }
+  @keyframes sheet-out {
+    from { opacity: 1; transform: none; }
+    to   { opacity: 0.5; transform: translate3d(0, 100%, 0); }
+  }
+
+  /* En pantalla ancha la hoja está centrada, no apoyada abajo: subirla desde
+     fuera de cuadro sería un viaje larguísimo por el medio de la pantalla. Ahí
+     se comporta como un diálogo —crece un pelo y se asienta—. */
+  @media (min-width: 640px) {
+    @keyframes sheet-in {
+      from { opacity: 0; transform: translate3d(0, 12px, 0) scale(0.97); }
+      to   { opacity: 1; transform: none; }
+    }
+    @keyframes sheet-out {
+      from { opacity: 1; transform: none; }
+      to   { opacity: 0; transform: translate3d(0, 8px, 0) scale(0.98); }
+    }
+  }
+
+  /* AVISOS: bajan desde arriba con un rebote corto y se van sin ruido.
+     La entrada usa la curva con overshoot de la pastilla del nav —es un objeto
+     chico, ahí el rebote sí corresponde— y la salida es plana y más rápida: un
+     aviso que se retira llamando la atención es exactamente lo contrario de lo
+     que tiene que hacer. */
+  @keyframes toast-in {
+    from { opacity: 0; transform: translate3d(0, -14px, 0) scale(0.96); }
+    to   { opacity: 1; transform: none; }
+  }
+  @keyframes toast-out {
+    from { opacity: 1; transform: none; }
+    to   { opacity: 0; transform: translate3d(0, -8px, 0) scale(0.98); }
+  }
+
+  /* Pantallas completas (onboarding, perfil, escáner): suben un poco al entrar.
+     Sin esto un `fixed inset-0` opaco reemplaza la app de golpe y parece que la
+     app se cerró y abrió otra. */
+  @keyframes screen-in {
+    from { opacity: 0; transform: translate3d(0, 18px, 0); }
+    to   { opacity: 1; transform: none; }
+  }
+  /* Al irse retrocede un pelo en vez de subir: la app que estaba debajo vuelve
+     al frente y la pantalla que se va se "aleja". Si saliera por el mismo lado
+     por el que entró, parecería que se está cancelando el gesto. */
+  @keyframes screen-out {
+    from { opacity: 1; transform: none; }
+    to   { opacity: 0; transform: scale(0.985); }
+  }
+
   /* LA PARTE "LÍQUIDA" DEL VIDRIO.
      Mientras el carril traslada la pastilla, la pastilla se estira en el sentido
      del viaje y adelgaza, y al llegar rebota antes de asentarse. Es el gesto que
@@ -581,6 +834,33 @@
      no cambia nada visualmente. */
   .anim-tab-forward { animation: tab-forward 0.38s cubic-bezier(0.33, 1, 0.68, 1) backwards; }
   .anim-tab-back    { animation: tab-back 0.38s cubic-bezier(0.33, 1, 0.68, 1) backwards; }
+
+  /* NO agregar `will-change: transform` acá para "suavizar": crea bloque
+     contenedor igual que un `transform`, y entonces cualquier modal abierto
+     dentro de una pestaña vuelve a anclarse a la pestaña en vez de a la
+     pantalla (es el mismo bug que documenta el `backwards` de arriba). */
+
+  /* La animación va en las clases del material, no en una clase `.anim-*`
+     aparte: `.scrim` y `.sheet` ya están en las diez hojas de la app, así que
+     todas entran igual sin tocar un solo componente. `backwards` y no `both`
+     por la razón de siempre —un `transform` que sobrevive convierte al panel en
+     bloque contenedor de sus hijos `fixed`—. */
+  .scrim { animation: scrim-in 0.3s cubic-bezier(0.32, 0.72, 0, 1) backwards; }
+  .sheet { animation: sheet-in 0.42s cubic-bezier(0.32, 0.72, 0, 1) backwards; }
+
+  /* El fantasma de salida (ver src/lib/Sheet.jsx): es un clon inerte del velo
+     que se inserta cuando React ya sacó la hoja real. Estas reglas le ganan a
+     las de arriba por especificidad, así el clon sale en vez de volver a
+     entrar. Acá sí va `both`: el clon tiene que quedarse quieto en el último
+     frame hasta que se lo borra. */
+  .scrim.sheet-ghost      { animation: scrim-out 0.26s cubic-bezier(0.4, 0, 0.9, 0.6) both; }
+  .scrim.sheet-ghost .sheet { animation: sheet-out 0.24s cubic-bezier(0.4, 0, 0.9, 0.6) both; }
+
+  .screen-ghost   { animation: screen-out 0.26s cubic-bezier(0.4, 0, 0.9, 0.6) both; }
+
+  .anim-toast-in  { animation: toast-in 0.4s cubic-bezier(0.34, 1.42, 0.5, 1) backwards; }
+  .anim-toast-out { animation: toast-out 0.22s cubic-bezier(0.4, 0, 1, 1) both; }
+  .anim-screen-in { animation: screen-in 0.36s cubic-bezier(0.16, 1, 0.3, 1) backwards; }
 
   /* Feedback táctil: mini "hundido" al presionar cualquier control. */
   button:active { transform: scale(0.98); }

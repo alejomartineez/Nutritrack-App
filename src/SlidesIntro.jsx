@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useExitGhost } from './lib/exitGhost';
 
 // ---------------------------------------------------------------------------
 // SLIDES A PANTALLA COMPLETA (reutilizable)
@@ -21,6 +22,10 @@ export default function SlidesIntro({
 }) {
   const [index, setIndex] = useState(0);
   const touchStartX = useRef(null);
+  // La intro entra deslizándose (`anim-screen-in`) y tiene que irse igual: sin
+  // esto, terminar los slides devolvía la app de un frame al otro.
+  const rootRef = useRef(null);
+  useExitGhost(rootRef, 'screen-ghost');
 
   const isLast = index === slides.length - 1;
   const go = (i) => setIndex(Math.max(0, Math.min(slides.length - 1, i)));
@@ -38,7 +43,8 @@ export default function SlidesIntro({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-slate-900 text-slate-100 flex justify-center"
+      ref={rootRef}
+      className="fixed inset-0 z-50 bg-slate-900 text-slate-100 flex justify-center anim-screen-in"
       role="dialog"
       aria-modal="true"
       aria-label="Introducción"

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { useExitGhost } from './exitGhost';
 
 // ---------------------------------------------------------------------------
 // HOJA MODAL — comportamiento compartido
@@ -153,6 +154,10 @@ export default function Sheet({
   useEffect(() => {
     if (entryRef.current) entryRef.current.onClose = onClose;
   });
+
+  // Salida animada del velo y del panel. El mecanismo —y por qué es un clon y
+  // no un estado de "cerrando"— está explicado en src/lib/exitGhost.js.
+  useExitGhost(overlayRef, 'sheet-ghost');
 
   const alignClass =
     align === 'bottom' ? 'items-end' : 'items-end sm:items-center px-0 sm:px-4';
