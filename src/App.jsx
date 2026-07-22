@@ -2032,10 +2032,13 @@ function TabRegistrar({
         <div className="flex gap-2">
           <div className="relative flex-1 min-w-0">
             <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+            {/* Con los campos a 16px la lista de tres ejemplos no entraba —de
+                hecho ya se cortaba a 13px, mostrando "…(banana, milane"—. Un
+                solo ejemplo alcanza para transmitir que se busca por nombre. */}
             <input
               value={foodQuery}
               onChange={(e) => setFoodQuery(e.target.value)}
-              placeholder="Buscar alimento (banana, milanesa, arroz...)"
+              placeholder="Buscar alimento (banana…)"
               className="w-full surface rounded-2xl pl-9 pr-3 py-3 text-sm text-slate-100 placeholder-slate-500"
             />
           </div>
@@ -2242,10 +2245,14 @@ function TabRegistrar({
                   inputMode="decimal"
                   className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-500"
                 />
+                {/* "Carbos" y no "Carbohidratos": con los campos a 16px —el piso
+                    que evita el zoom al enfocar, ver index.css— el nombre largo
+                    no entra en media columna y se cortaba. Es además el término
+                    que ya usa la tira de macros de Mi Día. */}
                 <input
                   value={customC}
                   onChange={(e) => setCustomC(e.target.value)}
-                  placeholder="Carbohidratos (g)"
+                  placeholder="Carbos (g)"
                   inputMode="decimal"
                   className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-500"
                 />

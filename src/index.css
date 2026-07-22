@@ -17,6 +17,18 @@
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     background-color: theme('colors.ink.900');
+
+    /* SE APAGA EL ZOOM POR DOBLE TOQUE, NO EL PELLIZCO.
+       `manipulation` deja pasar el scroll y el pinch-zoom, y saca solo los
+       gestos extra —el doble toque para acercar—. Es exactamente lo que hacía
+       falta: en una app donde tocás repetido en el mismo lugar (el + del agua,
+       las teclas del pad numérico, los chips de frecuentes), el doble toque se
+       interpretaba como zoom y la pantalla pegaba un salto.
+
+       Es la alternativa correcta a `maximum-scale=1` en el viewport, que
+       apagaba ESTE zoom pero de paso le sacaba el pellizco a quien ve poco
+       (WCAG 1.4.4). Acá se van los saltos molestos y el pellizco queda. */
+    touch-action: manipulation;
   }
 
   body {
@@ -25,6 +37,25 @@
     font-family: theme('fontFamily.sans');
     /* Evita el rebote elástico blanco al final del scroll en iOS. */
     overscroll-behavior-y: none;
+  }
+
+  /* EL OTRO ZOOM: el que dispara ENFOCAR UN CAMPO.
+     iOS Safari acerca la pantalla cuando el campo que tocás tiene menos de
+     16px, y al salir se queda acercado. El piso de 16px lo desactiva de raíz
+     —el navegador ya no necesita agrandar nada— sin tocar el viewport.
+
+     Solo en punteros gruesos: en escritorio no existe el problema y la escala
+     tipográfica queda tal cual está diseñada.
+
+     Los `:not()` son campos que YA superan los 16px (`text-lg` = 17px: el peso
+     en el perfil y las horas de sueño). Sin esa exclusión esta regla los
+     achicaría, que es el problema contrario. */
+  @media (pointer: coarse) {
+    input:not([type='checkbox']):not([type='radio']):not(.text-lg):not(.text-xl),
+    select,
+    textarea {
+      font-size: 16px;
+    }
   }
 
   /* Los títulos cargan el tracking negativo; Inter a peso alto lo necesita
