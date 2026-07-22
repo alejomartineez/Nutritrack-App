@@ -1024,13 +1024,34 @@ export default function NutriTrackApp() {
   // mientras escribís no sirve para nada y te come pantalla.
   const keyboardOpen = useKeyboardOpen();
 
+  // Tono de la luz ambiente. Sale del módulo en el que estás, no de la pestaña:
+  // Mi Día, Registrar y Progreso son todas nutrición y comparten la misma luz.
+  const ambientTone = activeTab === 'entreno' ? 'entreno' : activeTab === 'sueno' ? 'sueno' : 'nutricion';
+
   // ---------------------------------------------------------------------
   // RENDER
   // ---------------------------------------------------------------------
 
   return (
     <div className="min-h-screen w-full bg-slate-900 text-slate-100 flex justify-center">
-      <div className="w-full max-w-md flex flex-col min-h-screen relative">
+      {/* `isolate` crea contexto de apilamiento, y sin eso la luz ambiente no
+          se ve: un `z-index: -1` sin contexto propio se va detrás del fondo
+          opaco del contenedor de afuera. `isolation` no crea bloque contenedor
+          (a diferencia de `transform`), así que los `fixed` de adentro —la
+          barra, las hojas, los avisos— siguen anclados a la pantalla. */}
+      <div className="w-full max-w-md flex flex-col min-h-screen relative isolate">
+        {/* LUZ AMBIENTE. Es la escena que el vidrio de la app refracta; sin
+            ella el `backdrop-filter` de la barra desenfoca un plano de un solo
+            color y el efecto no existe. Ver .app-ambient en index.css.
+
+            Las tres capas de tono están siempre montadas y se cruzan por
+            opacidad —no se cambia una variable de color, ver el comentario en
+            index.css—, así que el cambio de módulo lo resuelve el compositor. */}
+        <div className="app-ambient" aria-hidden="true">
+          <span className={`ambient-tone ambient-nutricion ${ambientTone === 'nutricion' ? 'ambient-tone-on' : ''}`} />
+          <span className={`ambient-tone ambient-entreno ${ambientTone === 'entreno' ? 'ambient-tone-on' : ''}`} />
+          <span className={`ambient-tone ambient-sueno ${ambientTone === 'sueno' ? 'ambient-tone-on' : ''}`} />
+        </div>
         <Confetti active={celebrate} />
         {/* HEADER */}
         {/* El header queda pegado arriba con el mismo material que la barra de

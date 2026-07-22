@@ -164,7 +164,7 @@
     --accent-wash: 38, 165, 120; /* brand.500 */
     --accent-hairline: theme('colors.brand.900');
 
-    background-color: theme('colors.ink.800');
+    background-color: rgba(18, 22, 26, 0.72); /* ink-800 translúcido, ver .surface */
     background-image: linear-gradient(
       135deg,
       rgba(var(--accent-wash), 0.07) 0%,
@@ -186,6 +186,110 @@
   .surface-accent-sueno {
     --accent-wash: 122, 133, 176; /* sueno.500 */
     --accent-hairline: theme('colors.sueno.900');
+  }
+
+  /* LUZ AMBIENTE — la capa que faltaba para que el vidrio exista.
+     ================================================================
+     El vidrio de la app (barra, header, velos, avisos) estaba técnicamente
+     bien y aun así no se notaba, y la razón no estaba en el vidrio: estaba en
+     lo que había detrás. El fondo era ink-900 plano y las cards ink-800, dos
+     tonos casi iguales. Un `backdrop-filter` sobre un plano de un solo color
+     no tiene nada que desenfocar y el resultado es idéntico a un panel opaco.
+     No se veía vidrio porque no había escena que refractar.
+
+     Esta capa pone esa escena: dos pozos de luz enormes y muy suaves, fijos al
+     viewport. Uno cenital con el acento del módulo —la luz entra por arriba,
+     que es de donde entra siempre en esta app: el brillo del canto superior de
+     la barra y de las hojas ya asumía eso— y otro frío abajo a la derecha, que
+     evita que la mitad inferior quede muerta y le da a la barra flotante algo
+     por debajo que teñirla.
+
+     Tres decisiones que la separan de "ponerle un degradado al fondo":
+
+     1. ES FIJA, NO SCROLLEA. Si viajara con el contenido sería una imagen de
+        fondo; quieta se lee como iluminación del ambiente, y el contenido pasa
+        POR DELANTE de la luz. Además no repinta al scrollear.
+
+     2. LOS POZOS SALEN DE CUADRO. Los centros están fuera de la pantalla
+        (-10% arriba, 115% abajo) justamente para que nunca se vea el centro de
+        un radial —que es lo que hace que un degradado se lea como una mancha—.
+        Se ve la caída, no la fuente.
+
+     3. EL GRANO NO ES DECORACIÓN, ES OBLIGATORIO. Un degradado a 8% sobre casi
+        negro banda feísimo en las pantallas OLED del iPhone: se ven los
+        escalones como anillos. El ruido a 3.5% los rompe (dithering) y de
+        paso le da al material una textura física. El SVG es una tesela de
+        180px que se repite, no una capa a pantalla completa: así el
+        `feTurbulence` se rasteriza una vez sobre un lienzo chico.
+
+     El tono lo pone `--ambient`, que rebindean las clases de módulo. Es el
+     único lugar donde el acento del módulo ocupa superficie grande, y no
+     contradice la regla de "acento solo en detalles finos": esto no es un
+     relleno, es la luz de la habitación. Los CTA, las superficies y la
+     estructura siguen exactamente igual en los tres módulos. */
+  .app-ambient {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    /* El pozo frío del lateral no depende del módulo: es la luz de relleno que
+       impide que el costado derecho quede muerto en cualquier pantalla. */
+    background-image: radial-gradient(
+      90% 48% at 104% 42%,
+      rgba(160, 172, 182, 0.12) 0%,
+      rgba(160, 172, 182, 0.04) 45%,
+      rgba(160, 172, 182, 0) 76%
+    );
+  }
+
+  /* EL TONO DEL MÓDULO SE CRUZA POR OPACIDAD, NO POR VARIABLE.
+     Primer intento: una sola capa con `--ambient` rebindeada y
+     `transition: background-image`. No funciona — `background-image` es una
+     propiedad DISCRETA, no interpola, y el tono saltaba de golpe. La otra
+     salida "elegante" (registrar `--ambient` con `@property` como `<color>`)
+     sí interpola, pero obliga a repintar un degradado a pantalla completa en
+     cada frame, que es justo lo que no querés pagar en un iPhone.
+
+     Con una capa por módulo y `opacity` cruzada, la transición la hace el
+     compositor: cero repintado. Los 0.6s son a propósito más largos que el
+     cambio de pestaña (0.38s): la luz de una habitación no salta, y que el
+     ambiente siga acomodándose cuando el contenido ya llegó es lo que hace
+     que las tres pantallas se sientan como una sola escena. */
+  .ambient-tone {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.6s linear;
+    background-image:
+      radial-gradient(
+        132% 60% at 50% -14%,
+        rgba(var(--ambient), 0.26) 0%,
+        rgba(var(--ambient), 0.095) 34%,
+        rgba(var(--ambient), 0) 68%
+      ),
+      radial-gradient(
+        100% 52% at 4% 106%,
+        rgba(var(--ambient), 0.13) 0%,
+        rgba(var(--ambient), 0.042) 40%,
+        rgba(var(--ambient), 0) 74%
+      );
+  }
+  .ambient-tone-on { opacity: 1; }
+
+  .ambient-nutricion { --ambient: 69, 196, 143; }  /* brand.400 */
+  .ambient-entreno   { --ambient: 198, 133, 88; }  /* entreno.400 */
+  .ambient-sueno     { --ambient: 147, 157, 197; } /* sueno.400 */
+
+  /* El grano va en el ::after y no en una capa aparte para que quede ENCIMA de
+     los tonos: tiene que romper las bandas de los degradados, no quedar
+     debajo de ellas. */
+  .app-ambient::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 180px 180px;
   }
 
   /* Barra de navegación flotante — cristal líquido.
@@ -616,9 +720,33 @@
 
   /* Superficie de card estándar: hairline en vez de sombra difusa, más un
      highlight interior de 1px arriba que simula luz cenital. Es lo que
-     separa una card "plana" de una que parece física. */
+     separa una card "plana" de una que parece física.
+
+     EL RELLENO ES TRANSLÚCIDO (72%) Y NO LLEVA `backdrop-filter`, y las dos
+     cosas van juntas. Sobre la luz ambiente (ver .app-ambient) cada card toma
+     el tono de la zona en la que cae: las de arriba levantan el acento del
+     módulo, las de abajo quedan más frías. Es lo que hace que una columna de
+     cards deje de leerse como seis rectángulos iguales.
+
+     Sin filtro a propósito: lo que hay detrás YA es un degradado suavísimo, o
+     sea que está desenfocado por naturaleza. Un `backdrop-filter` no agregaría
+     nada visible y en cambio pondría ~20 capas filtradas por pantalla, que en
+     un iPhone es exactamente donde el scroll empieza a tironear. Misma regla
+     que las hojas: vidrio grueso sin filtro.
+
+     LA CUENTA DE CONTRASTE, QUE NO ES LA QUE PARECE. El instinto es medir
+     contra el pico de la luz (0.26) y ahí ink-500 caía a 4.3:1, por debajo del
+     mínimo. Pero ese pico está en `50% -14%`, o sea FUERA DE PANTALLA por
+     arriba: donde llega, lo que hay es el header, que es vidrio y no card. El
+     punto más iluminado que una card alcanza de verdad es la esquina inferior
+     izquierda, con ~0.06 de luz. Ahí la luminancia de la superficie pasa de
+     0.00776 a 0.00770 —más oscura, no más clara, porque la luz a esa alfa
+     sigue siendo más oscura que ink-800— y el contraste queda igual que antes.
+
+     La regla que queda: si alguna vez se sube la alfa de los pozos, la cuenta
+     se rehace en la esquina inferior izquierda, no en el centro superior. */
   .surface {
-    background-color: theme('colors.ink.800');
+    background-color: rgba(18, 22, 26, 0.72);
     border: 1px solid theme('colors.ink.700');
     box-shadow:
       inset 0 1px 0 0 rgba(255, 255, 255, 0.04),
@@ -651,7 +779,7 @@
      izquierdo: se distingue de un vistazo y no grita. */
   .meal-row {
     position: relative;
-    background-color: theme('colors.ink.800');
+    background-color: rgba(18, 22, 26, 0.72); /* translúcida como `.surface` */
     border: 1px solid theme('colors.ink.700');
     box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
     overflow: hidden;
