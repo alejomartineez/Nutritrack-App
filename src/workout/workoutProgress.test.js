@@ -8,6 +8,11 @@ import {
   computeWeekPlan,
   computeWeeklyAdherence,
   computeVolumeTrend,
+  startSession,
+  finishSession,
+  addExerciseToSession,
+  getLastPerformanceSets,
+  computeSessionPRs,
 } from './workoutStorage';
 
 // Martes 21 de julio de 2026 (getDay() === 2).
@@ -224,5 +229,150 @@ describe('computeVolumeTrend', () => {
       ]),
     };
     expect(computeVolumeTrend(sessions, REF).current).toBe(500);
+  });
+});
+
+describe('startSession', () => {
+  const day = {
+    id: 'd0',
+    name: 'Push',
+    exercises: [
+      { id: 'r1', exerciseId: 'ex_a', targetSets: 4, targetRepsMin: 6, targetRepsMax: 10 },
+      { id: 'r2', exerciseId: 'ex_b' }, // sin objetivo: cae a 3 series
+    ],
+  };
+
+  it('precarga las series objetivo, vacías y sin completar', () => {
+    const s = startSession({ id: 'rt_1' }, day);
+    expect(s.exercises).toHaveLength(2);
+    expect(s.exercises[0].sets).toHaveLength(4);
+    expect(s.exercises[1].sets).toHaveLength(3); // fallback
+    const set = s.exercises[0].sets[0];
+    expect(set.completed).toBe(false);
+    expect(set.weight).toBe('');
+    expect(set.reps).toBe('');
+    expect(set.type).toBe('effective');
+  });
+
+  it('copia el objetivo a cada ejercicio de la sesión', () => {
+    const s = startSession({ id: 'rt_1' }, day);
+    expect(s.exercises[0].targetSets).toBe(4);
+    expect(s.exercises[0].targetRepsMin).toBe(6);
+    expect(s.exercises[0].targetRepsMax).toBe(10);
+  });
+});
+
+describe('finishSession', () => {
+  it('sella endedAt y poda las series sin completar', () => {
+    const s = {
+      id: 'ses_1',
+      startedAt: 0,
+      endedAt: null,
+      exercises: [
+        {
+          id: 'sx1',
+          exerciseId: 'ex_a',
+          sets: [
+            { id: 'a', completed: true, weight: 80, reps: 8 },
+            { id: 'b', completed: false, weight: '', reps: '' }, // fila precargada que sobró
+          ],
+        },
+      ],
+    };
+    const done = finishSession(s);
+    expect(done.endedAt).toBeGreaterThan(0);
+    expect(done.exercises[0].sets).toHaveLength(1);
+    expect(done.exercises[0].sets[0].id).toBe('a');
+  });
+});
+
+describe('addExerciseToSession', () => {
+  it('agrega un ejercicio al final con series vacías y marca de ad-hoc', () => {
+    const s = { id: 'ses_1', exercises: [{ id: 'sx1', order: 0, exerciseId: 'ex_a', sets: [] }] };
+    const next = addExerciseToSession(s, 'ex_b', { targetSets: 2 });
+    expect(next.exercises).toHaveLength(2);
+    const added = next.exercises[1];
+    expect(added.exerciseId).toBe('ex_b');
+    expect(added.addedAdHoc).toBe(true);
+    expect(added.sets).toHaveLength(2);
+    expect(added.sets.every((set) => !set.completed)).toBe(true);
+  });
+});
+
+describe('getLastPerformanceSets', () => {
+  const sessions = {
+    old: session('old', '2026-07-10', [
+      { id: 'sx', exerciseId: 'ex_a', sets: [{ id: '1', completed: true, type: 'effective', weight: 70, reps: 10 }] },
+    ], { endedAt: 100 }),
+    recent: session('recent', '2026-07-18', [
+      {
+        id: 'sx',
+        exerciseId: 'ex_a',
+        sets: [
+          { id: '1', completed: true, type: 'warmup', weight: 40, reps: 12 }, // se ignora
+          { id: '2', completed: true, type: 'effective', weight: 80, reps: 8 },
+          { id: '3', completed: true, type: 'effective', weight: 80, reps: 7 },
+          { id: '4', completed: false, type: 'effective', weight: 80, reps: 6 }, // no completada
+        ],
+      },
+    ], { endedAt: 300 }),
+  };
+
+  it('devuelve las series efectivas de la sesión más reciente, en orden', () => {
+    const r = getLastPerformanceSets(sessions, 'ex_a');
+    expect(r).toEqual([
+      { weight: 80, reps: 8, rir: undefined },
+      { weight: 80, reps: 7, rir: undefined },
+    ]);
+  });
+
+  it('excluye la sesión indicada (la que está en curso)', () => {
+    const r = getLastPerformanceSets(sessions, 'ex_a', 'recent');
+    expect(r).toEqual([{ weight: 70, reps: 10, rir: undefined }]);
+  });
+
+  it('devuelve [] sin antecedente', () => {
+    expect(getLastPerformanceSets(sessions, 'ex_x')).toEqual([]);
+  });
+});
+
+describe('computeSessionPRs', () => {
+  const exercisesById = {
+    ex_a: { id: 'ex_a', name: 'Press banca', muscleGroup: 'Pecho' },
+  };
+
+  it('detecta un récord cuando se supera el mejor 1RM previo', () => {
+    const previous = session('prev', '2026-07-10', [
+      { id: 'sx', exerciseId: 'ex_a', sets: [{ id: '1', completed: true, type: 'effective', weight: 80, reps: 8 }] },
+    ], { endedAt: 100 });
+    const current = session('cur', '2026-07-18', [
+      { id: 'sx', exerciseId: 'ex_a', sets: [{ id: '2', completed: true, type: 'effective', weight: 90, reps: 8 }] },
+    ], { endedAt: 300 });
+
+    const prs = computeSessionPRs(current, { prev: previous, cur: current }, exercisesById);
+    expect(prs).toHaveLength(1);
+    expect(prs[0].exerciseName).toBe('Press banca');
+    expect(prs[0].isFirst).toBe(false);
+    expect(prs[0].estOneRM).toBeGreaterThan(prs[0].prev);
+  });
+
+  it('marca isFirst cuando no había antecedente', () => {
+    const current = session('cur', '2026-07-18', [
+      { id: 'sx', exerciseId: 'ex_a', sets: [{ id: '1', completed: true, type: 'effective', weight: 60, reps: 10 }] },
+    ], { endedAt: 300 });
+    const prs = computeSessionPRs(current, { cur: current }, exercisesById);
+    expect(prs).toHaveLength(1);
+    expect(prs[0].isFirst).toBe(true);
+    expect(prs[0].prev).toBe(0);
+  });
+
+  it('no marca récord si no se supera lo previo', () => {
+    const previous = session('prev', '2026-07-10', [
+      { id: 'sx', exerciseId: 'ex_a', sets: [{ id: '1', completed: true, type: 'effective', weight: 100, reps: 8 }] },
+    ], { endedAt: 100 });
+    const current = session('cur', '2026-07-18', [
+      { id: 'sx', exerciseId: 'ex_a', sets: [{ id: '2', completed: true, type: 'effective', weight: 80, reps: 8 }] },
+    ], { endedAt: 300 });
+    expect(computeSessionPRs(current, { prev: previous, cur: current }, exercisesById)).toEqual([]);
   });
 });

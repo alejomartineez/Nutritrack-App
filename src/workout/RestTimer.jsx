@@ -23,6 +23,7 @@ const beep = () => {
 export default function RestTimer({ durationSec, onDismiss }) {
   const [remaining, setRemaining] = useState(durationSec);
   const firedRef = useRef(false);
+  const peakRef = useRef(durationSec);
 
   useEffect(() => {
     if (remaining <= 0) {
@@ -41,6 +42,11 @@ export default function RestTimer({ durationSec, onDismiss }) {
   const mm = String(Math.floor(Math.max(0, remaining) / 60)).padStart(1, '0');
   const ss = String(Math.max(0, remaining) % 60).padStart(2, '0');
 
+  // Denominador del progreso: el pico de tiempo visto (cambia con los presets y
+  // el ±15), así la línea siempre arranca llena y se vacía hasta cero.
+  peakRef.current = Math.max(peakRef.current, remaining);
+  const pct = peakRef.current > 0 ? (Math.max(0, remaining) / peakRef.current) * 100 : 0;
+
   return (
     <div
       className={`fixed bottom-24 inset-x-0 flex flex-col items-center px-4 z-40 pointer-events-none`}
@@ -51,12 +57,21 @@ export default function RestTimer({ durationSec, onDismiss }) {
         // vidrio fino con filtro y el canto teñido con el acento del módulo. Al
         // llegar a cero pasa a relleno sólido a propósito —ahí ya no es un aviso
         // discreto, es lo único que importa en pantalla—.
-        className={`w-full max-w-md rounded-2xl px-4 py-3 flex items-center justify-between gap-3 pointer-events-auto transition-colors ${
+        className={`relative overflow-hidden w-full max-w-md rounded-2xl px-4 py-3 flex items-center justify-between gap-3 pointer-events-auto transition-colors ${
           isDone
             ? 'border border-entreno-400 bg-entreno-500 shadow-lg animate-pulse motion-reduce:animate-none'
             : 'toast toast-entreno'
         }`}
       >
+        {/* Línea de progreso: se vacía a medida que corre el descanso. Al llegar
+            a cero desaparece —ahí el fondo entero ya es el aviso—. */}
+        {!isDone && (
+          <span
+            className="absolute bottom-0 left-0 h-0.5 bg-entreno-400/80 transition-all duration-1000 ease-linear"
+            style={{ width: `${pct}%` }}
+            aria-hidden="true"
+          />
+        )}
         {/* min-w-0 + truncate: los tres controles de la derecha ahora ocupan
             44px cada uno (área táctil mínima), así que en pantallas angostas el
             que tiene que ceder es este bloque de texto, no la fila. */}

@@ -30,6 +30,7 @@ import {
   createCustomExercise,
   startSession,
   addSetToExercise,
+  addExerciseToSession,
   updateSet as updateSetInSession,
   removeSet as removeSetInSession,
   updateExerciseNotes,
@@ -187,6 +188,10 @@ export default function WorkoutModule() {
     setActiveSession((s) => addSetToExercise(s, sessionExerciseId, set));
   };
 
+  const handleAddSessionExercise = (exerciseId) => {
+    setActiveSession((s) => addExerciseToSession(s, exerciseId));
+  };
+
   const handleUpdateSet = (sessionExerciseId, setId, patch) => {
     setActiveSession((s) => updateSetInSession(s, sessionExerciseId, setId, patch));
   };
@@ -203,9 +208,13 @@ export default function WorkoutModule() {
     setActiveSession((s) => substituteExercise(s, sessionExerciseId, newExerciseId));
   };
 
-  const handleFinishSession = () => {
-    const finished = finishSession(activeSession);
-    setSessions((prev) => ({ ...prev, [finished.id]: finished }));
+  // Recibe la sesión ya finalizada (con `endedAt` congelado en el momento en que
+  // se tocó "Finalizar" y las series podadas): así el resumen que ve el usuario y
+  // lo que se guarda son exactamente lo mismo. Si no llega —camino viejo—, se
+  // finaliza acá.
+  const handleFinishSession = (finished) => {
+    const done = finished || finishSession(activeSession);
+    setSessions((prev) => ({ ...prev, [done.id]: done }));
     setActiveSession(null);
   };
 
@@ -223,6 +232,7 @@ export default function WorkoutModule() {
         exercises={exercises}
         sessionsMap={sessions}
         onAddSet={handleAddSet}
+        onAddSessionExercise={handleAddSessionExercise}
         onUpdateSet={handleUpdateSet}
         onRemoveSet={handleRemoveSet}
         onUpdateNotes={handleUpdateNotes}

@@ -126,6 +126,15 @@ export const clearActiveSession = () => {
   }
 };
 
+/**
+ * Arranca una sesión desde un día de la rutina.
+ *
+ * Cada ejercicio ya viene con sus series objetivo creadas y vacías —como hacen
+ * Strong o Hevy—: entrenar es confirmar números, no armar la planilla de cero.
+ * El objetivo (series × reps) viaja copiado en cada ejercicio para que la
+ * pantalla de sesión lo muestre sin depender de la rutina, que podría cambiarse
+ * a mitad de la semana.
+ */
 export const startSession = (routine, day) => ({
   id: uid('ses'),
   routineId: routine.id,
@@ -141,8 +150,54 @@ export const startSession = (routine, day) => ({
     order: i,
     notes: '',
     substitutedFrom: null,
-    sets: [],
+    targetSets: rex.targetSets ?? null,
+    targetRepsMin: rex.targetRepsMin ?? null,
+    targetRepsMax: rex.targetRepsMax ?? null,
+    sets: Array.from({ length: Math.max(1, rex.targetSets || 3) }, () => ({
+      id: uid('set'),
+      type: 'effective',
+      weight: '',
+      reps: '',
+      rir: '',
+      completed: false,
+    })),
   })),
+});
+
+/**
+ * Agrega un ejercicio a una sesión ya en curso (el "me tienta una serie más de
+ * algo" que no estaba en el plan del día). Viene con series vacías listas para
+ * cargar, igual que los del plan.
+ */
+export const addExerciseToSession = (
+  session,
+  exerciseId,
+  { targetSets = 3, targetRepsMin = 8, targetRepsMax = 12 } = {}
+) => ({
+  ...session,
+  exercises: [
+    ...session.exercises,
+    {
+      id: uid('sex'),
+      routineExerciseId: null,
+      exerciseId,
+      order: session.exercises.length,
+      notes: '',
+      substitutedFrom: null,
+      addedAdHoc: true,
+      targetSets,
+      targetRepsMin,
+      targetRepsMax,
+      sets: Array.from({ length: Math.max(1, targetSets) }, () => ({
+        id: uid('set'),
+        type: 'effective',
+        weight: '',
+        reps: '',
+        rir: '',
+        completed: false,
+      })),
+    },
+  ],
 });
 
 export const addSetToExercise = (session, sessionExerciseId, set) => ({
@@ -186,14 +241,38 @@ export const substituteExercise = (session, sessionExerciseId, newExerciseId) =>
     order: original.order + 0.5,
     notes: '',
     substitutedFrom: original.exerciseId,
-    sets: [],
+    targetSets: original.targetSets ?? null,
+    targetRepsMin: original.targetRepsMin ?? null,
+    targetRepsMax: original.targetRepsMax ?? null,
+    sets: Array.from({ length: Math.max(1, original.targetSets || 3) }, () => ({
+      id: uid('set'),
+      type: 'effective',
+      weight: '',
+      reps: '',
+      rir: '',
+      completed: false,
+    })),
   };
   const next = [...session.exercises];
   next.splice(idx + 1, 0, replacement);
   return { ...session, exercises: next };
 };
 
-export const finishSession = (session) => ({ ...session, endedAt: Date.now() });
+/**
+ * Cierra la sesión. Poda las series que quedaron sin tildar: en esta app el
+ * tilde ES el registro, así que una serie sin completar es una serie que no se
+ * hizo (típicamente una fila precargada que sobró). Guardarlas ensuciaría el
+ * historial y las analíticas con ceros. Se conservan los ejercicios aunque
+ * queden sin series, para que el detalle muestre qué se había planificado.
+ */
+export const finishSession = (session) => ({
+  ...session,
+  endedAt: Date.now(),
+  exercises: session.exercises.map((ex) => ({
+    ...ex,
+    sets: ex.sets.filter((s) => s.completed),
+  })),
+});
 
 // --------------------- Historial / auto-fill / analíticas ------------------
 
@@ -214,6 +293,29 @@ export const getLastPerformance = (sessionsMap, exerciseId, excludeSessionId) =>
     }
   }
   return null;
+};
+
+/**
+ * Las series efectivas de la última vez que se hizo este ejercicio, EN ORDEN.
+ * Alimenta la referencia "anterior" de cada fila durante la sesión (serie 1 vs
+ * serie 1, no contra la última suelta) y la adopción de esos valores al tildar
+ * una fila vacía. Devuelve [] si no hay antecedente.
+ */
+export const getLastPerformanceSets = (sessionsMap, exerciseId, excludeSessionId) => {
+  const candidates = Object.values(sessionsMap)
+    .filter((s) => s.id !== excludeSessionId && s.endedAt)
+    .sort((a, b) => b.endedAt - a.endedAt);
+
+  for (const session of candidates) {
+    const sets = session.exercises
+      .filter((ex) => ex.exerciseId === exerciseId)
+      .flatMap((ex) => ex.sets)
+      .filter((s) => s.completed && s.type !== 'warmup');
+    if (sets.length > 0) {
+      return sets.map((s) => ({ weight: s.weight, reps: s.reps, rir: s.rir }));
+    }
+  }
+  return [];
 };
 
 const startOfWeek = (date) => {
@@ -476,6 +578,55 @@ export const computePersonalRecords = (sessionsMap, exercisesById) => {
     });
   });
   return Object.values(prs).sort((a, b) => b.estOneRM - a.estOneRM);
+};
+
+/**
+ * Récords conseguidos EN una sesión concreta: por cada ejercicio, compara su
+ * mejor 1RM estimado de esta sesión contra el mejor histórico previo (todas las
+ * demás sesiones). Es lo que alimenta la celebración al terminar el entreno.
+ * `isFirst` marca los ejercicios sin antecedente —no rompen ningún récord, pero
+ * son un estreno que también vale mostrar—.
+ */
+export const computeSessionPRs = (session, sessionsMap, exercisesById) => {
+  const prevBest = {};
+  Object.values(sessionsMap).forEach((s) => {
+    if (s.id === session.id || !s.endedAt) return;
+    s.exercises.forEach((ex) => {
+      ex.sets.forEach((set) => {
+        if (!set.completed || set.type === 'warmup') return;
+        const est = epley1RM(set.weight, set.reps);
+        if (est > (prevBest[ex.exerciseId] || 0)) prevBest[ex.exerciseId] = est;
+      });
+    });
+  });
+
+  const bestThisSession = {};
+  session.exercises.forEach((ex) => {
+    ex.sets.forEach((set) => {
+      if (!set.completed || set.type === 'warmup') return;
+      const est = epley1RM(set.weight, set.reps);
+      if (est <= 0) return;
+      const current = bestThisSession[ex.exerciseId];
+      if (!current || est > current.estOneRM) {
+        bestThisSession[ex.exerciseId] = {
+          estOneRM: est,
+          weight: Number(set.weight) || 0,
+          reps: Number(set.reps) || 0,
+        };
+      }
+    });
+  });
+
+  return Object.entries(bestThisSession)
+    .filter(([exerciseId, best]) => best.estOneRM > (prevBest[exerciseId] || 0))
+    .map(([exerciseId, best]) => ({
+      exerciseId,
+      exerciseName: exercisesById[exerciseId]?.name || 'Ejercicio',
+      ...best,
+      prev: prevBest[exerciseId] || 0,
+      isFirst: !prevBest[exerciseId],
+    }))
+    .sort((a, b) => b.estOneRM - a.estOneRM);
 };
 
 export const computeAverageRIRTrend = (sessionsMap, weeksBack = 8, referenceDate = new Date()) => {
