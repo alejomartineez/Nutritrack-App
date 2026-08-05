@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { toFood } from './openFoodFacts';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { toFood, searchProducts } from './openFoodFacts';
 
 // Datos con la forma real que devuelve la API (claves verificadas contra
 // world.openfoodfacts.org: energy-kcal_100g, proteins_100g, etc.).
@@ -63,5 +63,71 @@ describe('toFood', () => {
   it('no explota con entrada nula', () => {
     expect(toFood(null)).toBeNull();
     expect(toFood(undefined)).toBeNull();
+  });
+});
+
+describe('searchProducts — resiliencia ante el servidor intermitente de OFF', () => {
+  const okResponse = (products) => ({ ok: true, status: 200, json: async () => ({ products }) });
+  const mkProduct = (name) => ({
+    code: `c_${name}`,
+    product_name: name,
+    brands: '',
+    nutriments: { 'energy-kcal_100g': 100, proteins_100g: 1, carbohydrates_100g: 2, fat_100g: 3 },
+  });
+
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => {
+    vi.runOnlyPendingTimers();
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it('reintenta ante un 503 sin CORS (Failed to fetch) y termina devolviendo resultados', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError('Failed to fetch')) // OFF caído: el navegador no ve el 503
+      .mockResolvedValueOnce(okResponse([mkProduct('galletas-a')]));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const promise = searchProducts('galletas retry unico', { limit: 3 });
+    await vi.advanceTimersByTimeAsync(600); // cubre el primer backoff (400ms)
+    const foods = await promise;
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(foods).toHaveLength(1);
+    expect(foods[0].name).toBe('galletas-a');
+  });
+
+  it('lanza si el servicio falla en todos los intentos (para que la UI muestre el error)', async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const promise = searchProducts('fantasma sin red', { limit: 3 });
+    const assertion = expect(promise).rejects.toThrow();
+    await vi.advanceTimersByTimeAsync(2000); // cubre los dos backoffs (400 + 1100)
+    await assertion;
+
+    expect(fetchMock).toHaveBeenCalledTimes(3); // intento inicial + 2 reintentos
+  });
+
+  it('cachea una búsqueda ya resuelta: no vuelve a pegarle a la red', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(okResponse([mkProduct('yogur-x')]));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const first = await searchProducts('yogur cache unico', { limit: 3 });
+    const second = await searchProducts('yogur cache unico', { limit: 3 });
+
+    expect(first).toEqual(second);
+    expect(fetchMock).toHaveBeenCalledTimes(1); // la segunda salió de caché
+  });
+
+  it('no reintenta ante 404 (resultado válido: no hay producto) y devuelve []', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 404, json: async () => ({}) });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const foods = await searchProducts('inexistente 404 unico', { limit: 3 });
+
+    expect(foods).toEqual([]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

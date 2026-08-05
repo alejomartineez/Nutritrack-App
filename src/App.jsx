@@ -2012,9 +2012,17 @@ function TabRegistrar({
 
   // Resultados de Open Food Facts. Van aparte de los locales a propósito: los
   // locales son instantáneos y curados, así que se muestran primero y nunca
-  // quedan esperando a la red. 'idle' | 'loading' | 'done' | 'offline'
+  // quedan esperando a la red. Estados:
+  //   'idle' | 'loading' | 'done'
+  //   'offline' -> el dispositivo no tiene red (navigator.onLine === false)
+  //   'error'   -> hay red pero el servicio de envasados no respondió (OFF caído)
+  // La distinción importa: "sin conexión" cuando SÍ hay internet es una mentira,
+  // y encima manda a revisar el wifi en vez de a reintentar, que es lo que sirve.
   const [offResults, setOffResults] = useState([]);
   const [offState, setOffState] = useState('idle');
+  // Se incrementa desde el botón "Reintentar" para volver a disparar la búsqueda
+  // sin que el usuario tenga que retocar el texto.
+  const [offRetry, setOffRetry] = useState(0);
 
   useEffect(() => {
     const q = foodQuery.trim();
@@ -2036,7 +2044,7 @@ function TabRegistrar({
         .catch((err) => {
           if (err.name === 'AbortError') return; // búsqueda reemplazada, no es un fallo
           setOffResults([]);
-          setOffState('offline');
+          setOffState(navigator.onLine === false ? 'offline' : 'error');
         });
     }, 350);
 
@@ -2044,7 +2052,7 @@ function TabRegistrar({
       clearTimeout(timer);
       ctrl.abort();
     };
-  }, [foodQuery]);
+  }, [foodQuery, offRetry]);
 
   // Desde el buscador se elige cantidad; el query se limpia al confirmar (o al
   // cancelar queda la búsqueda, que es lo esperable si te equivocaste de ítem).
@@ -2170,8 +2178,23 @@ function TabRegistrar({
 
             {offState === 'offline' && (
               <p className="text-xs text-slate-500 text-center py-2">
-                No se pudo buscar productos envasados (sin conexión).
+                Estás sin conexión. Los productos envasados necesitan internet.
               </p>
+            )}
+
+            {offState === 'error' && (
+              <div className="text-center py-2">
+                <p className="text-xs text-slate-500">
+                  El buscador de envasados no responde ahora. Los alimentos de arriba
+                  siguen disponibles.
+                </p>
+                <button
+                  onClick={() => setOffRetry((n) => n + 1)}
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-lg surface px-3 py-1.5 text-xs font-semibold text-slate-200 hover:border-emerald-500/50 transition-colors"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" /> Reintentar
+                </button>
+              </div>
             )}
 
             {offResults.length > 0 && (
