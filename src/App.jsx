@@ -4,7 +4,7 @@ import {
   ChevronRight, ChevronLeft, ChevronDown, Sparkles, Lightbulb, Award, Plus, Minus,
   Save, RotateCcw, Info, Utensils, Coffee, Pencil, Flame, Dumbbell, MoonStar,
   Download, Share, SquarePlus, Upload, ShieldCheck, Search, Bell, Clock, LayoutGrid, Calculator,
-  Loader2, Barcode, ScanLine, AlertCircle,
+  Loader2, Barcode, ScanLine, AlertCircle, Scale,
 } from 'lucide-react';
 // Entreno y Sueño se cargan a demanda (React.lazy): son módulos opcionales
 // —se apagan desde Ajustes— y pesan bastante (rutinas, sesión en vivo, gráficos,
@@ -47,6 +47,7 @@ import {
   hasMacros,
 } from './lib/nutritionCalcs';
 import QuantitySheet from './QuantitySheet';
+import EquivalencesSheet from './EquivalencesSheet';
 import { useCountUp, prefersReducedMotion } from './lib/motion';
 import { useKeyboardOpen } from './lib/viewport';
 import { useTodayKey } from './lib/today';
@@ -1264,6 +1265,11 @@ export default function NutriTrackApp() {
               setRegisterMode={setRegisterMode}
               catalog={planCatalog}
               freeCatalog={freeCatalog}
+              remaining={{
+                p: Math.max(0, Math.round(goals.protein - totals.p)),
+                c: Math.max(0, Math.round(goals.carbs - totals.c)),
+                f: Math.max(0, Math.round(goals.fat - totals.f)),
+              }}
               onAddCatalogItem={() => openAddCatalogItem('plan')}
               onEditCatalogItem={(item) => openEditCatalogItem(item, 'plan')}
               onEditFreeCatalogItem={(item) => openEditCatalogItem(item, 'libre')}
@@ -1983,6 +1989,7 @@ function TabRegistrar({
   setRegisterMode,
   catalog,
   freeCatalog,
+  remaining,
   onAddCatalogItem,
   onEditCatalogItem,
   onEditFreeCatalogItem,
@@ -2005,6 +2012,7 @@ function TabRegistrar({
   submitCustomFree,
 }) {
   const [foodQuery, setFoodQuery] = useState('');
+  const [showEquiv, setShowEquiv] = useState(false);
   const foodResults = useMemo(() => searchFoods(foodQuery), [foodQuery]);
   // Se calcula al entrar a la pestaña (el tab se desmonta al navegar): tus
   // alimentos más registrados, para sumarlos de un toque sin buscar.
@@ -2088,6 +2096,36 @@ function TabRegistrar({
           <Coffee className="w-4 h-4" /> Fuera de Plan
         </button>
       </div>
+
+      {/* EQUIVALENCIAS: el "machete" para elegir qué comer sin calcular a mano. */}
+      <button
+        onClick={() => setShowEquiv(true)}
+        className={`w-full rounded-2xl surface p-3.5 flex items-center gap-3 transition-colors ${
+          registerMode === 'plan' ? 'hover:border-emerald-500/50' : 'hover:border-amber-500/50'
+        }`}
+      >
+        <span
+          className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+            registerMode === 'plan' ? 'bg-emerald-500/15' : 'bg-amber-500/15'
+          }`}
+        >
+          <Scale className={`w-4 h-4 ${registerMode === 'plan' ? 'text-emerald-400' : 'text-amber-400'}`} />
+        </span>
+        <div className="min-w-0 text-left flex-1">
+          <p className="text-sm font-semibold text-slate-100">Equivalencias de macros</p>
+          <p className="text-xs text-slate-500">¿Cuánto de cada alimento te da la misma proteína o macros?</p>
+        </div>
+        <ChevronRight className="w-4 h-4 text-slate-500 shrink-0" />
+      </button>
+
+      {showEquiv && (
+        <EquivalencesSheet
+          accent={registerMode === 'plan' ? 'emerald' : 'amber'}
+          remaining={remaining}
+          onLog={(item) => (registerMode === 'plan' ? addPlanMeal(item) : addFreeMeal(item))}
+          onClose={() => setShowEquiv(false)}
+        />
+      )}
 
       {/* FRECUENTES: tus alimentos más registrados, a un toque. Se ocultan mientras buscás. */}
       {frequents.length > 0 && foodQuery.trim().length < 2 && (
