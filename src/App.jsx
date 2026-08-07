@@ -1269,6 +1269,7 @@ export default function NutriTrackApp() {
                 p: Math.max(0, Math.round(goals.protein - totals.p)),
                 c: Math.max(0, Math.round(goals.carbs - totals.c)),
                 f: Math.max(0, Math.round(goals.fat - totals.f)),
+                kcal: Math.max(0, Math.round(goals.calories - totals.kcal)),
               }}
               onAddCatalogItem={() => openAddCatalogItem('plan')}
               onEditCatalogItem={(item) => openEditCatalogItem(item, 'plan')}

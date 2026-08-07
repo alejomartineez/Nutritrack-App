@@ -66,6 +66,46 @@ describe('computeEquivalents — otros macros y bordes', () => {
   });
 });
 
+describe('computeEquivalents — calorías', () => {
+  const res = computeEquivalents('kcal', 200);
+
+  it('cada porción aproxima las calorías objetivo', () => {
+    expect(res.length).toBeGreaterThan(5);
+    for (const item of res) {
+      expect(item.kcal).toBeGreaterThanOrEqual(200 * 0.75);
+      expect(item.kcal).toBeLessThanOrEqual(200 * 1.25);
+    }
+  });
+
+  it('incluye todo tipo de alimento (cualquiera aporta calorías), incluso el aceite', () => {
+    const ids = res.map((r) => r.id);
+    expect(ids).toContain('eq_aceite'); // pura grasa: no es fuente de P/C pero sí de kcal
+    expect(ids).toContain('eq_pollo');
+    expect(ids).toContain('eq_banana');
+  });
+
+  it('ordena por proteína descendente (más proteína por esas calorías primero)', () => {
+    for (let i = 0; i < res.length - 1; i++) {
+      expect(res[i].p).toBeGreaterThanOrEqual(res[i + 1].p);
+    }
+  });
+});
+
+describe('alimentos agregados', () => {
+  it('incluye la proteína en polvo entre las fuentes de proteína, en scoops', () => {
+    const res = computeEquivalents('p', 24);
+    const whey = res.find((r) => r.id === 'eq_whey');
+    expect(whey).toBeTruthy();
+    expect(whey.label).toMatch(/scoops?$/);
+  });
+
+  it('incluye tofu y soja texturizada como proteína vegetal (legumbres)', () => {
+    const ids = computeEquivalents('p', 30).map((r) => r.id);
+    expect(ids).toContain('eq_tofu');
+    expect(ids).toContain('eq_soja_tex');
+  });
+});
+
 describe('portionLabel', () => {
   it('formatea gramos, ml y unidades (singular/plural)', () => {
     expect(portionLabel(120, { unit: 'g' })).toBe('120 g');
