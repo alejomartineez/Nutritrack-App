@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { X, Search, Plus } from 'lucide-react';
 import { MUSCLE_GROUPS, EQUIPMENT_TYPES } from './workoutData';
 import Sheet from '../lib/Sheet';
+import { useFreezeWindowScroll } from '../lib/viewport';
 
 export default function ExercisePickerModal({ title, exercises, onSelect, onCreateCustom, onClose, defaultMuscleGroup }) {
   const [query, setQuery] = useState('');
@@ -10,6 +11,8 @@ export default function ExercisePickerModal({ title, exercises, onSelect, onCrea
   const [newName, setNewName] = useState('');
   const [newMuscle, setNewMuscle] = useState(defaultMuscleGroup || MUSCLE_GROUPS[0]);
   const [newEquipment, setNewEquipment] = useState(EQUIPMENT_TYPES[0]);
+  const [searchFocused, setSearchFocused] = useState(false);
+  useFreezeWindowScroll(searchFocused);
 
   const filtered = useMemo(() => {
     return exercises.filter((ex) => {
@@ -28,25 +31,28 @@ export default function ExercisePickerModal({ title, exercises, onSelect, onCrea
 
   return (
     <Sheet onClose={onClose} z="z-[55]" labelledBy="picker-ejercicio-titulo">
-      <div className="w-full max-w-md sheet rounded-t-3xl sm:rounded-3xl p-5 max-h-[85vh] flex flex-col">
-        <div className="flex items-center justify-between mb-3">
+      {/* Altura fija: si el panel se achica al filtrar, el buscador baja al teclado. */}
+      <div className="w-full max-w-md sheet rounded-t-3xl sm:rounded-3xl p-5 h-[88vh] flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between mb-3 shrink-0">
           <h2 id="picker-ejercicio-titulo" className="text-lg font-bold text-slate-100">{title || 'Elegí un ejercicio'}</h2>
           <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-neutral-800">
             <X className="w-5 h-5 text-slate-400" />
           </button>
         </div>
 
-        <div className="relative mb-3">
+        <div className="relative mb-3 shrink-0">
           <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
             placeholder="Buscar ejercicio..."
-            className="w-full bg-neutral-800 border border-neutral-700 rounded-xl pl-9 pr-3 py-2.5 text-sm text-slate-100 placeholder-slate-500"
+            className="w-full bg-neutral-800 border border-neutral-700 rounded-xl pl-9 pr-3 py-2.5 text-slate-100 placeholder-slate-500"
           />
         </div>
 
-        <div className="flex gap-2 mb-3 overflow-x-auto pb-1">
+        <div className="flex gap-2 mb-3 overflow-x-auto pb-1 shrink-0">
           {['Todos', ...MUSCLE_GROUPS].map((m) => (
             <button
               key={m}
@@ -62,7 +68,7 @@ export default function ExercisePickerModal({ title, exercises, onSelect, onCrea
           ))}
         </div>
 
-        <div className="flex-1 overflow-y-auto space-y-2">
+        <div className="flex-1 min-h-0 overflow-y-auto space-y-2">
           {filtered.map((ex) => (
             <button
               key={ex.id}
@@ -86,12 +92,12 @@ export default function ExercisePickerModal({ title, exercises, onSelect, onCrea
         {!showNewForm ? (
           <button
             onClick={() => setShowNewForm(true)}
-            className="w-full mt-3 rounded-2xl border border-dashed border-entreno-500/40 text-entreno-300 py-3 text-sm font-semibold hover:bg-entreno-500/5 flex items-center justify-center gap-2"
+            className="w-full mt-3 rounded-2xl border border-dashed border-entreno-500/40 text-entreno-300 py-3 text-sm font-semibold hover:bg-entreno-500/5 flex items-center justify-center gap-2 shrink-0"
           >
             <Plus className="w-4 h-4" /> Crear ejercicio personalizado
           </button>
         ) : (
-          <div className="mt-3 rounded-2xl surface p-4 space-y-3">
+          <div className="mt-3 rounded-2xl surface p-4 space-y-3 shrink-0">
             <input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}

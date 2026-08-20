@@ -2200,7 +2200,10 @@ function TabRegistrar({
           </button>
         </div>
         {foodQuery.trim().length >= 2 && (
-          <div className="mt-2 space-y-1.5">
+          // Altura fija mientras buscás: si la lista crece y se achica en cada
+          // tecla, iOS re-clampea el scroll y el campo termina bajo el teclado
+          // (el mismo patrón que Equivalencias / el picker de ejercicios).
+          <div className="mt-2 h-56 overflow-y-auto overscroll-contain space-y-1.5">
             {foodResults.map((food) => (
               <button
                 key={food.id}

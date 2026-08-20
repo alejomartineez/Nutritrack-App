@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 
 // ---------------------------------------------------------------------------
 // Detección de teclado virtual.
@@ -78,6 +78,27 @@ export function useKeyboardOpen() {
   }, []);
 
   return open;
+}
+
+/**
+ * Para hojas `fixed`. iOS scrollea la ventana para dejar el input encima del
+ * teclado; si el listado cambia de alto en cada tecla, ese scroll se re-clampea
+ * y el campo termina debajo del teclado. La hoja no necesita el scroll de la
+ * página: se deja la ventana arriba mientras el buscador está enfocado.
+ *
+ * NO usarlo en campos que viven en el documento (p. ej. Registrar): ahí el
+ * scroll SÍ tiene que dejar el campo a la vista.
+ */
+export function useFreezeWindowScroll(enabled) {
+  useLayoutEffect(() => {
+    if (!enabled) return undefined;
+    const freeze = () => {
+      if (window.scrollY !== 0) window.scrollTo(0, 0);
+    };
+    freeze();
+    window.addEventListener('scroll', freeze, { passive: true });
+    return () => window.removeEventListener('scroll', freeze);
+  }, [enabled]);
 }
 
 /**

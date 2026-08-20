@@ -9,6 +9,7 @@ import {
   computeFoodSwap,
   swapMatchKey,
 } from './equivalences';
+import { useFreezeWindowScroll } from './lib/viewport';
 
 // ---------------------------------------------------------------------------
 // EQUIVALENCIAS — el "machete" para elegir comida
@@ -95,6 +96,8 @@ export default function EquivalencesSheet({ onClose, onLog, accent = 'emerald', 
   const [sourceFood, setSourceFood] = useState(null);
   const [sourceQty, setSourceQty] = useState(1);
   const [matchKey, setMatchKey] = useState('p');
+  const [swapSearchFocused, setSwapSearchFocused] = useState(false);
+  useFreezeWindowScroll(swapSearchFocused);
 
   const A =
     accent === 'amber'
@@ -183,8 +186,11 @@ export default function EquivalencesSheet({ onClose, onLog, accent = 'emerald', 
 
   return (
     <Sheet onClose={onClose} labelledBy="equiv-titulo">
-      <div className="w-full max-w-md sheet rounded-t-3xl sm:rounded-3xl p-5 max-h-[88vh] min-h-0 flex flex-col">
-        <div className="flex items-start justify-between gap-2 mb-1">
+      {/* `h-[88vh]` y no `max-h`: la hoja está anclada abajo. Si se achica al
+          filtrar, el buscador (que vive arriba del panel) baja hacia el teclado.
+          Altura fija = la lista scrollea adentro y el campo no se mueve. */}
+      <div className="w-full max-w-md sheet rounded-t-3xl sm:rounded-3xl p-5 h-[88vh] flex flex-col overflow-hidden">
+        <div className="flex items-start justify-between gap-2 mb-1 shrink-0">
           <div className="min-w-0">
             <h2 id="equiv-titulo" className="text-lg font-bold text-slate-100 flex items-center gap-2">
               <Scale className={`w-5 h-5 ${A.text}`} /> Equivalencias
@@ -200,7 +206,7 @@ export default function EquivalencesSheet({ onClose, onLog, accent = 'emerald', 
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-1 bg-slate-800 border border-slate-700 rounded-2xl p-1 mt-3">
+        <div className="grid grid-cols-2 gap-1 bg-slate-800 border border-slate-700 rounded-2xl p-1 mt-3 shrink-0">
           <button
             onClick={() => setMode('meta')}
             aria-pressed={mode === 'meta'}
@@ -222,7 +228,7 @@ export default function EquivalencesSheet({ onClose, onLog, accent = 'emerald', 
         </div>
 
         {mode === 'meta' ? (
-          <>
+          <div className="flex-1 min-h-0 flex flex-col">
             <div className="grid grid-cols-2 gap-2 mt-3">
               {Object.values(MACROS).map((m) => {
                 const active = m.key === macro;
@@ -291,24 +297,26 @@ export default function EquivalencesSheet({ onClose, onLog, accent = 'emerald', 
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto mt-3 -mx-1 px-1 space-y-4">
+            <div className="flex-1 min-h-0 overflow-y-auto mt-3 -mx-1 px-1 space-y-4">
               <ResultGroups groups={metaGroups} addedId={addedId} onLog={handleLog} A={A} />
             </div>
-          </>
+          </div>
         ) : (
           <>
             {!sourceFood ? (
               <div className="mt-3 flex flex-col min-h-0 flex-1">
-                <div className="relative">
+                <div className="relative shrink-0">
                   <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     value={swapQuery}
                     onChange={(e) => setSwapQuery(e.target.value)}
+                    onFocus={() => setSwapSearchFocused(true)}
+                    onBlur={() => setSwapSearchFocused(false)}
                     placeholder="¿Qué alimento reemplazás? (huevo…)"
                     className="w-full surface rounded-2xl pl-9 pr-3 py-3 text-slate-100 placeholder-slate-500"
                   />
                 </div>
-                <div className="flex-1 overflow-y-auto mt-2 -mx-1 px-1 space-y-1.5">
+                <div className="flex-1 min-h-0 overflow-y-auto mt-2 -mx-1 px-1 space-y-1.5">
                   {foodHits.map((food) => (
                     <button
                       key={food.id}
@@ -327,8 +335,8 @@ export default function EquivalencesSheet({ onClose, onLog, accent = 'emerald', 
                 </div>
               </div>
             ) : (
-              <>
-                <div className="mt-3 rounded-2xl surface p-3">
+              <div className="flex-1 min-h-0 flex flex-col">
+                <div className="mt-3 rounded-2xl surface p-3 shrink-0">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">Origen</p>
@@ -395,8 +403,8 @@ export default function EquivalencesSheet({ onClose, onLog, accent = 'emerald', 
                   )}
                 </div>
 
-                <p className="text-[11px] text-slate-500 mt-3 mb-1.5">Igualar por</p>
-                <div className="grid grid-cols-4 gap-1.5">
+                <p className="text-[11px] text-slate-500 mt-3 mb-1.5 shrink-0">Igualar por</p>
+                <div className="grid grid-cols-4 gap-1.5 shrink-0">
                   {Object.values(MACROS).map((m) => {
                     const active = m.key === matchKey;
                     return (
@@ -414,10 +422,10 @@ export default function EquivalencesSheet({ onClose, onLog, accent = 'emerald', 
                   })}
                 </div>
 
-                <div className="flex-1 overflow-y-auto mt-3 -mx-1 px-1 space-y-4">
+                <div className="flex-1 min-h-0 overflow-y-auto mt-3 -mx-1 px-1 space-y-4">
                   <ResultGroups groups={swapGroups} addedId={addedId} onLog={handleLog} A={A} />
                 </div>
-              </>
+              </div>
             )}
           </>
         )}
