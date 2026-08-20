@@ -18,16 +18,10 @@
     text-rendering: optimizeLegibility;
     background-color: theme('colors.ink.900');
 
-    /* SE APAGA EL ZOOM POR DOBLE TOQUE, NO EL PELLIZCO.
-       `manipulation` deja pasar el scroll y el pinch-zoom, y saca solo los
-       gestos extra —el doble toque para acercar—. Es exactamente lo que hacía
-       falta: en una app donde tocás repetido en el mismo lugar (el + del agua,
-       las teclas del pad numérico, los chips de frecuentes), el doble toque se
-       interpretaba como zoom y la pantalla pegaba un salto.
-
-       Es la alternativa correcta a `maximum-scale=1` en el viewport, que
-       apagaba ESTE zoom pero de paso le sacaba el pellizco a quien ve poco
-       (WCAG 1.4.4). Acá se van los saltos molestos y el pellizco queda. */
+    /* SE APAGA TODO EL ZOOM TÁCTIL.
+       `manipulation` saca el doble toque para acercar (el salto al tocar
+       repetido el + del agua o el pad numérico). El pellizco y el zoom al
+       teclado los corta el viewport `maximum-scale=1` en index.html. */
     touch-action: manipulation;
 
     /* EL FLASH GRIS DEL TOQUE. iOS pinta un rectángulo gris translúcido sobre
@@ -49,22 +43,10 @@
 
   /* EL OTRO ZOOM: el que dispara ENFOCAR UN CAMPO.
      iOS Safari acerca la pantalla cuando el campo que tocás tiene menos de
-     16px, y al salir se queda acercado. El piso de 16px lo desactiva de raíz
-     —el navegador ya no necesita agrandar nada— sin tocar el viewport.
-
-     Solo en punteros gruesos: en escritorio no existe el problema y la escala
-     tipográfica queda tal cual está diseñada.
-
-     Los `:not()` son campos que YA superan los 16px (`text-lg` = 17px: el peso
-     en el perfil y las horas de sueño). Sin esa exclusión esta regla los
-     achicaría, que es el problema contrario. */
-  @media (pointer: coarse) {
-    input:not([type='checkbox']):not([type='radio']):not(.text-lg):not(.text-xl),
-    select,
-    textarea {
-      font-size: 16px;
-    }
-  }
+     16px, y al salir se queda acercado. El piso de 16px lo desactiva de raíz.
+     Va DESPUÉS de las utilidades de Tailwind (ver el bloque al final del
+     archivo) porque `text-xs` / `text-sm` ganan a esta regla si vive en
+     `@layer base` y el teclado volvía a hacer zoom. */
 
   /* Los títulos cargan el tracking negativo; Inter a peso alto lo necesita
      para no separarse. */
@@ -584,6 +566,37 @@
   .sheet-free    { border-color: rgba(188, 136, 64, 0.32); }
   .sheet-entreno { border-color: rgba(176, 116, 63, 0.32); }
 
+  /* Pantalla completa (notas, PDFs): sin radio ni sombra de hoja que sube. */
+  .sheet-full {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    box-shadow: none;
+    background-color: theme('colors.ink.900');
+    background-image: none;
+  }
+
+  /* Bloc de notas: papel un poco más cálido que el resto de la app. */
+  .writer-sheet {
+    background-color: #12100e;
+    background-image: linear-gradient(
+      to bottom,
+      rgba(232, 210, 170, 0.05) 0%,
+      rgba(232, 210, 170, 0) 220px
+    );
+  }
+  .writer-card {
+    background-color: rgba(28, 24, 20, 0.85);
+    border: 1px solid rgba(232, 210, 170, 0.08);
+  }
+  .writer-body {
+    font-size: 1.125rem;
+    line-height: 1.7;
+    letter-spacing: 0.01em;
+    caret-color: theme('colors.brand.400');
+  }
+
   /* AVISOS FLOTANTES — la capa que NO empuja el layout.
      Antes los dos avisos (el "Comida agregada ✓" y el "Deshacer") se
      insertaban en el flujo, entre el header y el contenido. Cada vez que
@@ -997,3 +1010,14 @@
 /* La transición del transform vive fuera del media query para que el retorno
    sea suave, pero el scale del :active solo se aplica arriba. */
 button { transition: transform 0.1s cubic-bezier(0.16, 1, 0.3, 1); }
+
+/* Piso de 16px FUERA de @layer: las utilidades `text-xs`/`text-sm` de Tailwind
+   le ganaban a la regla de @layer base y iOS volvía a hacer zoom al teclado.
+   `.writer-body` queda afuera a propósito: el bloc se lee a 18px. */
+@media (pointer: coarse) {
+  input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='hidden']):not([type='range']):not([type='color']):not([type='time']),
+  select,
+  textarea:not(.writer-body) {
+    font-size: 16px !important;
+  }
+}

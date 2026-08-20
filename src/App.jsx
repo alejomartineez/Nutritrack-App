@@ -4,7 +4,7 @@ import {
   ChevronRight, ChevronLeft, ChevronDown, Sparkles, Lightbulb, Award, Plus, Minus,
   Save, RotateCcw, Info, Utensils, Coffee, Pencil, Flame, Dumbbell, MoonStar,
   Download, Share, SquarePlus, Upload, ShieldCheck, Search, Bell, Clock, LayoutGrid, Calculator,
-  Loader2, Barcode, ScanLine, AlertCircle, Scale,
+  Loader2, Barcode, ScanLine, AlertCircle, Scale, PenLine, FileText,
 } from 'lucide-react';
 // Entreno y Sueño se cargan a demanda (React.lazy): son módulos opcionales
 // —se apagan desde Ajustes— y pesan bastante (rutinas, sesión en vivo, gráficos,
@@ -48,6 +48,8 @@ import {
 } from './lib/nutritionCalcs';
 import QuantitySheet from './QuantitySheet';
 import EquivalencesSheet from './EquivalencesSheet';
+import NotesPad from './NotesPad';
+import PdfLibrary from './PdfLibrary';
 import { useCountUp, prefersReducedMotion } from './lib/motion';
 import { useKeyboardOpen } from './lib/viewport';
 import { useTodayKey } from './lib/today';
@@ -165,6 +167,8 @@ export default function NutriTrackApp() {
     window.scrollTo({ top: 0, behavior: 'auto' });
   };
   const [showSettings, setShowSettings] = useState(false);
+  const [showNotes, setShowNotes] = useState(false);
+  const [showPdfs, setShowPdfs] = useState(false);
   const [showInstallGuide, setShowInstallGuide] = useState(false);
   // Intro de primera vez: se muestra una sola vez y deja un flag al cerrarse.
   const [showOnboarding, setShowOnboarding] = useState(() => {
@@ -1111,7 +1115,21 @@ export default function NutriTrackApp() {
               </h1>
             </div>
           </div>
-          {activeTab !== 'entreno' && activeTab !== 'sueno' && (
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={() => setShowNotes(true)}
+              aria-label="Bloc de notas"
+              className="btn-icon bg-slate-800 border border-slate-700 hover:bg-slate-700 transition-colors"
+            >
+              <PenLine className="w-5 h-5 text-slate-300" />
+            </button>
+            <button
+              onClick={() => setShowPdfs(true)}
+              aria-label="Planes en PDF"
+              className="btn-icon bg-slate-800 border border-slate-700 hover:bg-slate-700 transition-colors"
+            >
+              <FileText className="w-5 h-5 text-slate-300" />
+            </button>
             <button
               onClick={openSettings}
               aria-label="Ajustes del plan"
@@ -1119,7 +1137,7 @@ export default function NutriTrackApp() {
             >
               <Settings className="w-5 h-5 text-slate-300" />
             </button>
-          )}
+          </div>
         </header>
 
         {/* AVISOS FLOTANTES (confirmación y deshacer)
@@ -1433,6 +1451,9 @@ export default function NutriTrackApp() {
             onToggleModule={toggleModule}
           />
         )}
+
+        {showNotes && <NotesPad onClose={() => setShowNotes(false)} />}
+        {showPdfs && <PdfLibrary onClose={() => setShowPdfs(false)} />}
 
         {/* MODAL DE EDICIÓN DE COMIDA */}
         {editingEntry && (
@@ -2114,7 +2135,7 @@ function TabRegistrar({
         </span>
         <div className="min-w-0 text-left flex-1">
           <p className="text-sm font-semibold text-slate-100">Equivalencias de macros</p>
-          <p className="text-xs text-slate-500">¿Cuánto de cada alimento te da la misma proteína o macros?</p>
+          <p className="text-xs text-slate-500">Lo que falta del día, o un alimento por otro (2 huevos → ?)</p>
         </div>
         <ChevronRight className="w-4 h-4 text-slate-500 shrink-0" />
       </button>

@@ -79,3 +79,19 @@ export function useKeyboardOpen() {
 
   return open;
 }
+
+/**
+ * Corta pellizco y gestos de zoom de iOS. El viewport ya trae maximum-scale=1;
+ * esto cubre Safari, que a veces ignora user-scalable=no.
+ */
+export function lockViewportZoom() {
+  const blockMultiTouch = (e) => {
+    if (e.touches && e.touches.length > 1) e.preventDefault();
+  };
+  const blockGesture = (e) => e.preventDefault();
+
+  document.addEventListener('touchmove', blockMultiTouch, { passive: false });
+  document.addEventListener('gesturestart', blockGesture);
+  document.addEventListener('gesturechange', blockGesture);
+  document.addEventListener('gestureend', blockGesture);
+}

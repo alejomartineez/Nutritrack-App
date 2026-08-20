@@ -42,7 +42,8 @@ const FOCUSABLE = [
  *                        el texto y sigue al que ya se lee en pantalla.
  * @param z              Clase de z-index. Las hojas anidadas suben.
  * @param align          'sheet' sube desde abajo y se centra en pantalla ancha;
- *                        'bottom' se queda siempre abajo (el teclado numérico).
+ *                        'bottom' se queda siempre abajo (el teclado numérico);
+ *                        'full' ocupa toda la pantalla (bloc de notas, PDFs).
  */
 export default function Sheet({
   onClose,
@@ -160,7 +161,11 @@ export default function Sheet({
   useExitGhost(overlayRef, 'sheet-ghost');
 
   const alignClass =
-    align === 'bottom' ? 'items-end' : 'items-end sm:items-center px-0 sm:px-4';
+    align === 'bottom'
+      ? 'items-end'
+      : align === 'full'
+        ? 'items-stretch'
+        : 'items-end sm:items-center px-0 sm:px-4';
 
   return (
     <div

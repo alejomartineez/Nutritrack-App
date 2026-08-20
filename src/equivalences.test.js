@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeEquivalents, portionLabel } from './equivalences';
+import { computeEquivalents, portionLabel, EQUIV_FOODS, swapMatchKey, computeFoodSwap } from './equivalences';
 
 describe('computeEquivalents — proteína', () => {
   const res = computeEquivalents('p', 30);
@@ -114,3 +114,30 @@ describe('portionLabel', () => {
     expect(portionLabel(3, { unit: 'u', single: 'huevo', plural: 'huevos' })).toBe('3 huevos');
   });
 });
+
+describe('reemplazo alimento ↔ alimento', () => {
+  const huevo = EQUIV_FOODS.find((f) => f.id === 'eq_huevo');
+
+  it('2 huevos se igualan por proteína por defecto (es fuente, aunque tenga grasa)', () => {
+    expect(swapMatchKey(huevo)).toBe('p');
+  });
+
+  it('2 huevos encuentran recambios de proteína y no se listan a sí mismos', () => {
+    const { source, results } = computeFoodSwap(huevo, 2, 'p');
+    expect(source.label).toBe('2 huevos');
+    expect(source.p).toBeGreaterThan(10);
+    expect(results.length).toBeGreaterThan(3);
+    expect(results.map((r) => r.id)).not.toContain('eq_huevo');
+    const pollo = results.find((r) => r.id === 'eq_pollo');
+    expect(pollo).toBeTruthy();
+    expect(pollo.p).toBeGreaterThanOrEqual(source.p * 0.7);
+    expect(pollo.p).toBeLessThanOrEqual(source.p * 1.3);
+    expect(pollo.delta.p).toBeCloseTo(pollo.p - source.p, 5);
+  });
+
+  it('el arroz se iguala por carbohidratos', () => {
+    const arroz = EQUIV_FOODS.find((f) => f.id === 'eq_arroz');
+    expect(swapMatchKey(arroz)).toBe('c');
+  });
+});
+

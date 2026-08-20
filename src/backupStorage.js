@@ -54,11 +54,10 @@ const collectNutritionLogs = () => {
   return logs;
 };
 
-// Versión 2: suma `freeCatalog`, `profile`, `modules` y la sesión de entreno en
-// curso. Los archivos v1 se restauran igual —cada campo se escribe solo si
-// viene— así que un backup viejo sigue sirviendo, nada más que sin esas partes.
+// Versión 3: suma el bloc de notas. Los archivos viejos se restauran igual
+// —cada campo se escribe solo si viene— así que un backup v1/v2 sigue sirviendo.
 export const buildFullBackup = () => ({
-  version: 2,
+  version: 3,
   exportedAt: new Date().toISOString(),
   nutrition: {
     goals: readJSON('nutri_goals', null),
@@ -94,6 +93,9 @@ export const buildFullBackup = () => ({
   settings: {
     reminders: readJSON('reminder_settings', null),
   },
+  // Machetes e ideas del bloc de notas. Los PDFs no entran: son Blobs en
+  // IndexedDB y reventarían el JSON (y el cupo de localStorage).
+  notes: readJSON('nutri_notes', null),
 });
 
 export const downloadFullBackup = () => {
@@ -148,6 +150,10 @@ export const restoreFullBackup = (data) => {
 
   if (data.settings) {
     writeJSON('reminder_settings', data.settings.reminders);
+  }
+
+  if (data.notes) {
+    writeJSON('nutri_notes', data.notes);
   }
 };
 

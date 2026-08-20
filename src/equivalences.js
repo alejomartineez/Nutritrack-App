@@ -168,3 +168,66 @@ export const computeEquivalents = (macroKey, target) => {
   results.sort(byKcal ? (a, b) => b.p - a.p || a.kcal - b.kcal : (a, b) => a.kcal - b.kcal);
   return results;
 };
+
+/**
+ * Porción concreta de un alimento (2 huevos, 150 g de pollo). `qty` va en la
+ * unidad del alimento (g, ml o unidades).
+ */
+export const portionOf = (food, qty) => {
+  if (!food) return null;
+  const q = Number(qty);
+  if (!Number.isFinite(q) || q <= 0) return null;
+  const rounded = food.unit === 'u' ? Math.max(1, Math.round(q)) : roundQty(q, food.unit);
+  const factor = rounded / food.per;
+  return {
+    id: food.id,
+    name: food.name,
+    cat: food.cat,
+    unit: food.unit,
+    qty: rounded,
+    label: portionLabel(rounded, food),
+    kcal: Math.round(food.kcal * factor),
+    p: round1(food.p * factor),
+    c: round1(food.c * factor),
+    f: round1(food.f * factor),
+  };
+};
+
+/**
+ * Con qué macro conviene igualar un reemplazo. Si el alimento es fuente de
+ * proteína (aunque tenga más kcal de grasa, como el huevo), se iguala proteína:
+ * es lo que un nutricionista está sustituyendo. Si no, carbo, grasa o kcal.
+ */
+export const swapMatchKey = (food) => {
+  if (!food || !food.kcal) return 'kcal';
+  const pFrac = (food.p * MACRO_KCAL.p) / food.kcal;
+  const cFrac = (food.c * MACRO_KCAL.c) / food.kcal;
+  const fFrac = (food.f * MACRO_KCAL.f) / food.kcal;
+  if (pFrac >= SOURCE_THRESHOLD.p) return 'p';
+  if (cFrac >= SOURCE_THRESHOLD.c) return 'c';
+  if (fFrac >= SOURCE_THRESHOLD.f) return 'f';
+  return 'kcal';
+};
+
+/**
+ * "Tengo 2 huevos, ¿con qué los reemplazo?" Escala el alimento origen y busca
+ * porciones de los demás que den el mismo macro (o las mismas kcal). Cada fila
+ * trae el delta contra el origen para ver si el recambio nutre parecido.
+ */
+export const computeFoodSwap = (sourceFood, qty, matchKey = 'kcal') => {
+  const source = portionOf(sourceFood, qty);
+  if (!source || !MACROS[matchKey]) return { source: null, results: [] };
+  const target = matchKey === 'kcal' ? source.kcal : source[matchKey];
+  const results = computeEquivalents(matchKey, target)
+    .filter((r) => r.id !== sourceFood.id)
+    .map((r) => ({
+      ...r,
+      delta: {
+        kcal: r.kcal - source.kcal,
+        p: round1(r.p - source.p),
+        c: round1(r.c - source.c),
+        f: round1(r.f - source.f),
+      },
+    }));
+  return { source, results };
+};

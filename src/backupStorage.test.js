@@ -44,6 +44,7 @@ const FULL_STATE = {
   sleep_goal_hours: 8,
   weight_logs: [{ date: '2026-07-20', kg: 78.4 }],
   reminder_settings: { enabled: true },
+  nutri_notes: [{ id: 'note_1', body: 'Machete desayuno', createdAt: 1, updatedAt: 2 }],
 };
 
 const seed = (state) => {
@@ -79,6 +80,11 @@ describe('backup completo', () => {
     const backup = buildFullBackup();
     expect(backup.nutrition.freeCatalog).toEqual(FULL_STATE.nutri_free_catalog);
     expect(backup.nutrition.profile).toEqual(FULL_STATE.nutri_profile);
+  });
+
+  it('conserva el bloc de notas', () => {
+    const backup = buildFullBackup();
+    expect(backup.notes).toEqual(FULL_STATE.nutri_notes);
   });
 
   it('junta todos los días registrados, no solo el último', () => {

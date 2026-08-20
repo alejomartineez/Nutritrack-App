@@ -3,7 +3,10 @@ import ReactDOM from 'react-dom/client';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import App from './App.jsx';
 import ErrorBoundary from './ErrorBoundary.jsx';
+import { lockViewportZoom } from './lib/viewport';
 import './index.css';
+
+lockViewportZoom();
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
