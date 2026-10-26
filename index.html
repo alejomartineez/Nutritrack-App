@@ -20,6 +20,8 @@
         var pref = (JSON.parse(localStorage.getItem('nutri_settings') || '{}').theme) || 'auto';
         var light = pref === 'light' || (pref === 'auto' && window.matchMedia('(prefers-color-scheme: light)').matches);
         document.documentElement.dataset.theme = light ? 'light' : 'dark';
+        // La barra de estado de iOS se lee al abrir la app: texto oscuro en modo claro.
+        if (light) document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').setAttribute('content', 'default');
       } catch (e) {}
     </script>
   </head>

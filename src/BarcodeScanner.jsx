@@ -127,7 +127,7 @@ export default function BarcodeScanner({ onDetected, onCancel }) {
   }, [onCancel]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-ink-900 flex flex-col anim-screen-in" role="dialog" aria-modal="true" aria-label="Escanear código de barras">
+    <div className="fixed inset-0 z-[60] bg-ink-950 flex flex-col anim-screen-in" role="dialog" aria-modal="true" aria-label="Escanear código de barras">
       <div
         className="flex items-center justify-between px-5 pb-3"
         style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.25rem)' }}
@@ -146,7 +146,7 @@ export default function BarcodeScanner({ onDetected, onCancel }) {
         {/* Marco guía */}
         {!error && !starting && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-4/5 h-32 border-2 border-brand-400/80 rounded-2xl shadow-[0_0_0_100vmax_rgba(15,23,42,0.55)]" />
+            <div className="w-4/5 h-32 border-2 border-brand-400/80 rounded-2xl shadow-[0_0_0_100vmax_rgba(0,0,0,0.55)]" />
           </div>
         )}
 
