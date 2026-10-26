@@ -26,7 +26,6 @@ import {
   getSleepDaySummary,
   getSleepRangeSummary,
   wakeCountOf,
-  parseAnyTimeToMinutes,
 } from './sleepStorage';
 import { addDaysToKey } from '../lib/dates';
 
@@ -346,15 +345,5 @@ describe('API para Hoy / Progreso', () => {
     expect(getSleepRangeSummary(ago(6), END)).toEqual({ nights: 2, avgHours: 7, avgScore: expect.any(Number), avgQuality: 3, goalHours: 7 });
     expect(getSleepRangeSummary(END, ago(6)).nights).toBe(2);
     expect(getSleepRangeSummary('2020-01-01', '2020-01-07')).toEqual({ nights: 0, avgHours: null, avgScore: null, avgQuality: null, goalHours: 7 });
-  });
-});
-
-describe('parseAnyTimeToMinutes (compat)', () => {
-  it('24 h, a.m./p.m. y basura', () => {
-    expect(parseAnyTimeToMinutes('07:30')).toBe(450);
-    expect(parseAnyTimeToMinutes('1:00 p.m.')).toBe(780);
-    expect(parseAnyTimeToMinutes('12:15 a.m.')).toBe(15);
-    expect(parseAnyTimeToMinutes(null)).toBeNull();
-    expect(parseAnyTimeToMinutes('sin hora')).toBeNull();
   });
 });

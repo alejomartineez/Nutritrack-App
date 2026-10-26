@@ -20,6 +20,9 @@ class MemoryStorage {
   setItem(k, v) {
     this.map.set(k, String(v));
   }
+  removeItem(k) {
+    this.map.delete(k);
+  }
   clear() {
     this.map.clear();
   }
@@ -55,12 +58,7 @@ const seed = (state) => {
 describe('backup completo', () => {
   beforeEach(() => seed(FULL_STATE));
 
-  // Este es el test que importa. El backup se escribe a mano, clave por clave, y
-  // el modo en que falla es agregar una clave nueva a la app y olvidarse de
-  // sumarla acá: no rompe nada, no avisa nada, y el usuario descubre el hueco
-  // recién cuando restaura en el teléfono nuevo. Comparar el estado entero
-  // contra sí mismo después de una vuelta completa cubre todas las claves de
-  // una, incluidas las que se agreguen en el futuro.
+  // Vuelta completa: cubre todas las claves, incluidas las que se agreguen.
   it('sobrevive una vuelta completa exportar → restaurar sin perder nada', () => {
     const backup = JSON.parse(JSON.stringify(buildFullBackup()));
 
@@ -74,22 +72,40 @@ describe('backup completo', () => {
     });
   });
 
-  it('conserva los gustos fuera de plan y el perfil', () => {
-    // Las dos claves que faltaban. Explícito además del test general, para que
-    // si se rompen el mensaje diga cuál de las dos fue.
+  it('guarda cada clave tal cual, incluso valores que no son JSON', () => {
+    globalThis.localStorage.setItem('nutri_profile', 'skipped');
     const backup = buildFullBackup();
-    expect(backup.nutrition.freeCatalog).toEqual(FULL_STATE.nutri_free_catalog);
-    expect(backup.nutrition.profile).toEqual(FULL_STATE.nutri_profile);
+    expect(backup.version).toBe(4);
+    expect(backup.keys.nutri_profile).toBe('skipped');
+    expect(Object.keys(backup.keys).filter((k) => k.startsWith('nutri_log_')).sort()).toEqual(['nutri_log_2026-07-20', 'nutri_log_2026-07-21']);
   });
 
-  it('conserva el bloc de notas', () => {
+  it('no mete en la copia claves ajenas ni la foto previa a la actualización', () => {
+    globalThis.localStorage.setItem('otra_app', '1');
+    globalThis.localStorage.setItem('nutri_pre_v2_backup', '{}');
     const backup = buildFullBackup();
-    expect(backup.notes).toEqual(FULL_STATE.nutri_notes);
+    expect(backup.keys.otra_app).toBeUndefined();
+    expect(backup.keys.nutri_pre_v2_backup).toBeUndefined();
   });
 
-  it('junta todos los días registrados, no solo el último', () => {
-    const backup = buildFullBackup();
-    expect(Object.keys(backup.nutrition.logs).sort()).toEqual(['2026-07-20', '2026-07-21']);
+  it('al restaurar una v4 reemplaza: lo que no estaba en el archivo se va', () => {
+    const backup = JSON.parse(JSON.stringify(buildFullBackup()));
+    globalThis.localStorage.setItem('nutri_log_2030-01-01', '{"water":1}');
+    restoreFullBackup(backup);
+    expect(globalThis.localStorage.getItem('nutri_log_2030-01-01')).toBeNull();
+  });
+
+  it('restaura un archivo v3 (formato anterior por secciones)', () => {
+    const v3 = {
+      version: 3,
+      nutrition: { goals: FULL_STATE.nutri_goals, logs: { '2026-07-20': FULL_STATE['nutri_log_2026-07-20'] } },
+      sleep: { logs: FULL_STATE.sleep_logs },
+      notes: FULL_STATE.nutri_notes,
+    };
+    globalThis.localStorage = new MemoryStorage();
+    restoreFullBackup(v3);
+    expect(JSON.parse(globalThis.localStorage.getItem('nutri_log_2026-07-20'))).toEqual(FULL_STATE['nutri_log_2026-07-20']);
+    expect(JSON.parse(globalThis.localStorage.getItem('nutri_notes'))).toEqual(FULL_STATE.nutri_notes);
   });
 
   it('restaura un archivo v1 sin las claves nuevas, en vez de romperse', () => {

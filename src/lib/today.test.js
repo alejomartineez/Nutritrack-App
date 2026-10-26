@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { msUntilNextMidnight } from './today';
-import { dateKeyOf } from './nutritionCalcs';
+import { dateKeyOf } from './dates';
 
 describe('msUntilNextMidnight', () => {
   it('cuenta lo que falta desde el mediodía', () => {

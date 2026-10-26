@@ -381,21 +381,3 @@ export const summarizeRange = (map, goalHours, fromKey, toKey) => {
 
 /** Promedios de las noches que terminan entre fromKey y toKey (inclusive). */
 export const getSleepRangeSummary = (fromKey, toKey) => summarizeRange(loadSleepLogs(), loadSleepGoalHours(), fromKey, toKey);
-
-// ---- Compatibilidad: solo para WeeklyRecap.jsx y reminders.js (se reescriben aparte). Borrar cuando no los importen.
-
-export const computeWeeklyStats = (map, goalHours = DEFAULT_SLEEP_GOAL_HOURS, ref = new Date()) => {
-  const to = dateKeyOf(ref);
-  const s = summarizeRange(map, goalHours, addDaysToKey(to, -6), to);
-  return { avgHours: s.avgHours ?? 0, nightsLogged: s.nights };
-};
-export const correlateLateDinnerWithQuality = () => ({ available: false, sampleSize: 0 });
-export const correlateSleepWithWorkoutVolume = () => ({ available: false, sampleSize: 0 });
-export const parseAnyTimeToMinutes = (raw) => {
-  const match = typeof raw === 'string' ? raw.match(/(\d{1,2}):(\d{2})/) : null;
-  if (!match) return null;
-  let hour = Number(match[1]);
-  if (/p\.?\s?m\.?/i.test(raw) && hour !== 12) hour += 12;
-  if (/a\.?\s?m\.?/i.test(raw) && hour === 12) hour = 0;
-  return hour * 60 + Number(match[2]);
-};
