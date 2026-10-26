@@ -5,7 +5,7 @@
 import { readRaw, writeRaw, removeKey, readJSON } from './lib/storage';
 
 const APP_PREFIXES = ['nutri_', 'workout_', 'sleep_', 'weight_', 'reminder_'];
-const EXCLUDED = new Set(['nutri_pre_v2_backup', 'nutri_last_backup']);
+const EXCLUDED = new Set(['nutri_pre_v2_backup', 'nutri_last_backup', 'workout_rest_timer']);
 const NUTRI_LOG_PREFIX = 'nutri_log_';
 
 const isAppKey = (k) => APP_PREFIXES.some((p) => k.startsWith(p)) && !EXCLUDED.has(k);

@@ -3,12 +3,13 @@ import { ChevronLeft, ChevronRight, Plus, Minus, Droplet, Flame, BookOpen, Setti
 import { ScreenHeader, IconButton, Ring, ProgressBar, toast, Sheet, ListGroup, ListRow, Button } from '../ui';
 import { haptic } from '../lib/haptics';
 import { useSettings } from '../lib/settings';
-import { dateKeyOf, keyToDate, addDays, addDaysToKey, startOfWeek, formatDisplayDate, formatLongDate, WEEKDAY_INITIALS } from '../lib/dates';
+import { dateKeyOf, keyToDate, addDays, addDaysToKey, startOfWeek, formatDisplayDate, formatLongDate, WEEKDAY_INITIALS, formatShortDate } from '../lib/dates';
 import { kcalOf } from '../lib/nutritionCalcs';
 import { useLog, useGoals, removeEntry, removeEntries, setWater, copyEntries, getLog, saveCatalogItem, useWeights } from './store';
 import { MEALS, entriesOf, totalsOf, TOLERANCE, qtyLabel, baseOfEntry, splitName } from './model';
 import { dayStats } from './insights';
 import { MACROS, MacroLine, FreeBadge, SwipeRow, fmt, fmt1 } from './parts';
+import { SummaryRow } from './ModuleTiles';
 
 export default function TodayScreen({ dateKey, todayKey, onChangeDate, onAdd, onOpenEntry, onOpenSettings, onOpenPlan, onOpenWeight, onOpenEquivalences, streak, tiles }) {
   const goals = useGoals();
@@ -56,7 +57,7 @@ export default function TodayScreen({ dateKey, todayKey, onChangeDate, onAdd, on
         ))}
       </div>
 
-      <div className="flex gap-3">
+      <div className="surface rounded-3xl overflow-hidden divide-y divide-[var(--hairline)]">
         <WeightTile dateKey={dateKey} onOpen={onOpenWeight} />
         {tiles}
       </div>
@@ -453,27 +454,15 @@ function WeightTile({ dateKey, onOpen }) {
   const keys = Object.keys(weights).filter((k) => k <= dateKey).sort();
   const last = keys[keys.length - 1];
   const prev = keys[keys.length - 2];
-  const today = weights[dateKey];
   const delta = last && prev ? weights[last] - weights[prev] : 0;
   return (
-    <button onClick={onOpen} className="surface rounded-3xl p-4 text-left min-h-[6.5rem] flex flex-col flex-1 min-w-0">
-      <span className="flex items-center gap-1.5 text-xs font-semibold text-ink-400">
-        <Scale className="w-4 h-4 text-brand-400" /> Peso
-      </span>
-      {last ? (
-        <>
-          <span className="num-display text-2xl text-ink-50 mt-auto">
-            {fmt1(weights[last])}
-            <span className="text-sm text-ink-500 font-semibold ml-1">kg</span>
-          </span>
-          <span className="text-xs text-ink-500 mt-0.5">
-            {today ? 'Hoy' : `Último: ${last.slice(8)}/${last.slice(5, 7)}`}
-            {delta ? ` · ${delta > 0 ? '+' : ''}${fmt1(delta)}` : ''}
-          </span>
-        </>
-      ) : (
-        <span className="text-sm font-semibold text-ink-200 mt-auto">Registrá tu peso</span>
-      )}
-    </button>
+    <SummaryRow
+      icon={Scale}
+      tone="bg-brand-500/15 text-brand-400"
+      label="Peso"
+      main={last ? `${fmt1(weights[last])} kg` : 'Registrar'}
+      sub={last ? `${last === dateKey ? 'Hoy' : formatShortDate(last)}${delta ? ` · ${delta > 0 ? '+' : ''}${fmt1(delta)}` : ''}` : 'Tocá para anotarlo'}
+      onClick={onOpen}
+    />
   );
 }

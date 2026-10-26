@@ -56,7 +56,7 @@ export function Overlay({ onClose, closeOnBackdrop = true, label, labelledBy, z 
   return createPortal(
     <div
       ref={ref}
-      className={`fixed inset-x-0 ${z} flex ${alignClass} justify-center ${align === 'full' ? 'anim-screen-in' : 'scrim'}`}
+      className={`fixed inset-x-0 ${z} flex ${alignClass} justify-center outline-none ${align === 'full' ? 'anim-screen-in' : 'scrim'}`}
       style={
         vv
           ? { top: vv.top, height: vv.height, paddingTop: align === 'full' ? 0 : 8 }

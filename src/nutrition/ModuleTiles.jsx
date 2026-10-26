@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Dumbbell, MoonStar, Trophy } from 'lucide-react';
+import { Dumbbell, MoonStar, Trophy, ChevronRight } from 'lucide-react';
 import * as workout from '../workout/workoutStorage';
 import * as sleep from '../sleep/sleepStorage';
 import { addDaysToKey, dateKeyOf } from '../lib/dates';
@@ -34,14 +34,19 @@ const sleepTile = (todayKey) => {
   return { main: '¿Dormiste?', sub: 'Registrá anoche' };
 };
 
-function Tile({ icon: Icon, tone, label, main, sub, onClick }) {
+/** Fila de resumen (Peso, Entreno, Sueño) dentro de la card "Tu día" de Hoy. */
+export function SummaryRow({ icon: Icon, tone, label, main, sub, onClick }) {
   return (
-    <button onClick={onClick} className="surface rounded-3xl p-4 text-left min-h-[6.5rem] flex flex-col flex-1 min-w-0">
-      <span className="flex items-center gap-1.5 text-xs font-semibold text-ink-400">
-        <Icon className={`w-4 h-4 ${tone}`} /> {label}
+    <button onClick={onClick} className="w-full flex items-center gap-3 px-4 min-h-[3.5rem] text-left active:bg-ink-700/30" style={{ transform: 'none' }}>
+      <span className={`w-8 h-8 rounded-[9px] flex items-center justify-center shrink-0 ${tone}`}>
+        <Icon className="w-[18px] h-[18px]" />
       </span>
-      <span className="mt-auto text-[17px] font-bold text-ink-50 truncate">{main}</span>
-      <span className="text-xs text-ink-500 truncate mt-0.5">{sub}</span>
+      <span className="text-[15px] text-ink-200 w-[4.5rem] shrink-0">{label}</span>
+      <span className="flex-1 min-w-0 text-right">
+        <span className="block text-[15px] font-semibold text-ink-50 truncate">{main}</span>
+        {sub && <span className="block text-xs text-ink-500 truncate">{sub}</span>}
+      </span>
+      <ChevronRight className="w-4 h-4 text-ink-600 shrink-0" />
     </button>
   );
 }
@@ -51,8 +56,8 @@ export function ModuleTiles({ modules, onGoTo }) {
   const s = useMemo(() => sleepTile(dateKeyOf()), []);
   return (
     <>
-      {modules.entreno && <Tile icon={Dumbbell} tone="text-entreno-400" label="Entreno" {...w} onClick={() => onGoTo('entreno')} />}
-      {modules.sueno && <Tile icon={MoonStar} tone="text-sueno-400" label="Sueño" {...s} onClick={() => onGoTo('sueno')} />}
+      {modules.entreno && <SummaryRow icon={Dumbbell} tone="bg-entreno-500/15 text-entreno-400" label="Entreno" {...w} onClick={() => onGoTo('entreno')} />}
+      {modules.sueno && <SummaryRow icon={MoonStar} tone="bg-sueno-500/15 text-sueno-400" label="Sueño" {...s} onClick={() => onGoTo('sueno')} />}
     </>
   );
 }
