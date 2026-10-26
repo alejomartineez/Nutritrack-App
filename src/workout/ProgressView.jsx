@@ -1,276 +1,201 @@
 import React, { useMemo, useState } from 'react';
-import { Download, FileJson, Trophy, TrendingUp, TrendingDown, Minus, BarChart3, Target, Gauge } from 'lucide-react';
-import { MUSCLE_GROUP_COLORS } from './workoutData';
-import { theme } from '../lib/theme';
-import SessionHistory from './SessionHistory';
+import { BarChart3, Plus, Trophy, History } from 'lucide-react';
+import { Card, Button, EmptyState, ListGroup, ListRow, SectionTitle, Stat } from '../ui';
+import { dateKeyOf, formatShortDate, formatDisplayDate, keyToDate } from '../lib/dates';
+import { MUSCLE_GROUPS, WEEKLY_SETS_TARGET } from './workoutData';
 import {
-  computeWeeklyEffectiveSets,
+  finishedSessions,
+  summarizeSession,
   computeWeeklyVolumeHistory,
-  computePersonalRecords,
-  computeAverageRIRTrend,
-  computeWeeklyAdherence,
   computeVolumeTrend,
-  getRecentSessions,
-  exportWorkoutDataAsJSON,
-  exportWorkoutDataAsCSV,
-} from './workoutStorage';
+  computeWeeklySetsByMuscle,
+  computeRecordsList,
+  weekStartKey,
+} from './workoutStats';
+import { formatVolume, plural } from './format';
 
-const EFFECTIVE_SETS_TARGET = 12; // referencia orientativa por grupo muscular/semana
-
-const formatVolume = (kg) => (kg >= 1000 ? `${(kg / 1000).toFixed(1)}t` : `${kg}kg`);
-
-const formatDate = (dateKey) => {
-  const d = new Date(`${dateKey}T00:00:00`);
-  const text = d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
-  return text.charAt(0).toUpperCase() + text.slice(1);
-};
-
-/** Tarjeta de una cifra con su variación. La flecha es lo que se mira primero. */
-function StatTile({ icon: Icon, value, label, delta }) {
-  const dir = delta == null ? null : delta > 2 ? 'up' : delta < -2 ? 'down' : 'flat';
-  const DeltaIcon = dir === 'up' ? TrendingUp : dir === 'down' ? TrendingDown : Minus;
-  const deltaColor = dir === 'up' ? 'text-brand-400' : dir === 'down' ? 'text-amber-400' : 'text-ink-500';
-
+function VolumeBars({ weeks }) {
+  const max = Math.max(1, ...weeks.map((w) => w.volume));
   return (
-    <div className="rounded-2xl surface p-3 flex flex-col">
-      <Icon className="w-4 h-4 text-entreno-400 mb-2" />
-      <p className="font-mono text-xl font-black text-ink-100 leading-none">{value}</p>
-      <p className="text-[10px] text-ink-500 mt-1 leading-tight flex-1">{label}</p>
-      {dir && (
-        <p className={`text-[11px] font-semibold mt-1.5 flex items-center gap-0.5 ${deltaColor}`}>
-          <DeltaIcon className="w-3 h-3 shrink-0" />
-          {dir === 'flat' ? 'igual' : `${delta > 0 ? '+' : ''}${delta}%`}
-        </p>
-      )}
-    </div>
-  );
-}
-
-function Card({ icon: Icon, title, hint, children }) {
-  return (
-    <div className="rounded-3xl surface p-5">
-      <div className="flex items-center gap-2 mb-1">
-        {Icon && <Icon className="w-4 h-4 text-entreno-400" />}
-        <h2 className="label-section">{title}</h2>
+    <div>
+      <div className="flex items-end gap-2 h-28" role="img" aria-label={`Volumen semanal: ${weeks.map((w) => formatVolume(w.volume)).join(', ')}`}>
+        {weeks.map((w, i) => {
+          const current = i === weeks.length - 1;
+          const h = w.volume > 0 ? Math.max(4, (w.volume / max) * 85) : 0;
+          return (
+            <div key={w.weekStart} className="flex-1 h-full flex flex-col justify-end items-center">
+              {current && w.volume > 0 && <span className="text-[11px] num font-semibold text-entreno-300 mb-1 whitespace-nowrap">{formatVolume(w.volume)}</span>}
+              <div
+                className={`w-full rounded-md transition-[height] duration-700 ${current ? 'bg-entreno-500' : 'bg-entreno-500/30'}`}
+                style={{ height: `${h}%`, minHeight: w.volume > 0 ? 4 : 0 }}
+              />
+              {w.volume === 0 && <div className="w-full h-1 rounded-full bg-ink-700" />}
+            </div>
+          );
+        })}
       </div>
-      {hint && <p className="text-[11px] text-ink-500 mb-3.5">{hint}</p>}
-      <div className={hint ? '' : 'mt-3.5'}>{children}</div>
+      <div className="flex gap-2 mt-2">
+        {weeks.map((w, i) => (
+          <span key={w.weekStart} className="flex-1 text-center text-[10px] text-ink-500 num whitespace-nowrap">
+            {(weeks.length - 1 - i) % 2 === 0 ? (i === weeks.length - 1 ? 'Esta' : formatShortDate(w.weekStart)) : ''}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
 
-export default function ProgressView({ sessionsMap, exercisesById, activeRoutine, onGoToToday }) {
-  const [showAllPRs, setShowAllPRs] = useState(false);
+function MuscleSets({ perMuscle }) {
+  const SCALE = 24;
+  const rows = MUSCLE_GROUPS.filter((g) => perMuscle[g]).map((g) => [g, perMuscle[g]]);
+  if (!rows.length) return <p className="text-sm text-ink-500">Todavía no entrenaste esta semana.</p>;
+  const left = (WEEKLY_SETS_TARGET.min / SCALE) * 100;
+  const width = ((WEEKLY_SETS_TARGET.max - WEEKLY_SETS_TARGET.min) / SCALE) * 100;
+  return (
+    <div className="space-y-3">
+      {rows.map(([group, n]) => {
+        const inRange = n >= WEEKLY_SETS_TARGET.min && n <= WEEKLY_SETS_TARGET.max;
+        return (
+          <div key={group} className="grid grid-cols-[6.5rem_1fr_2rem] items-center gap-3">
+            <span className="text-sm text-ink-200 truncate">{group}</span>
+            <div className="relative h-2.5 rounded-full bg-ink-700 overflow-hidden">
+              <span className="absolute inset-y-0 bg-ink-600/60" style={{ left: `${left}%`, width: `${width}%` }} aria-hidden="true" />
+              <span
+                className={`absolute inset-y-0 left-0 rounded-full ${inRange ? 'bg-entreno-500' : 'bg-entreno-500/50'}`}
+                style={{ width: `${Math.min(100, (n / SCALE) * 100)}%` }}
+              />
+            </div>
+            <span className={`num text-sm text-right font-semibold ${inRange ? 'text-entreno-300' : 'text-ink-400'}`}>{n}</span>
+          </div>
+        );
+      })}
+      <p className="text-xs text-ink-500 pt-1">
+        La franja gris marca {WEEKLY_SETS_TARGET.min}–{WEEKLY_SETS_TARGET.max} series efectivas por semana, el rango que más suele servir para crecer.
+      </p>
+    </div>
+  );
+}
 
-  const sessions = useMemo(() => getRecentSessions(sessionsMap), [sessionsMap]);
-  const weeklySets = useMemo(() => computeWeeklyEffectiveSets(sessionsMap, exercisesById), [sessionsMap, exercisesById]);
-  const volumeHistory = useMemo(() => computeWeeklyVolumeHistory(sessionsMap, 8), [sessionsMap]);
-  const rirTrend = useMemo(() => computeAverageRIRTrend(sessionsMap, 8), [sessionsMap]);
-  const prs = useMemo(() => computePersonalRecords(sessionsMap, exercisesById), [sessionsMap, exercisesById]);
-  const adherence = useMemo(() => computeWeeklyAdherence(activeRoutine, sessionsMap, 4), [activeRoutine, sessionsMap]);
-  const volumeTrend = useMemo(() => computeVolumeTrend(sessionsMap), [sessionsMap]);
+export default function ProgressView({ sessionsMap, exercisesById, routine, onOpenSession, onOpenExercise, onLogPast }) {
+  const [shown, setShown] = useState(10);
+  const [allRecords, setAllRecords] = useState(false);
+  const today = dateKeyOf();
 
-  // Un módulo recién estrenado no tiene por qué mostrar cuatro gráficos vacíos:
-  // no comunican nada y hacen parecer que algo se rompió.
-  if (sessions.length === 0) {
+  const sessions = useMemo(() => finishedSessions(sessionsMap), [sessionsMap]);
+  const weeks = useMemo(() => computeWeeklyVolumeHistory(sessionsMap, 8, today), [sessionsMap, today]);
+  const trend = useMemo(() => computeVolumeTrend(sessionsMap, today), [sessionsMap, today]);
+  const perMuscle = useMemo(() => computeWeeklySetsByMuscle(sessionsMap, exercisesById, today), [sessionsMap, exercisesById, today]);
+  const records = useMemo(() => computeRecordsList(sessionsMap, exercisesById), [sessionsMap, exercisesById]);
+
+  if (!sessions.length) {
     return (
-      <div className="rounded-3xl surface-accent surface-accent-entreno p-6 text-center">
-        <BarChart3 className="w-10 h-10 text-entreno-400 mx-auto mb-3" />
-        <h2 className="text-lg font-bold text-ink-100 mb-1">Todavía no hay nada que medir</h2>
-        <p className="text-sm text-ink-400 mb-4 leading-relaxed">
-          Cuando termines tu primer entreno vas a ver acá tu volumen semana a semana, las series por grupo muscular, tus
-          récords y el historial completo de sesiones.
-        </p>
-        {onGoToToday && (
-          <button
-            onClick={onGoToToday}
-            className="rounded-xl bg-entreno-500 text-onaccent px-5 py-3 text-sm font-bold hover:bg-entreno-400"
-          >
-            Ir al entreno de hoy
-          </button>
-        )}
-      </div>
+      <EmptyState
+        icon={BarChart3}
+        title="Todavía no hay entrenos"
+        text="Cuando termines el primero vas a ver acá tu volumen, las series por músculo, tus récords y el historial."
+        action={
+          <Button variant="soft" tone="entreno" icon={Plus} onClick={onLogPast}>
+            Registrar un entreno pasado
+          </Button>
+        }
+        className="mt-2"
+      />
     );
   }
 
-  const maxVolume = Math.max(1, ...volumeHistory.map((w) => w.volume));
-  const muscleEntries = Object.entries(weeklySets).sort((a, b) => b[1] - a[1]);
-  const setsThisWeek = muscleEntries.reduce((sum, [, n]) => sum + n, 0);
-  const adherenceNow = adherence[adherence.length - 1];
-  const visiblePRs = showAllPRs ? prs : prs.slice(0, 5);
+  const thisWeek = weeks[weeks.length - 1];
+  const planned = routine ? routine.days.filter((d) => !d.isRest).length : 0;
+  const weekStart = weekStartKey(today);
+  const daysTrained = new Set(sessions.filter((s) => s.date >= weekStart).map((s) => s.date)).size;
+  const delta = trend.pctChange;
 
   return (
-    <div className="space-y-4">
-      {/* ---- Resumen: las tres cifras que importan --------------------------- */}
-      <div>
-        <div className="grid grid-cols-3 gap-2">
-          <StatTile
-            icon={TrendingUp}
-            value={formatVolume(volumeTrend.current)}
-            label="volumen"
-            delta={volumeTrend.pctChange}
-          />
-          <StatTile icon={Target} value={setsThisWeek} label="series efectivas" />
-          <StatTile
-            icon={BarChart3}
-            value={adherenceNow.planned > 0 ? `${adherenceNow.done}/${adherenceNow.planned}` : adherenceNow.done}
-            label={adherenceNow.planned > 0 ? 'entrenos del plan' : 'entrenos'}
-          />
-        </div>
-        <p className="text-[11px] text-ink-600 mt-2 px-1">
-          Semana en curso. La variación compara contra los mismos {volumeTrend.daysElapsed}{' '}
-          {volumeTrend.daysElapsed === 1 ? 'día' : 'días'} de la semana pasada.
-        </p>
-      </div>
+    <div className="space-y-7 pt-1">
+      <Card className="grid grid-cols-3 gap-3">
+        <Stat label="Entrenos" value={planned ? `${daysTrained}/${planned}` : daysTrained} sub="esta semana" />
+        <Stat label="Series" value={thisWeek.sets} sub="efectivas" />
+        <Stat
+          label="Volumen"
+          value={formatVolume(thisWeek.volume)}
+          sub={delta == null ? 'esta semana' : `${delta > 0 ? '+' : ''}${delta}% vs. sem. ant.`}
+        />
+      </Card>
 
-      {/* ---- Volumen ------------------------------------------------------- */}
-      <Card
-        icon={TrendingUp}
-        title="Volumen semanal"
-        hint="Peso × repeticiones de las series efectivas. El calentamiento no suma."
-      >
-        <div className="flex items-end justify-between gap-1.5 h-32">
-          {volumeHistory.map((w, i) => {
-            const h = Math.max(3, (w.volume / maxVolume) * 100);
-            const isCurrent = i === volumeHistory.length - 1;
+      <section>
+        <SectionTitle>Volumen por semana</SectionTitle>
+        <Card>
+          <VolumeBars weeks={weeks} />
+        </Card>
+      </section>
+
+      <section>
+        <SectionTitle>Series por músculo · esta semana</SectionTitle>
+        <Card>
+          <MuscleSets perMuscle={perMuscle} />
+        </Card>
+      </section>
+
+      {records.length > 0 && (
+        <section>
+          <SectionTitle
+            action={
+              records.length > 6 && (
+                <button onClick={() => setAllRecords((v) => !v)} className="text-[13px] font-semibold text-entreno-400">
+                  {allRecords ? 'Ver menos' : `Ver todos (${records.length})`}
+                </button>
+              )
+            }
+          >
+            Récords
+          </SectionTitle>
+          <ListGroup>
+            {(allRecords ? records : records.slice(0, 6)).map((r) => (
+              <ListRow
+                key={r.exerciseId}
+                icon={Trophy}
+                iconTone="entreno"
+                title={r.exerciseName}
+                subtitle={r.date ? formatDisplayDate(keyToDate(r.date)) : undefined}
+                value={r.label}
+                onClick={() => onOpenExercise(r.exerciseId)}
+              />
+            ))}
+          </ListGroup>
+        </section>
+      )}
+
+      <section>
+        <SectionTitle
+          action={
+            <button onClick={onLogPast} className="text-[13px] font-semibold text-entreno-400 flex items-center gap-1">
+              <Plus className="w-3.5 h-3.5" strokeWidth={2.5} /> Registrar pasado
+            </button>
+          }
+        >
+          Historial
+        </SectionTitle>
+        <ListGroup footer={sessions.length > shown ? undefined : plural(sessions.length, 'entreno en total', 'entrenos en total')}>
+          {sessions.slice(0, shown).map((s) => {
+            const sum = summarizeSession(s, exercisesById);
             return (
-              <div key={w.weekStart} className="flex-1 flex flex-col items-center gap-1 min-w-0">
-                <div className="w-full h-28 flex items-end">
-                  <div
-                    className={`w-full rounded-t-md transition-all duration-500 ${
-                      w.volume === 0 ? 'bg-ink-800' : isCurrent ? 'bg-entreno-400' : 'bg-entreno-600'
-                    }`}
-                    style={{ height: `${h}%` }}
-                    title={`${w.volume} kg`}
-                  />
-                </div>
-                <span className={`text-[9px] ${isCurrent ? 'text-entreno-300 font-semibold' : 'text-ink-600'}`}>
-                  {w.weekStart.slice(5).replace('-', '/')}
-                </span>
-              </div>
+              <ListRow
+                key={s.id}
+                icon={History}
+                iconTone="ink"
+                title={s.dayName || 'Entreno'}
+                subtitle={`${formatDisplayDate(keyToDate(s.date))} · ${plural(sum.effectiveSets, 'serie', 'series')} · ${formatVolume(sum.volume)}`}
+                chevron
+                onClick={() => onOpenSession(s)}
+              />
             );
           })}
-        </div>
-      </Card>
-
-      {/* ---- Series por grupo muscular -------------------------------------- */}
-      <Card
-        icon={Target}
-        title="Series efectivas por músculo"
-        hint={`Semana en curso. La línea marca las ${EFFECTIVE_SETS_TARGET} series semanales que se suelen tomar como referencia de crecimiento.`}
-      >
-        {muscleEntries.length === 0 ? (
-          <p className="text-sm text-ink-500">Todavía no registraste series efectivas esta semana.</p>
-        ) : (
-          <div className="space-y-3">
-            {muscleEntries.map(([muscle, count]) => {
-              const pct = Math.min(100, (count / EFFECTIVE_SETS_TARGET) * 100);
-              return (
-                <div key={muscle}>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-ink-300 font-medium">{muscle}</span>
-                    <span className={`font-mono ${count >= EFFECTIVE_SETS_TARGET ? 'text-brand-400' : 'text-ink-400'}`}>
-                      {count}
-                    </span>
-                  </div>
-                  {/* La marca del objetivo va sobre la pista, no como texto: se
-                      compara la barra con la línea de un vistazo. */}
-                  <div className="relative h-2 w-full rounded-full bg-ink-900 overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{ width: `${pct}%`, backgroundColor: MUSCLE_GROUP_COLORS[muscle] || theme.accent }}
-                    />
-                    <span className="absolute inset-y-0 right-0 w-px bg-ink-500" />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+        </ListGroup>
+        {sessions.length > shown && (
+          <Button variant="ghost" tone="entreno" block className="mt-2" onClick={() => setShown((n) => n + 20)}>
+            Ver más
+          </Button>
         )}
-      </Card>
-
-      {/* ---- Intensidad ------------------------------------------------------
-          Antes la barra era el RIR crudo, así que entrenar MÁS suave dibujaba
-          una barra MÁS alta. Ahora la altura es el esfuerzo (5 − RIR) y el
-          número debajo sigue siendo el RIR real. */}
-      <Card icon={Gauge} title="Intensidad por semana" hint="Barra más alta = entrenaste más cerca del fallo. Debajo, tu RIR promedio.">
-        <div className="flex items-end justify-between gap-1.5">
-          {rirTrend.map((w, i) => {
-            const effort = w.avgRir == null ? null : Math.max(0, Math.min(100, ((5 - w.avgRir) / 5) * 100));
-            const isCurrent = i === rirTrend.length - 1;
-            return (
-              <div key={w.weekStart} className="flex-1 flex flex-col items-center gap-1 min-w-0">
-                <div className="w-full h-14 flex items-end">
-                  <div
-                    className={`w-full rounded-t-md transition-all duration-500 ${
-                      effort == null ? 'bg-ink-800' : isCurrent ? 'bg-entreno-400' : 'bg-entreno-600'
-                    }`}
-                    style={{ height: effort == null ? '4%' : `${Math.max(6, effort)}%` }}
-                  />
-                </div>
-                <span className={`text-[10px] font-mono ${isCurrent ? 'text-entreno-300' : 'text-ink-500'}`}>
-                  {w.avgRir ?? '–'}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </Card>
-
-      {/* ---- Récords -------------------------------------------------------- */}
-      <div className="rounded-3xl surface-accent surface-accent-entreno p-5">
-        <div className="flex items-center gap-2 mb-1">
-          <Trophy className="w-4 h-4 text-entreno-400" />
-          <h2 className="label-section">Récords personales</h2>
-        </div>
-        <p className="text-[11px] text-ink-500 mb-3.5">1RM estimado con la fórmula de Epley sobre tu mejor serie.</p>
-        {prs.length === 0 ? (
-          <p className="text-sm text-ink-500">Completá series efectivas para ver tus estimaciones de 1RM.</p>
-        ) : (
-          <>
-            <ul className="space-y-2">
-              {visiblePRs.map((pr) => (
-                <li key={pr.exerciseId} className="flex items-center justify-between gap-3 rounded-xl surface px-3 py-2.5">
-                  <div className="min-w-0">
-                    <p className="text-sm text-ink-200 font-medium truncate">{pr.exerciseName}</p>
-                    <p className="text-xs text-ink-500 mt-0.5">
-                      {pr.weight}kg × {pr.reps} · {formatDate(pr.date)}
-                    </p>
-                  </div>
-                  <span className="font-mono text-lg font-black text-entreno-300 shrink-0">{pr.estOneRM}kg</span>
-                </li>
-              ))}
-            </ul>
-            {prs.length > 5 && (
-              <button
-                onClick={() => setShowAllPRs((v) => !v)}
-                className="w-full mt-3 py-2 text-xs font-semibold text-entreno-300 hover:bg-entreno-500/5 rounded-xl"
-              >
-                {showAllPRs ? 'Mostrar menos' : `Ver los ${prs.length} ejercicios`}
-              </button>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* ---- Historial ------------------------------------------------------ */}
-      <SessionHistory sessions={sessions} exercisesById={exercisesById} />
-
-      {/* ---- Exportar: es una utilidad, no una analítica. Va al pie y callado. */}
-      <div className="flex gap-2">
-        <button
-          onClick={exportWorkoutDataAsJSON}
-          className="flex-1 rounded-xl border border-ink-700 text-ink-400 py-2.5 text-xs font-semibold flex items-center justify-center gap-1.5 hover:text-ink-200 hover:border-ink-600"
-        >
-          <FileJson className="w-3.5 h-3.5" /> Exportar JSON
-        </button>
-        <button
-          onClick={exportWorkoutDataAsCSV}
-          className="flex-1 rounded-xl border border-ink-700 text-ink-400 py-2.5 text-xs font-semibold flex items-center justify-center gap-1.5 hover:text-ink-200 hover:border-ink-600"
-        >
-          <Download className="w-3.5 h-3.5" /> Exportar CSV
-        </button>
-      </div>
+      </section>
     </div>
   );
 }

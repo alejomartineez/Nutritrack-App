@@ -1,8 +1,4 @@
-// ---------------------------------------------------------------------------
-// DATOS BASE DEL MÓDULO DE ENTRENAMIENTO
-// ---------------------------------------------------------------------------
-
-import { sequential } from '../lib/theme';
+// Catálogo y constantes del módulo de entreno.
 
 export const MUSCLE_GROUPS = [
   'Pecho',
@@ -19,112 +15,140 @@ export const MUSCLE_GROUPS = [
   'Cardio / Full body',
 ];
 
-export const EQUIPMENT_TYPES = [
-  'Mancuernas',
-  'Barra',
-  'Máquina',
-  'Peso corporal',
-  'Bandas de resistencia',
-  'Cable/Polea',
-];
+export const EQUIPMENT_TYPES = ['Barra', 'Mancuernas', 'Máquina', 'Cable/Polea', 'Peso corporal', 'Bandas de resistencia'];
 
+/** Tipos que se pueden elegir. Los legados (myorep, superset) se siguen mostrando. */
 export const SET_TYPES = [
-  { id: 'warmup', label: 'Calentamiento', short: 'W', color: 'text-ink-400 bg-ink-700/60' },
-  { id: 'effective', label: 'Serie efectiva', short: 'E', color: 'text-entreno-300 bg-entreno-500/20' },
-  { id: 'dropset', label: 'Drop set', short: 'D', color: 'text-red-300 bg-red-500/20' },
-  { id: 'myorep', label: 'Myo-rep', short: 'M', color: 'text-sueno-300 bg-sueno-500/20' },
-  { id: 'superset', label: 'Superserie', short: 'S', color: 'text-ink-300 bg-ink-500/20' },
+  { id: 'effective', label: 'Serie efectiva', short: '' },
+  { id: 'warmup', label: 'Calentamiento', short: 'C' },
+  { id: 'dropset', label: 'Drop set', short: 'D' },
 ];
+const LEGACY_SET_TYPES = [
+  { id: 'myorep', label: 'Myo-rep', short: 'M' },
+  { id: 'superset', label: 'Superserie', short: 'S' },
+];
+export const setTypeInfo = (type) =>
+  SET_TYPES.find((t) => t.id === type) || LEGACY_SET_TYPES.find((t) => t.id === type) || SET_TYPES[0];
 
-export const ROUTINE_TEMPLATES = [
-  {
-    id: 'ppl',
-    name: 'Push / Pull / Legs',
-    days: ['Push', 'Pull', 'Legs', 'Push', 'Pull', 'Legs', 'Descanso'],
-  },
-  {
-    id: 'upper_lower',
-    name: 'Torso / Pierna',
-    days: ['Torso', 'Pierna', 'Descanso', 'Torso', 'Pierna', 'Descanso', 'Descanso'],
-  },
-  {
-    id: 'fullbody',
-    name: 'Full Body',
-    days: ['Full Body A', 'Descanso', 'Full Body B', 'Descanso', 'Full Body C', 'Descanso', 'Descanso'],
-  },
-  {
-    id: 'calistenia',
-    name: 'Calistenia / Peso corporal',
-    days: ['Empuje', 'Tracción', 'Piernas y core', 'Descanso', 'Full body', 'Descanso', 'Descanso'],
-  },
-  {
-    id: 'custom',
-    name: 'Personalizada (en blanco)',
-    days: ['Día 1', 'Día 2', 'Día 3', 'Día 4', 'Día 5', 'Día 6', 'Día 7'],
-  },
-];
+export const RIR_OPTIONS = ['', 0, 1, 2, 3, '4+'];
 
 export const WEEKDAY_LABELS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
-export const REST_PRESETS_SEC = [60, 90, 120, 180];
+export const DEFAULT_REST_SEC = 90;
+export const PLATES_KG = [25, 20, 15, 10, 5, 2.5, 1.25];
+export const BAR_OPTIONS_KG = [20, 15, 10, 0];
 
-// Catálogo inicial de ejercicios (se puede ampliar con ejercicios personalizados)
+/** Series efectivas por músculo y semana que se consideran el rango útil. */
+export const WEEKLY_SETS_TARGET = { min: 10, max: 20 };
+
+const ex = (id, name, muscleGroup, equipment, extra) => ({ id, name, muscleGroup, equipment, isCustom: false, ...extra });
+
 export const DEFAULT_EXERCISES = [
-  { id: 'ex_press_banca', name: 'Press de banca con barra', muscleGroup: 'Pecho', equipment: 'Barra', isCustom: false },
-  { id: 'ex_press_banca_mancuerna', name: 'Press de banca con mancuernas', muscleGroup: 'Pecho', equipment: 'Mancuernas', isCustom: false },
-  { id: 'ex_press_inclinado', name: 'Press inclinado con mancuernas', muscleGroup: 'Pecho', equipment: 'Mancuernas', isCustom: false },
-  { id: 'ex_aperturas', name: 'Aperturas con mancuernas', muscleGroup: 'Pecho', equipment: 'Mancuernas', isCustom: false },
-  { id: 'ex_flexiones', name: 'Flexiones de brazos', muscleGroup: 'Pecho', equipment: 'Peso corporal', isCustom: false },
-  { id: 'ex_dominadas', name: 'Dominadas', muscleGroup: 'Espalda', equipment: 'Peso corporal', isCustom: false },
-  { id: 'ex_remo_barra', name: 'Remo con barra', muscleGroup: 'Espalda', equipment: 'Barra', isCustom: false },
-  { id: 'ex_remo_mancuerna', name: 'Remo a un brazo con mancuerna', muscleGroup: 'Espalda', equipment: 'Mancuernas', isCustom: false },
-  { id: 'ex_jalon_pecho', name: 'Jalón al pecho', muscleGroup: 'Espalda', equipment: 'Cable/Polea', isCustom: false },
-  { id: 'ex_remo_polea', name: 'Remo en polea baja', muscleGroup: 'Espalda', equipment: 'Cable/Polea', isCustom: false },
-  { id: 'ex_press_militar', name: 'Press militar con barra', muscleGroup: 'Hombro', equipment: 'Barra', isCustom: false },
-  { id: 'ex_press_hombro_mancuerna', name: 'Press hombro con mancuernas', muscleGroup: 'Hombro', equipment: 'Mancuernas', isCustom: false },
-  { id: 'ex_elevaciones_laterales', name: 'Elevaciones laterales', muscleGroup: 'Hombro', equipment: 'Mancuernas', isCustom: false },
-  { id: 'ex_face_pull', name: 'Face pull', muscleGroup: 'Hombro', equipment: 'Cable/Polea', isCustom: false },
-  { id: 'ex_curl_biceps', name: 'Curl de bíceps con barra', muscleGroup: 'Bíceps', equipment: 'Barra', isCustom: false },
-  { id: 'ex_curl_mancuerna', name: 'Curl alternado con mancuernas', muscleGroup: 'Bíceps', equipment: 'Mancuernas', isCustom: false },
-  { id: 'ex_curl_martillo', name: 'Curl martillo', muscleGroup: 'Bíceps', equipment: 'Mancuernas', isCustom: false },
-  { id: 'ex_press_frances', name: 'Press francés', muscleGroup: 'Tríceps', equipment: 'Barra', isCustom: false },
-  { id: 'ex_extension_polea', name: 'Extensión de tríceps en polea', muscleGroup: 'Tríceps', equipment: 'Cable/Polea', isCustom: false },
-  { id: 'ex_fondos', name: 'Fondos en paralelas', muscleGroup: 'Tríceps', equipment: 'Peso corporal', isCustom: false },
-  { id: 'ex_sentadilla', name: 'Sentadilla con barra', muscleGroup: 'Cuádriceps', equipment: 'Barra', isCustom: false },
-  { id: 'ex_sentadilla_goblet', name: 'Sentadilla goblet', muscleGroup: 'Cuádriceps', equipment: 'Mancuernas', isCustom: false },
-  { id: 'ex_prensa', name: 'Prensa de piernas', muscleGroup: 'Cuádriceps', equipment: 'Máquina', isCustom: false },
-  { id: 'ex_zancadas', name: 'Zancadas', muscleGroup: 'Cuádriceps', equipment: 'Mancuernas', isCustom: false },
-  { id: 'ex_peso_muerto', name: 'Peso muerto', muscleGroup: 'Isquiotibiales', equipment: 'Barra', isCustom: false },
-  { id: 'ex_peso_muerto_rumano', name: 'Peso muerto rumano', muscleGroup: 'Isquiotibiales', equipment: 'Barra', isCustom: false },
-  { id: 'ex_curl_femoral', name: 'Curl femoral en máquina', muscleGroup: 'Isquiotibiales', equipment: 'Máquina', isCustom: false },
-  { id: 'ex_hip_thrust', name: 'Hip thrust', muscleGroup: 'Glúteos', equipment: 'Barra', isCustom: false },
-  { id: 'ex_puente_gluteo', name: 'Puente de glúteo', muscleGroup: 'Glúteos', equipment: 'Peso corporal', isCustom: false },
-  { id: 'ex_gemelos_pie', name: 'Elevación de talones de pie', muscleGroup: 'Pantorrillas', equipment: 'Máquina', isCustom: false },
-  { id: 'ex_plancha', name: 'Plancha abdominal', muscleGroup: 'Core', equipment: 'Peso corporal', isCustom: false },
-  { id: 'ex_crunch', name: 'Crunch abdominal', muscleGroup: 'Core', equipment: 'Peso corporal', isCustom: false },
-  { id: 'ex_rueda_abdominal', name: 'Rueda abdominal (ab wheel)', muscleGroup: 'Core', equipment: 'Peso corporal', isCustom: false },
+  ex('ex_press_banca', 'Press de banca con barra', 'Pecho', 'Barra'),
+  ex('ex_press_banca_mancuerna', 'Press de banca con mancuernas', 'Pecho', 'Mancuernas'),
+  ex('ex_press_inclinado', 'Press inclinado con mancuernas', 'Pecho', 'Mancuernas'),
+  ex('ex_press_inclinado_barra', 'Press inclinado con barra', 'Pecho', 'Barra'),
+  ex('ex_press_pecho_maquina', 'Press de pecho en máquina', 'Pecho', 'Máquina'),
+  ex('ex_aperturas', 'Aperturas con mancuernas', 'Pecho', 'Mancuernas'),
+  ex('ex_pec_deck', 'Contractora (pec deck)', 'Pecho', 'Máquina'),
+  ex('ex_cruce_poleas', 'Cruce de poleas', 'Pecho', 'Cable/Polea'),
+  ex('ex_flexiones', 'Flexiones de brazos', 'Pecho', 'Peso corporal'),
+  ex('ex_dominadas', 'Dominadas', 'Espalda', 'Peso corporal'),
+  ex('ex_remo_invertido', 'Remo invertido (australianas)', 'Espalda', 'Peso corporal'),
+  ex('ex_remo_barra', 'Remo con barra', 'Espalda', 'Barra'),
+  ex('ex_remo_t', 'Remo en T', 'Espalda', 'Barra'),
+  ex('ex_remo_mancuerna', 'Remo a un brazo con mancuerna', 'Espalda', 'Mancuernas'),
+  ex('ex_jalon_pecho', 'Jalón al pecho', 'Espalda', 'Cable/Polea'),
+  ex('ex_remo_polea', 'Remo en polea baja', 'Espalda', 'Cable/Polea'),
+  ex('ex_remo_maquina', 'Remo en máquina', 'Espalda', 'Máquina'),
+  ex('ex_encogimientos', 'Encogimientos con mancuernas', 'Espalda', 'Mancuernas'),
+  ex('ex_press_militar', 'Press militar con barra', 'Hombro', 'Barra'),
+  ex('ex_press_hombro_mancuerna', 'Press hombro con mancuernas', 'Hombro', 'Mancuernas'),
+  ex('ex_press_hombro_maquina', 'Press de hombro en máquina', 'Hombro', 'Máquina'),
+  ex('ex_elevaciones_laterales', 'Elevaciones laterales', 'Hombro', 'Mancuernas'),
+  ex('ex_elevaciones_frontales', 'Elevaciones frontales', 'Hombro', 'Mancuernas'),
+  ex('ex_pajaros', 'Pájaros (vuelos posteriores)', 'Hombro', 'Mancuernas'),
+  ex('ex_face_pull', 'Face pull', 'Hombro', 'Cable/Polea'),
+  ex('ex_curl_biceps', 'Curl de bíceps con barra', 'Bíceps', 'Barra'),
+  ex('ex_curl_mancuerna', 'Curl alternado con mancuernas', 'Bíceps', 'Mancuernas'),
+  ex('ex_curl_martillo', 'Curl martillo', 'Bíceps', 'Mancuernas'),
+  ex('ex_curl_scott', 'Curl en banco Scott', 'Bíceps', 'Barra'),
+  ex('ex_curl_polea', 'Curl de bíceps en polea', 'Bíceps', 'Cable/Polea'),
+  ex('ex_press_frances', 'Press francés', 'Tríceps', 'Barra'),
+  ex('ex_extension_polea', 'Extensión de tríceps en polea', 'Tríceps', 'Cable/Polea'),
+  ex('ex_extension_nuca', 'Extensión de tríceps sobre la cabeza', 'Tríceps', 'Mancuernas'),
+  ex('ex_fondos', 'Fondos en paralelas', 'Tríceps', 'Peso corporal'),
+  ex('ex_sentadilla', 'Sentadilla con barra', 'Cuádriceps', 'Barra'),
+  ex('ex_sentadilla_goblet', 'Sentadilla goblet', 'Cuádriceps', 'Mancuernas'),
+  ex('ex_sentadilla_hack', 'Sentadilla hack', 'Cuádriceps', 'Máquina'),
+  ex('ex_sentadilla_bulgara', 'Sentadilla búlgara', 'Cuádriceps', 'Mancuernas'),
+  ex('ex_prensa', 'Prensa de piernas', 'Cuádriceps', 'Máquina'),
+  ex('ex_extension_cuadriceps', 'Extensión de cuádriceps (sillón)', 'Cuádriceps', 'Máquina'),
+  ex('ex_zancadas', 'Zancadas', 'Cuádriceps', 'Mancuernas'),
+  ex('ex_peso_muerto', 'Peso muerto', 'Isquiotibiales', 'Barra'),
+  ex('ex_peso_muerto_rumano', 'Peso muerto rumano', 'Isquiotibiales', 'Barra'),
+  ex('ex_curl_femoral', 'Curl femoral en máquina', 'Isquiotibiales', 'Máquina'),
+  ex('ex_hip_thrust', 'Hip thrust', 'Glúteos', 'Barra'),
+  ex('ex_puente_gluteo', 'Puente de glúteo', 'Glúteos', 'Peso corporal'),
+  ex('ex_abduccion', 'Abducción de cadera en máquina', 'Glúteos', 'Máquina'),
+  ex('ex_patada_gluteo', 'Patada de glúteo en polea', 'Glúteos', 'Cable/Polea'),
+  ex('ex_gemelos_pie', 'Elevación de talones de pie', 'Pantorrillas', 'Máquina'),
+  ex('ex_gemelos_sentado', 'Elevación de talones sentado', 'Pantorrillas', 'Máquina'),
+  ex('ex_plancha', 'Plancha abdominal', 'Core', 'Peso corporal', { metric: 'time' }),
+  ex('ex_crunch', 'Crunch abdominal', 'Core', 'Peso corporal'),
+  ex('ex_elevacion_piernas', 'Elevación de piernas colgado', 'Core', 'Peso corporal'),
+  ex('ex_rueda_abdominal', 'Rueda abdominal (ab wheel)', 'Core', 'Peso corporal'),
 ];
 
-// Rampa de un solo tono en vez de 12 naranjas distintos. En un ranking de
-// volumen por grupo el color no codifica categoría (ya está la etiqueta al
-// lado): codifica magnitud, así que una escala ordenada se lee de un vistazo
-// y no compite con el acento del resto de la app.
-export const MUSCLE_GROUP_COLORS = Object.fromEntries(
-  [
-    'Pecho',
-    'Espalda',
-    'Cuádriceps',
-    'Glúteos',
-    'Hombro',
-    'Isquiotibiales',
-    'Bíceps',
-    'Tríceps',
-    'Core',
-    'Pantorrillas',
-    'Antebrazo',
-    'Cardio / Full body',
-  ].map((group, i) => [group, sequential[i % sequential.length]]),
-);
+export const isBodyweight = (exercise) => exercise?.equipment === 'Peso corporal';
+export const isTimed = (exercise) => exercise?.metric === 'time';
+
+/** Minúsculas y sin tildes, para buscar "jalon" y encontrar "Jalón". */
+export const normalizeText = (s) =>
+  String(s || '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .trim();
+
+// Plantillas. Cada día: [nombre, [[exerciseId, series, repsMin, repsMax], ...]] o null = descanso.
+const FB_A = [['ex_sentadilla', 3, 6, 8], ['ex_press_banca', 3, 6, 8], ['ex_remo_barra', 3, 8, 10], ['ex_press_hombro_mancuerna', 2, 10, 12], ['ex_curl_femoral', 2, 10, 12], ['ex_plancha', 3, 30, 45]];
+const FB_B = [['ex_peso_muerto_rumano', 3, 8, 10], ['ex_press_inclinado', 3, 8, 12], ['ex_jalon_pecho', 3, 8, 12], ['ex_zancadas', 2, 10, 12], ['ex_elevaciones_laterales', 3, 12, 15], ['ex_crunch', 2, 12, 15]];
+const FB_C = [['ex_prensa', 3, 10, 12], ['ex_press_militar', 3, 6, 8], ['ex_remo_polea', 3, 10, 12], ['ex_hip_thrust', 3, 8, 12], ['ex_curl_mancuerna', 2, 10, 12], ['ex_extension_polea', 2, 10, 12]];
+const UPPER_A = [['ex_press_banca', 4, 6, 8], ['ex_remo_barra', 4, 6, 8], ['ex_press_hombro_mancuerna', 3, 8, 10], ['ex_jalon_pecho', 3, 8, 12], ['ex_curl_biceps', 2, 10, 12], ['ex_extension_polea', 2, 10, 12]];
+const LOWER_A = [['ex_sentadilla', 4, 6, 8], ['ex_peso_muerto_rumano', 3, 8, 10], ['ex_prensa', 3, 10, 12], ['ex_curl_femoral', 3, 10, 12], ['ex_gemelos_pie', 3, 12, 15]];
+const UPPER_B = [['ex_press_inclinado', 4, 8, 10], ['ex_dominadas', 4, 6, 10], ['ex_remo_mancuerna', 3, 10, 12], ['ex_elevaciones_laterales', 3, 12, 15], ['ex_curl_martillo', 2, 10, 12], ['ex_press_frances', 2, 10, 12]];
+const LOWER_B = [['ex_peso_muerto', 3, 4, 6], ['ex_sentadilla_bulgara', 3, 8, 10], ['ex_hip_thrust', 3, 8, 12], ['ex_extension_cuadriceps', 3, 12, 15], ['ex_gemelos_sentado', 3, 12, 15], ['ex_elevacion_piernas', 3, 10, 15]];
+const PUSH = [['ex_press_banca', 4, 6, 8], ['ex_press_hombro_mancuerna', 3, 8, 10], ['ex_press_inclinado', 3, 8, 12], ['ex_elevaciones_laterales', 3, 12, 15], ['ex_extension_polea', 3, 10, 12], ['ex_fondos', 2, 8, 12]];
+const PULL = [['ex_dominadas', 3, 6, 10], ['ex_remo_barra', 3, 8, 10], ['ex_remo_polea', 3, 10, 12], ['ex_face_pull', 3, 12, 15], ['ex_curl_biceps', 3, 8, 12], ['ex_curl_martillo', 2, 10, 12]];
+const LEGS = [['ex_sentadilla', 4, 6, 8], ['ex_peso_muerto_rumano', 3, 8, 10], ['ex_prensa', 3, 10, 12], ['ex_curl_femoral', 3, 10, 12], ['ex_gemelos_pie', 4, 12, 15], ['ex_plancha', 3, 30, 60]];
+
+export const ROUTINE_TEMPLATES = [
+  {
+    id: 'fullbody3',
+    name: 'Full body 3 días',
+    description: 'Todo el cuerpo lunes, miércoles y viernes. Ideal para empezar.',
+    days: [['Full body A', FB_A], null, ['Full body B', FB_B], null, ['Full body C', FB_C], null, null],
+  },
+  {
+    id: 'upper_lower4',
+    name: 'Torso / Pierna 4 días',
+    description: 'Dos de torso y dos de pierna. Buen equilibrio entre volumen y descanso.',
+    days: [['Torso A', UPPER_A], ['Pierna A', LOWER_A], null, ['Torso B', UPPER_B], ['Pierna B', LOWER_B], null, null],
+  },
+  {
+    id: 'ppl6',
+    name: 'Push / Pull / Legs',
+    description: 'Empuje, tracción y piernas, dos veces por semana. Para quien ya entrena.',
+    days: [['Push', PUSH], ['Pull', PULL], ['Legs', LEGS], ['Push', PUSH], ['Pull', PULL], ['Legs', LEGS], null],
+  },
+  {
+    id: 'blank',
+    name: 'En blanco',
+    description: 'Tres días vacíos para armar a tu manera.',
+    days: [['Día 1', []], null, ['Día 2', []], null, ['Día 3', []], null, null],
+  },
+];
 
 export const epley1RM = (weight, reps) => {
   const w = Number(weight) || 0;

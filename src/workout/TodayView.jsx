@@ -1,263 +1,227 @@
-import React from 'react';
-import { Dumbbell, Play, Moon, Check, Settings2, ChevronRight, Flame, CalendarDays } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Play, Check, Moon, Dumbbell, Zap, CalendarDays, ChevronRight } from 'lucide-react';
+import { Button, Card, Sheet, ListGroup, ListRow, Stat, SectionTitle } from '../ui';
+import { formatLongDate, formatDisplayDate, keyToDate, WEEKDAY_INITIALS } from '../lib/dates';
+import { summarizeSession } from './workoutStats';
+import { countWorkSets } from './workoutStorage';
+import { formatVolume, formatMinutes, plural } from './format';
 
-// ---------------------------------------------------------------------------
-// Entreno · Hoy
-//
-// La acción principal del módulo es "empezar el entreno de hoy", y antes vivía
-// escondida en el botón de play de una de siete tarjetas idénticas. Acá es lo
-// primero y lo más grande de la pantalla; la semana y las analíticas pasan a
-// ser consulta.
-// ---------------------------------------------------------------------------
-
-const formatVolume = (kg) => (kg >= 1000 ? `${(kg / 1000).toFixed(1)}t` : `${kg}kg`);
-
-const formatDate = (dateKey) => {
-  const d = new Date(`${dateKey}T00:00:00`);
-  const text = d.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' });
-  return text.charAt(0).toUpperCase() + text.slice(1);
-};
-
-/** Tira de 7 puntos con lo que tocaba y lo que se hizo esta semana. */
-function WeekStrip({ weekPlan, onSelectDay }) {
-  const plannedDays = weekPlan.filter((d) => !d.isRest && d.dayName);
-  const doneDays = weekPlan.filter((d) => d.trained);
-
+function WeekStrip({ plan }) {
+  const planned = plan.filter((d) => !d.isRest).length;
+  const trained = plan.filter((d) => d.trained).length;
   return (
-    <div className="rounded-2xl surface p-4">
-      <div className="flex items-baseline justify-between mb-3">
-        <h2 className="label-section">Tu semana</h2>
-        <p className="text-xs text-ink-400">
-          <span className="font-mono font-bold text-ink-100">{doneDays.length}</span>
-          {plannedDays.length > 0 && <span> de {plannedDays.length} entrenos</span>}
-        </p>
-      </div>
-
-      <div className="flex justify-between gap-1">
-        {weekPlan.map((d) => {
-          // Cuatro estados y un color cada uno: hecho, hoy pendiente, salteado,
-          // por venir. El descanso es un guion, no un punto vacío: un punto
-          // vacío se lee como "fallaste" y descansar no es fallar.
-          const state = d.trained ? 'done' : d.isRest || !d.dayName ? 'rest' : d.isToday ? 'today' : d.isPast ? 'missed' : 'upcoming';
-
-          const dot = {
-            done: 'bg-entreno-500 border-entreno-500',
-            today: 'border-entreno-400 border-dashed animate-none',
-            missed: 'border-ink-700 bg-ink-900',
-            upcoming: 'border-ink-700',
-            rest: 'border-transparent',
-          }[state];
-
+    <section>
+      <SectionTitle
+        action={
+          <span className="text-[13px] text-ink-500 num">
+            {trained}
+            {planned > 0 ? ` de ${planned}` : ''} {trained === 1 && !planned ? 'entreno' : 'entrenos'}
+          </span>
+        }
+      >
+        Esta semana
+      </SectionTitle>
+      <Card className="flex justify-between px-3">
+        {plan.map((d) => {
+          const state = d.trained ? 'done' : d.isToday ? 'today' : d.isRest ? 'rest' : d.isPast ? 'missed' : 'next';
           return (
-            <button
-              key={d.key}
-              onClick={onSelectDay ? () => onSelectDay(d) : undefined}
-              disabled={!onSelectDay}
-              aria-label={`${d.weekday}: ${d.trained ? 'entrenado' : d.isRest ? 'descanso' : d.dayName || 'sin rutina'}`}
-              className="flex-1 flex flex-col items-center gap-1.5 py-1 rounded-lg disabled:cursor-default"
-            >
-              <span className={`text-[10px] font-semibold uppercase ${d.isToday ? 'text-entreno-300' : 'text-ink-500'}`}>
-                {d.short}
+            <div key={d.key} className="flex flex-col items-center gap-2 w-9" aria-label={`${d.weekday}: ${d.trained ? 'entrenado' : d.isRest ? 'descanso' : d.day?.name || ''}`}>
+              <span className={`text-[11px] font-semibold ${d.isToday ? 'text-entreno-400' : 'text-ink-500'}`}>{WEEKDAY_INITIALS[d.index]}</span>
+              <span
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  {
+                    done: 'bg-entreno-500 text-onaccent',
+                    today: 'ring-2 ring-entreno-500 ring-inset',
+                    rest: '',
+                    missed: 'bg-ink-700/50',
+                    next: 'ring-1 ring-ink-600 ring-inset',
+                  }[state]
+                }`}
+              >
+                {state === 'done' && <Check className="w-4 h-4" strokeWidth={3} />}
+                {state === 'rest' && <span className="w-2.5 h-[3px] rounded-full bg-ink-600" />}
               </span>
-              <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${dot}`}>
-                {state === 'done' && <Check className="w-3.5 h-3.5 text-onaccent" strokeWidth={3} />}
-                {state === 'rest' && <span className="w-2.5 h-0.5 rounded-full bg-ink-600" />}
-              </span>
-            </button>
+            </div>
           );
         })}
-      </div>
-    </div>
+      </Card>
+    </section>
   );
 }
 
-/** Resumen compacto de una sesión ya terminada. */
-function SessionSummaryRow({ session, summary }) {
+function DayChooser({ routine, onPick, onClose }) {
+  const days = routine.days.filter((d) => !d.isRest && d.exercises?.length);
   return (
-    <div className="flex items-center gap-3 text-xs text-ink-400">
-      <span className="font-mono font-bold text-ink-200">{summary.effectiveSets}</span> series
-      <span className="w-px h-3 bg-ink-700" />
-      <span className="font-mono font-bold text-ink-200">{formatVolume(summary.volume)}</span> volumen
-      {summary.durationMin != null && (
-        <>
-          <span className="w-px h-3 bg-ink-700" />
-          <span className="font-mono font-bold text-ink-200">{summary.durationMin}</span> min
-        </>
-      )}
-    </div>
+    <Sheet onClose={onClose} title="¿Qué entrenás?">
+      <ListGroup>
+        {days.map((d) => (
+          <ListRow key={d.id} title={d.name} subtitle={`${d.weekday} · ${plural(d.exercises.length, 'ejercicio', 'ejercicios')}`} chevron onClick={() => onPick(d)} />
+        ))}
+      </ListGroup>
+      {days.length === 0 && <p className="text-sm text-ink-500 px-1">Tu rutina no tiene días con ejercicios todavía.</p>}
+    </Sheet>
   );
 }
 
-export default function TodayView({
-  activeRoutine,
-  todayDay,
-  todaySessions,
-  lastSession,
-  lastSessionSummary,
-  weekPlan,
-  summarize,
-  onStartSession,
-  onEditDay,
-  onCreateRoutine,
-  onGoToWeek,
-}) {
-  const todayLabel = new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+export default function TodayView({ routine, todayDay, todaySessions, activeSession, weekPlan, lastSession, exercisesById, onStart, onStartFree, onResume, onGoRoutine, onEditDay, onOpenSession }) {
+  const [chooser, setChooser] = useState(false);
+  const todaySummary = useMemo(() => {
+    if (!todaySessions.length) return null;
+    const parts = todaySessions.map((s) => summarizeSession(s, exercisesById));
+    return {
+      sets: parts.reduce((a, p) => a + p.effectiveSets, 0),
+      volume: parts.reduce((a, p) => a + p.volume, 0),
+      minutes: parts.reduce((a, p) => a + (p.durationMin || 0), 0),
+    };
+  }, [todaySessions, exercisesById]);
+  const today = formatLongDate(new Date());
 
-  // ---- Sin rutina: una sola cosa que hacer -------------------------------
-  if (!activeRoutine) {
-    return (
-      <div className="rounded-3xl surface-accent surface-accent-entreno p-6 text-center">
-        <Dumbbell className="w-10 h-10 text-entreno-400 mx-auto mb-3" />
-        <h2 className="text-lg font-bold text-ink-100 mb-1">Empezá por tu rutina</h2>
-        <p className="text-sm text-ink-400 mb-4">
-          Elegí una distribución semanal —Push/Pull/Legs, Torso/Pierna, Full Body o Calistenia— y armá tus días. Después
-          entrenás con un toque desde acá.
+  const secondary = (
+    <div className="grid grid-cols-2 gap-2 mt-3">
+      <Button variant="soft" tone="ink" icon={Zap} onClick={onStartFree}>
+        Entreno libre
+      </Button>
+      <Button variant="soft" tone="ink" icon={CalendarDays} onClick={routine ? () => setChooser(true) : onGoRoutine}>
+        {routine ? 'Otro día' : 'Rutinas'}
+      </Button>
+    </div>
+  );
+
+  let hero;
+  if (activeSession) {
+    const done = countWorkSets(activeSession);
+    const mins = Math.max(0, Math.round((Date.now() - activeSession.startedAt) / 60000));
+    hero = (
+      <Card className="surface-accent surface-accent-entreno p-5">
+        <p className="text-[13px] font-semibold uppercase tracking-wide text-entreno-400">En curso</p>
+        <h2 className="text-2xl font-bold text-ink-50 mt-1 truncate">{activeSession.dayName}</h2>
+        <p className="text-sm text-ink-400 mt-0.5 num">
+          {formatMinutes(mins)} · {plural(done, 'serie', 'series')}
         </p>
-        {/* Abre el diálogo de alta directamente. Mandarlo a "Semana" lo dejaba
-            frente a otra card vacía con el mismo botón. */}
-        <button
-          onClick={onCreateRoutine}
-          className="rounded-xl bg-entreno-500 text-onaccent px-5 py-3 text-sm font-bold hover:bg-entreno-400"
-        >
-          Crear rutina
-        </button>
-      </div>
+        <Button block size="lg" tone="entreno" icon={Play} className="mt-5" onClick={onResume}>
+          Continuar entreno
+        </Button>
+      </Card>
+    );
+  } else if (todaySummary) {
+    hero = (
+      <>
+        <Card className="p-5">
+          <div className="flex items-center gap-3">
+            <span className="w-11 h-11 rounded-full bg-entreno-500 text-onaccent flex items-center justify-center shrink-0">
+              <Check className="w-6 h-6" strokeWidth={3} />
+            </span>
+            <div className="min-w-0">
+              <h2 className="text-xl font-bold text-ink-50">Entrenaste hoy</h2>
+              <p className="text-sm text-ink-500 truncate">{todaySessions.map((s) => s.dayName).join(' + ')}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3 mt-5 pt-4 border-t hairline">
+            <Stat label="Series" value={todaySummary.sets} />
+            <Stat label="Volumen" value={formatVolume(todaySummary.volume)} />
+            <Stat label="Duración" value={todaySummary.minutes} unit="min" />
+          </div>
+        </Card>
+        {secondary}
+      </>
+    );
+  } else if (!routine) {
+    hero = (
+      <Card className="surface-accent surface-accent-entreno p-6 text-center">
+        <span className="inline-flex w-14 h-14 rounded-2xl bg-entreno-500/15 text-entreno-400 items-center justify-center">
+          <Dumbbell className="w-7 h-7" />
+        </span>
+        <h2 className="text-xl font-bold text-ink-50 mt-4">Empezá a entrenar</h2>
+        <p className="text-sm text-ink-400 mt-1 leading-snug">Elegí una rutina lista (se arma en dos toques) o arrancá un entreno libre ahora.</p>
+        <Button block size="lg" tone="entreno" className="mt-5" onClick={onGoRoutine}>
+          Elegir una rutina
+        </Button>
+        <Button block variant="ghost" tone="entreno" icon={Zap} className="mt-1" onClick={onStartFree}>
+          Entreno libre
+        </Button>
+      </Card>
+    );
+  } else if (!todayDay || todayDay.isRest) {
+    hero = (
+      <>
+        <Card className="p-5">
+          <span className="inline-flex w-11 h-11 rounded-full bg-ink-700/70 text-ink-300 items-center justify-center">
+            <Moon className="w-5 h-5" />
+          </span>
+          <h2 className="text-xl font-bold text-ink-50 mt-3">Hoy toca descanso</h2>
+          <p className="text-sm text-ink-400 mt-1 leading-snug">El músculo crece entre sesiones. Si igual tenés ganas, elegí un día o hacé un entreno libre.</p>
+        </Card>
+        {secondary}
+      </>
+    );
+  } else {
+    const list = todayDay.exercises || [];
+    hero = (
+      <>
+        <Card className="surface-accent surface-accent-entreno p-5">
+          <p className="text-[13px] font-semibold uppercase tracking-wide text-entreno-400">Hoy te toca</p>
+          <h2 className="text-[28px] leading-tight font-bold text-ink-50 mt-1">{todayDay.name}</h2>
+          {list.length > 0 ? (
+            <>
+              <ul className="mt-4 space-y-2">
+                {list.slice(0, 5).map((rex) => (
+                  <li key={rex.id} className="flex items-baseline justify-between gap-3 text-[15px]">
+                    <span className="text-ink-200 truncate">{exercisesById[rex.exerciseId]?.name || 'Ejercicio'}</span>
+                    <span className="text-ink-500 num text-sm shrink-0">
+                      {rex.targetSets} × {rex.targetRepsMin}–{rex.targetRepsMax}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {list.length > 5 && <p className="text-sm text-ink-500 mt-2">y {plural(list.length - 5, 'ejercicio más', 'ejercicios más')}</p>}
+              <Button block size="lg" tone="entreno" icon={Play} className="mt-5" onClick={() => onStart(todayDay)}>
+                Empezar
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-ink-400 mt-1">Este día todavía no tiene ejercicios.</p>
+              <Button block size="lg" tone="entreno" className="mt-5" onClick={() => onEditDay(todayDay)}>
+                Armar el día
+              </Button>
+            </>
+          )}
+        </Card>
+        {secondary}
+      </>
     );
   }
 
-  const trainedToday = todaySessions.length > 0;
-  const isRest = todayDay?.isRest ?? true;
-  const exerciseCount = todayDay?.exercises?.length || 0;
-
   return (
-    <div className="space-y-4">
-      {/* ---- Hero: qué pasa hoy ------------------------------------------ */}
-      <div className="rounded-3xl surface-accent surface-accent-entreno p-5">
-        <p className="label-section text-entreno-400">{todayLabel}</p>
-
-        {trainedToday ? (
-          <>
-            <div className="flex items-center gap-2.5 mt-2">
-              <span className="w-9 h-9 rounded-full bg-entreno-500 flex items-center justify-center shrink-0">
-                <Check className="w-5 h-5 text-onaccent" strokeWidth={3} />
-              </span>
-              <div className="min-w-0">
-                <h2 className="text-xl font-bold text-ink-100 truncate">Entrenaste hoy</h2>
-                <p className="text-xs text-ink-400 truncate">{todaySessions.map((s) => s.dayName).join(' · ')}</p>
-              </div>
-            </div>
-            <div className="mt-3.5 pt-3.5 border-t border-entreno-900">
-              <SessionSummaryRow session={todaySessions[0]} summary={summarize(todaySessions[0])} />
-            </div>
-            {!isRest && exerciseCount > 0 && (
-              <button
-                onClick={() => onStartSession(todayDay)}
-                className="mt-4 w-full rounded-xl border border-entreno-500/40 text-entreno-300 py-2.5 text-xs font-semibold hover:bg-entreno-500/10"
-              >
-                Registrar otro entreno
-              </button>
-            )}
-          </>
-        ) : isRest ? (
-          <>
-            <div className="flex items-center gap-2.5 mt-2">
-              <span className="w-9 h-9 rounded-full bg-ink-700 flex items-center justify-center shrink-0">
-                <Moon className="w-5 h-5 text-ink-300" />
-              </span>
-              <div className="min-w-0">
-                <h2 className="text-xl font-bold text-ink-100">Hoy descansás</h2>
-                <p className="text-xs text-ink-400 truncate">Tu rutina «{activeRoutine.name}» no programa entreno</p>
-              </div>
-            </div>
-            <p className="text-sm text-ink-400 mt-3.5 leading-relaxed">
-              El descanso es parte del plan: el músculo crece entre sesiones, no durante.
-            </p>
-            <button
-              onClick={onGoToWeek}
-              className="mt-4 w-full rounded-xl border border-entreno-500/40 text-entreno-300 py-2.5 text-xs font-semibold hover:bg-entreno-500/10 flex items-center justify-center gap-1.5"
-            >
-              <CalendarDays className="w-3.5 h-3.5" /> Entrenar otro día igual
-            </button>
-          </>
-        ) : (
-          <>
-            <h2 className="text-2xl font-bold text-ink-100 mt-1.5">{todayDay.name}</h2>
-            <p className="text-sm text-ink-400 mt-0.5">
-              {exerciseCount === 0
-                ? 'Este día todavía no tiene ejercicios'
-                : `${exerciseCount} ejercicio${exerciseCount === 1 ? '' : 's'} programado${exerciseCount === 1 ? '' : 's'}`}
-            </p>
-
-            {exerciseCount === 0 ? (
-              <button
-                onClick={() => onEditDay(todayDay)}
-                className="mt-4 w-full rounded-2xl bg-entreno-500 text-onaccent py-3.5 text-sm font-bold hover:bg-entreno-400 flex items-center justify-center gap-2"
-              >
-                <Settings2 className="w-4 h-4" /> Armar este día
-              </button>
-            ) : (
-              <div className="mt-4 flex items-center gap-2">
-                <button
-                  onClick={() => onStartSession(todayDay)}
-                  className="flex-1 rounded-2xl bg-entreno-500 text-onaccent py-3.5 text-sm font-bold hover:bg-entreno-400 flex items-center justify-center gap-2"
-                >
-                  <Play className="w-4 h-4" fill="currentColor" /> Empezar entreno
-                </button>
-                <button
-                  onClick={() => onEditDay(todayDay)}
-                  aria-label="Editar los ejercicios de hoy"
-                  className="btn-icon border border-entreno-500/30 text-entreno-300 hover:bg-entreno-500/10 shrink-0"
-                >
-                  <Settings2 className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-          </>
-        )}
+    <div className="space-y-7 pt-1">
+      <div>
+        <p className="text-sm text-ink-500 px-1 mb-2 first-letter:uppercase">{today}</p>
+        {hero}
       </div>
 
-      {/* ---- Semana en curso --------------------------------------------- */}
-      <WeekStrip weekPlan={weekPlan} onSelectDay={onGoToWeek ? () => onGoToWeek() : undefined} />
+      <WeekStrip plan={weekPlan} />
 
-      {/* ---- Último entreno (solo si no fue hoy, para no repetir el hero) - */}
-      {!trainedToday && lastSession && (
-        <div className="rounded-2xl surface p-4">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <h2 className="label-section">Último entreno</h2>
-            <span className="text-xs text-ink-500">{formatDate(lastSession.date)}</span>
-          </div>
-          <p className="text-sm font-bold text-ink-100">{lastSession.dayName}</p>
-          <div className="mt-2">
-            <SessionSummaryRow session={lastSession} summary={lastSessionSummary} />
-          </div>
-          {lastSessionSummary.muscleGroups.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-3">
-              {lastSessionSummary.muscleGroups.map((g) => (
-                <span key={g} className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-entreno-500/15 text-entreno-300">
-                  {g}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
+      {lastSession && !todaySessions.some((s) => s.id === lastSession.id) && (
+        <ListGroup title="Último entreno">
+          <ListRow
+            title={lastSession.dayName || 'Entreno'}
+            subtitle={`${formatDisplayDate(keyToDate(lastSession.date))} · ${plural(summarizeSession(lastSession).effectiveSets, 'serie', 'series')} · ${formatVolume(summarizeSession(lastSession).volume)}`}
+            right={<ChevronRight className="w-4 h-4 text-ink-600 shrink-0" />}
+            onClick={() => onOpenSession(lastSession)}
+          />
+        </ListGroup>
       )}
 
-      {/* ---- Atajo a la rutina ------------------------------------------- */}
-      <button
-        onClick={onGoToWeek}
-        className="w-full rounded-2xl surface p-3.5 flex items-center justify-between gap-3 hover:border-entreno-500/40 transition-colors"
-      >
-        <div className="flex items-center gap-2.5 min-w-0">
-          <span className="w-9 h-9 rounded-xl bg-entreno-500/15 flex items-center justify-center shrink-0">
-            <Flame className="w-4 h-4 text-entreno-400" />
-          </span>
-          <div className="min-w-0 text-left">
-            <p className="label-section">Rutina activa</p>
-            <p className="text-sm font-bold text-ink-100 truncate">{activeRoutine.name}</p>
-          </div>
-        </div>
-        <ChevronRight className="w-4 h-4 text-ink-500 shrink-0" />
-      </button>
+      {chooser && routine && (
+        <DayChooser
+          routine={routine}
+          onClose={() => setChooser(false)}
+          onPick={(d) => {
+            setChooser(false);
+            onStart(d);
+          }}
+        />
+      )}
     </div>
   );
 }

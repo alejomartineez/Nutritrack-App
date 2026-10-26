@@ -1,91 +1,87 @@
 import React from 'react';
-import { X, Delete, Check } from 'lucide-react';
-import Sheet from '../lib/Sheet';
+import { X, Delete, ArrowRight, Check, Disc3 } from 'lucide-react';
+import { haptic } from '../lib/haptics';
+import { fmtNum } from './format';
 
-/**
- * Teclado numérico propio en hoja inferior (bottom sheet), pensado para usar
- * a una sola mano durante el entrenamiento. Reemplaza al teclado nativo del
- * sistema para que nunca tape el resto de la pantalla (rutina, cronómetro, etc).
- */
-export default function NumberPad({ label, value, onChange, onClose, quickSteps = [], allowDecimal = true }) {
-  const push = (digit) => {
-    if (digit === '.' && (!allowDecimal || value.includes('.'))) return;
-    if (value === '0' && digit !== '.') onChange(digit);
-    else onChange(value + digit);
-  };
+// Teclado propio acoplado abajo de la pantalla de entreno: la fila que se edita
+// queda a la vista (el teclado del sistema la tapa y no tiene ±2,5).
 
-  const backspace = () => onChange(value.slice(0, -1));
-
-  const step = (amount) => {
-    const current = parseFloat(value || '0') || 0;
-    const next = Math.max(0, current + amount);
-    onChange(String(Number.isInteger(next) ? next : Math.round(next * 100) / 100));
-  };
-
-  const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'back'];
+export default function NumberPad({ label, decimal, step, reference, nextLabel, nextIcon = 'next', onKey, onStep, onNext, onCancel, onPlates }) {
+  const key = (k, content, aria) => (
+    <button
+      key={k}
+      type="button"
+      aria-label={aria || k}
+      onClick={() => onKey(k)}
+      disabled={k === ',' && !decimal}
+      className="h-[52px] rounded-xl bg-ink-700/60 text-[22px] font-semibold text-ink-100 num flex items-center justify-center active:bg-ink-600 disabled:opacity-30"
+    >
+      {content ?? k}
+    </button>
+  );
+  const stepBtn = (d) => (
+    <button
+      type="button"
+      onClick={() => {
+        haptic(5);
+        onStep(d);
+      }}
+      className="h-[52px] rounded-xl bg-entreno-500/15 text-entreno-300 text-base font-semibold num active:bg-entreno-500/25"
+    >
+      {`${d > 0 ? '+' : '−'}${fmtNum(Math.abs(d))}`}
+    </button>
+  );
 
   return (
-    // Ya cerraba tocando el velo, así que mantiene ese comportamiento. El
-    // `stopPropagation` del panel dejó de hacer falta: Sheet compara el target
-    // contra el velo en vez de escuchar el click que burbujea.
-    <Sheet onClose={onClose} closeOnBackdrop z="z-[60]" align="bottom" label={label}>
-      <div className="w-full max-w-md sheet sheet-entreno rounded-t-3xl p-4 pb-6">
-        <div className="flex items-center justify-between mb-3">
-          <p className="label-section text-entreno-400">{label}</p>
-          <button onClick={onClose} aria-label="Cerrar teclado" className="btn-icon hover:bg-ink-800">
-            <X className="w-4 h-4 text-ink-400" />
+    <div
+      data-pad
+      className="sheet rounded-t-[26px] px-3 pt-1.5 anim-item-in"
+      style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.6rem)' }}
+    >
+      <div className="flex items-center gap-2 h-11">
+        <button type="button" onClick={onCancel} aria-label="Cancelar" className="btn-icon w-9 h-9 bg-ink-700/70 text-ink-400">
+          <X className="w-4 h-4" strokeWidth={2.5} />
+        </button>
+        <p className="flex-1 min-w-0 text-center text-sm text-ink-400 truncate">
+          <span className="font-semibold text-ink-200">{label}</span>
+          {reference && <span>{` · Anterior ${reference}`}</span>}
+        </p>
+        {onPlates ? (
+          <button type="button" onClick={onPlates} aria-label="Calculadora de discos" className="btn-icon w-9 h-9 bg-ink-700/70 text-ink-300">
+            <Disc3 className="w-[18px] h-[18px]" />
           </button>
-        </div>
-
-        <div className="text-center py-3 mb-3 rounded-2xl bg-ink-800 border border-ink-700">
-          <span className="font-mono text-4xl font-black text-entreno-300">{value || '0'}</span>
-        </div>
-
-        {quickSteps.length > 0 && (
-          <div className="flex gap-2 mb-3 overflow-x-auto">
-            {quickSteps.map((s) => (
-              <button
-                key={s}
-                onClick={() => step(s)}
-                className="shrink-0 px-3 py-1.5 rounded-full bg-entreno-500/15 border border-entreno-500/30 text-entreno-300 text-sm font-semibold"
-              >
-                {s > 0 ? `+${s}` : s}
-              </button>
-            ))}
-          </div>
+        ) : (
+          <span className="w-9" />
         )}
-
-        <div className="grid grid-cols-3 gap-2">
-          {keys.map((k) =>
-            k === 'back' ? (
-              <button
-                key={k}
-                onClick={backspace}
-                aria-label="Borrar"
-                className="py-4 rounded-2xl bg-ink-800 border border-ink-700 flex items-center justify-center hover:bg-ink-700"
-              >
-                <Delete className="w-5 h-5 text-ink-300" />
-              </button>
-            ) : (
-              <button
-                key={k}
-                onClick={() => push(k)}
-                disabled={k === '.' && !allowDecimal}
-                className="py-4 rounded-2xl bg-ink-800 border border-ink-700 text-xl font-bold text-ink-100 hover:bg-ink-700 disabled:opacity-30"
-              >
-                {k}
-              </button>
-            )
-          )}
-        </div>
-
+      </div>
+      <div className="grid grid-cols-4 gap-1.5 mt-1">
+        {key('1')}
+        {key('2')}
+        {key('3')}
+        {key('back', <Delete className="w-5 h-5 text-ink-300" />, 'Borrar')}
+        {key('4')}
+        {key('5')}
+        {key('6')}
+        {stepBtn(-step)}
+        {key('7')}
+        {key('8')}
+        {key('9')}
+        {stepBtn(step)}
+        {key(',', decimal ? ',' : '')}
+        {key('0')}
         <button
-          onClick={onClose}
-          className="w-full mt-3 py-3.5 rounded-2xl bg-entreno-500 text-onaccent font-bold flex items-center justify-center gap-2 hover:bg-entreno-400"
+          type="button"
+          onClick={() => {
+            haptic();
+            onNext();
+          }}
+          className="col-span-2 h-[52px] rounded-xl bg-entreno-500 text-onaccent text-base font-semibold flex items-center justify-center gap-1.5"
         >
-          <Check className="w-5 h-5" /> Listo
+          {nextIcon === 'check' && <Check className="w-5 h-5" strokeWidth={2.75} />}
+          {nextLabel}
+          {nextIcon === 'next' && <ArrowRight className="w-[18px] h-[18px]" strokeWidth={2.5} />}
         </button>
       </div>
-    </Sheet>
+    </div>
   );
 }
