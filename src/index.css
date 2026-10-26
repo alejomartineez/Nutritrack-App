@@ -281,6 +281,13 @@
     border-color: rgb(var(--brand-500) / 0.6);
   }
 
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
   .hairline {
     border-color: var(--hairline);
   }
@@ -379,6 +386,14 @@
   }
   :root[data-theme='light'] .sheet {
     background-color: rgb(var(--ink-900));
+  }
+  /* Dentro de una hoja oscura las cards suben un escalón para despegarse. */
+  :root:not([data-theme='light']) .sheet .surface {
+    background-color: rgb(var(--ink-700) / 0.5);
+  }
+  :root:not([data-theme='light']) .sheet .field,
+  :root:not([data-theme='light']) .sheet .bg-ink-900 {
+    background-color: rgb(var(--ink-950) / 0.55);
   }
   .sheet-full {
     border-radius: 0;

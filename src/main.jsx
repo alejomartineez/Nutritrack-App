@@ -24,7 +24,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   </React.StrictMode>
 );
 
-if ('serviceWorker' in navigator) {
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
   // Tras un deploy, el SW nuevo toma control y se recarga una vez para servir
   // la versión nueva sin tener que cerrar la app.
   const hadController = !!navigator.serviceWorker.controller;

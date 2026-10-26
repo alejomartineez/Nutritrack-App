@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, createContext, useContext } from 'r
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { useExitGhost } from '../lib/exitGhost';
-import { useKeyboardInset } from '../lib/viewport';
+import { useVisibleViewport } from '../lib/viewport';
 
 // Hojas modales. `Overlay` es el comportamiento (velo, Escape, pila, foco,
 // teclado, salida animada); `Sheet` suma el panel estándar con manija,
@@ -19,7 +19,7 @@ export function Overlay({ onClose, closeOnBackdrop = true, label, labelledBy, z 
   const ref = useRef(null);
   const entry = useRef({ onClose });
   entry.current.onClose = onClose;
-  const kb = useKeyboardInset();
+  const vv = useVisibleViewport();
 
   useEffect(() => {
     const node = ref.current;
@@ -56,8 +56,12 @@ export function Overlay({ onClose, closeOnBackdrop = true, label, labelledBy, z 
   return createPortal(
     <div
       ref={ref}
-      className={`fixed inset-0 ${z} flex ${alignClass} justify-center ${align === 'full' ? 'anim-screen-in' : 'scrim'}`}
-      style={{ paddingBottom: kb }}
+      className={`fixed inset-x-0 ${z} flex ${alignClass} justify-center ${align === 'full' ? 'anim-screen-in' : 'scrim'}`}
+      style={
+        vv
+          ? { top: vv.top, height: vv.height, paddingTop: align === 'full' ? 0 : 8 }
+          : { top: 0, bottom: 0, paddingTop: align === 'full' ? 0 : 'calc(env(safe-area-inset-top, 0px) + 12px)' }
+      }
       role="dialog"
       aria-modal="true"
       aria-label={labelledBy ? undefined : label}
@@ -117,7 +121,7 @@ export default function Sheet({
     }
   };
 
-  const heightClass = size === 'large' ? 'h-[calc(100dvh-env(safe-area-inset-top,0px)-12px)]' : 'max-h-[calc(100dvh-env(safe-area-inset-top,0px)-12px)]';
+  const heightClass = size === 'large' ? 'h-full' : 'max-h-full';
 
   return (
     <Overlay onClose={onClose} closeOnBackdrop={closeOnBackdrop} labelledBy={title ? titleId : undefined} label={title ? undefined : 'Hoja'}>

@@ -28,18 +28,18 @@ export function useKeyboardOpen() {
 }
 
 /**
- * Píxeles que el teclado le quita a la parte de abajo de la pantalla, medidos
- * con visualViewport. Las hojas los usan como padding inferior para que el
- * campo enfocado y el botón principal sigan a la vista.
+ * Área visible real (visualViewport) mientras hay teclado abierto: las hojas
+ * se dimensionan a esto para que el campo enfocado y el botón principal sigan
+ * a la vista. Sin teclado devuelve null y la hoja ocupa la pantalla normal.
  */
-export function useKeyboardInset() {
-  const [inset, setInset] = useState(0);
+export function useVisibleViewport() {
+  const [box, setBox] = useState(null);
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return undefined;
     const update = () => {
-      const hidden = window.innerHeight - vv.height - vv.offsetTop;
-      setInset(hidden > 80 ? Math.round(hidden) : 0);
+      const hidden = window.innerHeight - vv.height;
+      setBox(hidden > 80 ? { top: Math.round(vv.offsetTop), height: Math.round(vv.height) } : null);
     };
     update();
     vv.addEventListener('resize', update);
@@ -49,7 +49,7 @@ export function useKeyboardInset() {
       vv.removeEventListener('scroll', update);
     };
   }, []);
-  return inset;
+  return box;
 }
 
 /**

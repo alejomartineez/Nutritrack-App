@@ -96,7 +96,7 @@ export function Card({ as: Tag = 'div', className = '', padded = true, children,
  * Encabezado de pantalla (título grande estilo iOS). Queda pegado arriba con un
  * degradé que tapa el contenido que pasa por detrás.
  */
-export function ScreenHeader({ title, eyebrow, eyebrowTone, right, children, sticky = true }) {
+export function ScreenHeader({ title, eyebrow, eyebrowTone, right, children, sticky = false }) {
   return (
     <header
       className={`${sticky ? 'app-header' : ''} -mx-5 px-5 pb-3`}

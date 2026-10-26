@@ -84,10 +84,10 @@ function ResultGroups({ groups, addedId, onLog, A }) {
   ));
 }
 
-export default function EquivalencesSheet({ onClose, onLog, accent = 'emerald', remaining }) {
+export default function EquivalencesSheet({ onClose, onLog, accent = 'emerald', remaining, initialMacro = 'p', initialTarget }) {
   const [mode, setMode] = useState('meta'); // 'meta' | 'swap'
-  const [macro, setMacro] = useState('p');
-  const [target, setTarget] = useState(DEFAULT_TARGET.p);
+  const [macro, setMacro] = useState(initialMacro);
+  const [target, setTarget] = useState(initialTarget ?? DEFAULT_TARGET[initialMacro]);
   const [addedId, setAddedId] = useState(null);
   const addedTimer = useRef(null);
   useEffect(() => () => clearTimeout(addedTimer.current), []);
