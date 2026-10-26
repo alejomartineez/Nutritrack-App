@@ -111,15 +111,15 @@ export default function PdfLibrary({ onClose }) {
               <button
                 onClick={() => setViewing(null)}
                 aria-label="Volver a la lista"
-                className="btn-icon hover:bg-slate-800"
+                className="btn-icon hover:bg-ink-800"
               >
-                <ChevronLeft className="w-5 h-5 text-slate-300" />
+                <ChevronLeft className="w-5 h-5 text-ink-300" />
               </button>
-              <h2 id="pdfs-titulo" className="flex-1 min-w-0 text-sm font-semibold text-slate-100 truncate pr-2">
+              <h2 id="pdfs-titulo" className="flex-1 min-w-0 text-sm font-semibold text-ink-100 truncate pr-2">
                 {viewing.name}
               </h2>
-              <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-slate-800">
-                <X className="w-5 h-5 text-slate-400" />
+              <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-ink-800">
+                <X className="w-5 h-5 text-ink-400" />
               </button>
             </header>
             {objectUrl ? (
@@ -131,25 +131,25 @@ export default function PdfLibrary({ onClose }) {
                 />
               </div>
             ) : (
-              <p className="text-sm text-slate-500 text-center py-16">Abriendo…</p>
+              <p className="text-sm text-ink-500 text-center py-16">Abriendo…</p>
             )}
           </>
         ) : (
           <>
             <header className="flex items-center justify-between px-4 py-3">
-              <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-slate-800">
-                <X className="w-5 h-5 text-slate-400" />
+              <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-ink-800">
+                <X className="w-5 h-5 text-ink-400" />
               </button>
-              <h2 id="pdfs-titulo" className="text-sm font-semibold tracking-wide text-slate-200">
+              <h2 id="pdfs-titulo" className="text-sm font-semibold tracking-wide text-ink-200">
                 Planes PDF
               </h2>
               <button
                 onClick={pickFile}
                 disabled={busy}
                 aria-label="Cargar PDF"
-                className="btn-icon hover:bg-slate-800"
+                className="btn-icon hover:bg-ink-800"
               >
-                <Plus className="w-5 h-5 text-slate-300" />
+                <Plus className="w-5 h-5 text-ink-300" />
               </button>
             </header>
 
@@ -172,18 +172,18 @@ export default function PdfLibrary({ onClose }) {
               )}
 
               {loading ? (
-                <p className="text-sm text-slate-500 text-center py-16">Cargando…</p>
+                <p className="text-sm text-ink-500 text-center py-16">Cargando…</p>
               ) : items.length === 0 ? (
                 <button
                   onClick={pickFile}
                   disabled={busy}
-                  className="w-full mt-6 rounded-3xl border border-dashed border-slate-600 px-6 py-14 text-center hover:border-slate-500 transition-colors"
+                  className="w-full mt-6 rounded-3xl border border-dashed border-ink-600 px-6 py-14 text-center hover:border-ink-500 transition-colors"
                 >
-                  <span className="w-12 h-12 mx-auto mb-4 rounded-2xl bg-slate-800 flex items-center justify-center">
-                    <Upload className="w-5 h-5 text-slate-300" />
+                  <span className="w-12 h-12 mx-auto mb-4 rounded-2xl bg-ink-800 flex items-center justify-center">
+                    <Upload className="w-5 h-5 text-ink-300" />
                   </span>
-                  <p className="text-base font-semibold text-slate-100">Cargar un PDF</p>
-                  <p className="text-sm text-slate-500 mt-1.5 leading-relaxed">
+                  <p className="text-base font-semibold text-ink-100">Cargar un PDF</p>
+                  <p className="text-sm text-ink-500 mt-1.5 leading-relaxed">
                     Tu plan, un machete, lo que quieras consultar sin salir de la app.
                   </p>
                 </button>
@@ -196,12 +196,12 @@ export default function PdfLibrary({ onClose }) {
                         disabled={busy}
                         className="flex-1 flex items-center gap-3 text-left px-3.5 py-3 min-w-0"
                       >
-                        <span className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center shrink-0">
-                          <FileText className="w-5 h-5 text-slate-300" />
+                        <span className="w-10 h-10 rounded-xl bg-ink-800 flex items-center justify-center shrink-0">
+                          <FileText className="w-5 h-5 text-ink-300" />
                         </span>
                         <span className="min-w-0">
-                          <span className="block text-sm font-semibold text-slate-100 truncate">{item.name}</span>
-                          <span className="block text-xs text-slate-500 mt-0.5">
+                          <span className="block text-sm font-semibold text-ink-100 truncate">{item.name}</span>
+                          <span className="block text-xs text-ink-500 mt-0.5">
                             {formatWhen(item.addedAt)} · {formatBytes(item.size)}
                           </span>
                         </span>
@@ -210,9 +210,9 @@ export default function PdfLibrary({ onClose }) {
                         onClick={() => removeItem(item.id)}
                         disabled={busy}
                         aria-label={`Borrar ${item.name}`}
-                        className="btn-icon shrink-0 self-center mr-1 hover:bg-slate-800"
+                        className="btn-icon shrink-0 self-center mr-1 hover:bg-ink-800"
                       >
-                        <Trash2 className="w-4 h-4 text-slate-500" />
+                        <Trash2 className="w-4 h-4 text-ink-500" />
                       </button>
                     </li>
                   ))}
@@ -223,13 +223,13 @@ export default function PdfLibrary({ onClose }) {
                 <button
                   onClick={pickFile}
                   disabled={busy}
-                  className="w-full mt-3 py-3 rounded-2xl border border-dashed border-slate-600 text-sm font-semibold text-slate-300 hover:border-slate-500 flex items-center justify-center gap-2"
+                  className="w-full mt-3 py-3 rounded-2xl border border-dashed border-ink-600 text-sm font-semibold text-ink-300 hover:border-ink-500 flex items-center justify-center gap-2"
                 >
                   <Plus className="w-4 h-4" /> Cargar otro PDF
                 </button>
               )}
 
-              <p className="text-[11px] text-slate-600 text-center mt-6 leading-relaxed">
+              <p className="text-[11px] text-ink-600 text-center mt-6 leading-relaxed">
                 Quedan en este teléfono, no viajan con la copia de seguridad JSON.
               </p>
             </div>

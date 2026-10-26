@@ -1,90 +1,190 @@
-/* Inter Variable, servida desde node_modules (no CDN): la app es una PWA y
-   tiene que verse igual sin conexión. Trae el eje wght 100–900 completo. */
-@import '@fontsource-variable/inter';
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ---------------------------------------------------------------------------
+   Tokens. Tripletes RGB para que Tailwind pueda aplicar /alpha.
+   Oscuro por defecto; el claro se activa con [data-theme='light'] (lo pone
+   src/lib/appearance.js antes del primer paint).
+--------------------------------------------------------------------------- */
+:root {
+  color-scheme: dark;
+
+  --ink-50: 250 250 252;
+  --ink-100: 238 238 242;
+  --ink-200: 218 218 224;
+  --ink-300: 192 192 200;
+  --ink-400: 160 160 170;
+  --ink-500: 132 132 142;
+  --ink-600: 74 74 82;
+  --ink-700: 46 46 52;
+  --ink-800: 26 26 30;
+  --ink-900: 11 11 13;
+  --ink-950: 0 0 0;
+
+  --brand-50: 232 251 242;
+  --brand-100: 198 245 223;
+  --brand-200: 148 235 198;
+  --brand-300: 95 224 169;
+  --brand-400: 52 211 153;
+  --brand-500: 16 185 129;
+  --brand-600: 5 150 105;
+  --brand-700: 4 120 87;
+  --brand-800: 6 95 70;
+  --brand-900: 6 78 59;
+  --brand-950: 2 44 34;
+
+  --amber-50: 255 248 235;
+  --amber-100: 254 236 199;
+  --amber-200: 253 217 138;
+  --amber-300: 252 195 77;
+  --amber-400: 251 176 36;
+  --amber-500: 245 158 11;
+  --amber-600: 217 119 6;
+  --amber-700: 180 83 9;
+  --amber-800: 146 64 14;
+  --amber-900: 120 53 15;
+  --amber-950: 69 26 3;
+
+  --red-50: 254 242 242;
+  --red-100: 254 226 226;
+  --red-200: 254 202 202;
+  --red-300: 252 165 165;
+  --red-400: 248 113 113;
+  --red-500: 239 68 68;
+  --red-600: 220 38 38;
+  --red-700: 185 28 28;
+  --red-800: 153 27 27;
+  --red-900: 127 29 29;
+  --red-950: 69 10 10;
+
+  --entreno-50: 255 244 237;
+  --entreno-100: 255 228 210;
+  --entreno-200: 255 199 163;
+  --entreno-300: 255 162 107;
+  --entreno-400: 255 138 76;
+  --entreno-500: 249 115 22;
+  --entreno-600: 234 88 12;
+  --entreno-700: 194 65 12;
+  --entreno-800: 154 52 18;
+  --entreno-900: 124 45 18;
+  --entreno-950: 67 20 7;
+
+  --sueno-50: 238 240 255;
+  --sueno-100: 224 227 255;
+  --sueno-200: 196 201 255;
+  --sueno-300: 165 172 255;
+  --sueno-400: 139 146 255;
+  --sueno-500: 110 117 245;
+  --sueno-600: 84 88 224;
+  --sueno-700: 69 66 184;
+  --sueno-800: 55 53 144;
+  --sueno-900: 46 46 110;
+  --sueno-950: 28 27 64;
+
+  --protein: 255 112 133;
+  --carbs: 91 155 255;
+  --fat: 186 148 255;
+  --water: 52 200 230;
+  --onaccent: 7 10 9;
+
+  --hairline: rgb(255 255 255 / 0.07);
+  --shadow-card: inset 0 1px 0 rgb(255 255 255 / 0.04);
+  --shadow-raised: 0 10px 30px -10px rgb(0 0 0 / 0.75), 0 0 0 1px rgb(255 255 255 / 0.06);
+  --shadow-sheet: 0 -12px 40px -12px rgb(0 0 0 / 0.85);
+  --glass-bg: rgb(28 28 32 / 0.62);
+  --glass-border: rgb(255 255 255 / 0.1);
+  --glass-shine: rgb(255 255 255 / 0.12);
+  --scrim: rgb(0 0 0 / 0.55);
+  --ambient-strength: 0.16;
+  --focus-ring: rgb(var(--brand-400));
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --ink-50: 0 0 0;
+  --ink-100: 22 22 26;
+  --ink-200: 44 44 50;
+  --ink-300: 66 66 74;
+  --ink-400: 92 92 102;
+  --ink-500: 112 112 120;
+  --ink-600: 176 176 184;
+  --ink-700: 226 226 232;
+  --ink-800: 255 255 255;
+  --ink-900: 242 242 247;
+  --ink-950: 232 232 238;
+
+  /* Los acentos como texto necesitan más oscuridad sobre blanco. Los rellenos
+     (500) quedan iguales. */
+  --brand-200: 4 120 87;
+  --brand-300: 5 130 92;
+  --brand-400: 5 150 105;
+  --amber-200: 160 75 8;
+  --amber-300: 180 83 9;
+  --amber-400: 200 100 6;
+  --red-200: 185 28 28;
+  --red-300: 200 30 30;
+  --red-400: 220 38 38;
+  --entreno-200: 180 60 10;
+  --entreno-300: 194 65 12;
+  --entreno-400: 220 80 12;
+  --sueno-200: 69 66 184;
+  --sueno-300: 75 72 200;
+  --sueno-400: 84 88 224;
+
+  --protein: 229 64 96;
+  --carbs: 47 111 224;
+  --fat: 139 92 246;
+  --water: 8 145 178;
+
+  --hairline: rgb(0 0 0 / 0.07);
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04), 0 0 0 1px rgb(0 0 0 / 0.04);
+  --shadow-raised: 0 10px 30px -10px rgb(0 0 0 / 0.25), 0 0 0 1px rgb(0 0 0 / 0.06);
+  --shadow-sheet: 0 -12px 40px -12px rgb(0 0 0 / 0.25);
+  --glass-bg: rgb(255 255 255 / 0.68);
+  --glass-border: rgb(0 0 0 / 0.08);
+  --glass-shine: rgb(255 255 255 / 0.9);
+  --scrim: rgb(0 0 0 / 0.32);
+  --ambient-strength: 0.1;
+}
 
 /* ---------------------------------------------------------------------------
    Base
 --------------------------------------------------------------------------- */
 @layer base {
   html {
-    /* Inter necesita antialiasing en fondo oscuro; sin esto los pesos medios
-       se ven gruesos y sucios en macOS. */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
-    background-color: theme('colors.ink.900');
-
-    /* SE APAGA TODO EL ZOOM TÁCTIL.
-       `manipulation` saca el doble toque para acercar (el salto al tocar
-       repetido el + del agua o el pad numérico). El pellizco y el zoom al
-       teclado los corta el viewport `maximum-scale=1` en index.html. */
+    background-color: rgb(var(--ink-900));
+    /* Sin doble toque para acercar ni resaltado gris de WebKit al tocar. */
     touch-action: manipulation;
-
-    /* EL FLASH GRIS DEL TOQUE. iOS pinta un rectángulo gris translúcido sobre
-       cualquier cosa tocable mientras la mantenés apretada, y encima lo pinta
-       sobre la CAJA del elemento, así que en un botón redondo aparece un
-       cuadrado. Es la señal más barata de "esto es una página web y no una
-       app". El feedback de toque ya lo da el `scale` de `button:active`, que
-       sigue la forma real del control. */
     -webkit-tap-highlight-color: transparent;
   }
 
   body {
-    background-color: theme('colors.ink.900');
-    color: theme('colors.ink.100');
+    background-color: rgb(var(--ink-900));
+    color: rgb(var(--ink-100));
     font-family: theme('fontFamily.sans');
-    /* Evita el rebote elástico blanco al final del scroll en iOS. */
     overscroll-behavior-y: none;
   }
 
-  /* EL OTRO ZOOM: el que dispara ENFOCAR UN CAMPO.
-     iOS Safari acerca la pantalla cuando el campo que tocás tiene menos de
-     16px, y al salir se queda acercado. El piso de 16px lo desactiva de raíz.
-     Va DESPUÉS de las utilidades de Tailwind (ver el bloque al final del
-     archivo) porque `text-xs` / `text-sm` ganan a esta regla si vive en
-     `@layer base` y el teclado volvía a hacer zoom. */
-
-  /* Los títulos cargan el tracking negativo; Inter a peso alto lo necesita
-     para no separarse. */
   h1, h2, h3 {
-    font-weight: 650;
-  }
-
-  /* Un solo estilo de foco en toda la app, visible sobre cualquier superficie.
-     Solo :focus-visible, así el mouse no lo dispara.
-
-     El color sale de una variable en vez de estar fijo: los módulos la rebindean
-     (ver .module-entreno / .module-sueno abajo) y el foco toma el acento del
-     módulo en el que estás sin que ningún componente tenga que declararlo.
-     Antes cada botón repetía el par de utilidades de ring a mano —63 veces— y
-     el resultado eran DOS indicadores de foco encima del otro: este outline
-     más el ring de Tailwind. */
-  :root {
-    --focus-ring: theme('colors.brand.400');
+    font-weight: 700;
+    letter-spacing: -0.02em;
   }
 
   :focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
-    border-radius: 2px;
   }
 
   ::selection {
-    background-color: theme('colors.brand.500');
-    color: theme('colors.ink.900');
+    background-color: rgb(var(--brand-500) / 0.35);
   }
 
-  /* Los controles no se seleccionan ni abren el menú de iOS.
-     Mantener apretado un botón —cosa que pasa sola cuando dudás medio segundo
-     antes de soltar— seleccionaba su etiqueta en azul y levantaba el menú de
-     "Copiar / Buscar". En una app instalada eso no existe; el texto de un
-     control no es contenido, es interfaz. El contenido (nombres de comida,
-     cifras, notas) sigue siendo seleccionable: la regla apunta solo a
-     controles. */
+  /* El texto de los controles es interfaz, no contenido: no se selecciona al
+     mantener apretado. */
   button,
   [role='button'],
   .label-section,
@@ -94,800 +194,274 @@
     user-select: none;
   }
 
-  /* Scrollbar discreta, para que no rompa el fondo oscuro en desktop. */
+  input,
+  textarea,
+  select {
+    background-color: transparent;
+  }
+
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
   * {
     scrollbar-width: thin;
-    scrollbar-color: theme('colors.ink.600') transparent;
-  }
-  *::-webkit-scrollbar { width: 6px; height: 6px; }
-  *::-webkit-scrollbar-track { background: transparent; }
-  *::-webkit-scrollbar-thumb {
-    background-color: theme('colors.ink.600');
-    border-radius: 999px;
+    scrollbar-color: rgb(var(--ink-600)) transparent;
   }
 }
 
+/* ---------------------------------------------------------------------------
+   Componentes
+--------------------------------------------------------------------------- */
 @layer components {
-  /* `font-mono` ya no es monoespaciada (ver fontFamily en tailwind.config.js):
-     es Inter con cifras tabulares. Mantiene las columnas de números alineadas
-     —kcal, gramos, ml, series×reps— sin el aspecto de terminal que daba la
-     monoespaciada por defecto del navegador. */
-  .font-mono {
-    font-variant-numeric: tabular-nums slashed-zero;
-    font-feature-settings: 'tnum' 1, 'zero' 1, 'ss01' 1;
-    letter-spacing: -0.01em;
-  }
-
-  /* Cifras grandes de display (el contador de calorías, pesos, totales).
-     Tabulares para que no bailen al actualizarse en vivo. */
-  .num-display {
+  .font-mono,
+  .num {
+    font-family: theme('fontFamily.rounded');
     font-variant-numeric: tabular-nums;
-    font-feature-settings: 'tnum' 1;
-    font-weight: 680;
-    letter-spacing: -0.035em;
   }
 
-  /* Etiqueta de sección: versalita ancha y atenuada. Reemplaza los
-     `text-sm font-bold uppercase` sueltos que había por pantalla. */
+  .num-display {
+    font-family: theme('fontFamily.rounded');
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+
   .label-section {
-    font-size: 0.6875rem;
-    font-weight: 600;
+    font-size: 0.75rem;
     line-height: 1rem;
-    letter-spacing: 0.08em;
+    font-weight: 600;
+    letter-spacing: 0.02em;
     text-transform: uppercase;
-    color: theme('colors.ink.400');
+    color: rgb(var(--ink-500));
   }
 
-  /* Card destacada (resumen semanal, récords, sesión activa). Misma superficie
-     que `.surface` con un lavado de acento apenas perceptible en la esquina y
-     un hairline verde oscuro. Reemplaza los degradados al 10–15% que teñían la
-     card entera de verde y competían con los datos. */
+  /* Card estándar. */
+  .surface {
+    background-color: rgb(var(--ink-800));
+    box-shadow: var(--shadow-card);
+  }
+
+  /* Card con tinte del acento (destacados). */
   .surface-accent {
-    --accent-wash: 38, 165, 120; /* brand.500 */
-    --accent-hairline: theme('colors.brand.900');
-
-    background-color: rgba(18, 22, 26, 0.72); /* ink-800 translúcido, ver .surface */
-    background-image: linear-gradient(
-      135deg,
-      rgba(var(--accent-wash), 0.07) 0%,
-      rgba(var(--accent-wash), 0) 55%
-    );
-    border: 1px solid var(--accent-hairline);
-    box-shadow:
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.04),
-      0 1px 2px rgba(0, 0, 0, 0.4);
+    background-color: rgb(var(--ink-800));
+    background-image: linear-gradient(160deg, rgb(var(--brand-500) / 0.16), rgb(var(--brand-500) / 0.03) 60%);
+    box-shadow: inset 0 0 0 1px rgb(var(--brand-500) / 0.22);
   }
-
-  /* Modificadores: se combinan con `.surface-accent` para que la card destacada
-     tome el tono del módulo en el que vive. Sin esto, las cards de Entreno y
-     Sueño quedaban con un lavado verde que contradecía el resto del módulo. */
   .surface-accent-entreno {
-    --accent-wash: 176, 116, 63; /* entreno.500 */
-    --accent-hairline: theme('colors.entreno.900');
+    background-image: linear-gradient(160deg, rgb(var(--entreno-500) / 0.16), rgb(var(--entreno-500) / 0.03) 60%);
+    box-shadow: inset 0 0 0 1px rgb(var(--entreno-500) / 0.24);
   }
   .surface-accent-sueno {
-    --accent-wash: 122, 133, 176; /* sueno.500 */
-    --accent-hairline: theme('colors.sueno.900');
+    background-image: linear-gradient(160deg, rgb(var(--sueno-500) / 0.18), rgb(var(--sueno-500) / 0.03) 60%);
+    box-shadow: inset 0 0 0 1px rgb(var(--sueno-500) / 0.26);
   }
 
-  /* LUZ AMBIENTE — la capa que faltaba para que el vidrio exista.
-     ================================================================
-     El vidrio de la app (barra, header, velos, avisos) estaba técnicamente
-     bien y aun así no se notaba, y la razón no estaba en el vidrio: estaba en
-     lo que había detrás. El fondo era ink-900 plano y las cards ink-800, dos
-     tonos casi iguales. Un `backdrop-filter` sobre un plano de un solo color
-     no tiene nada que desenfocar y el resultado es idéntico a un panel opaco.
-     No se veía vidrio porque no había escena que refractar.
+  /* Superficie inset (campos, celdas dentro de una card). */
+  .inset {
+    background-color: rgb(var(--ink-900));
+  }
 
-     Esta capa pone esa escena: dos pozos de luz enormes y muy suaves, fijos al
-     viewport. Uno cenital con el acento del módulo —la luz entra por arriba,
-     que es de donde entra siempre en esta app: el brillo del canto superior de
-     la barra y de las hojas ya asumía eso— y otro frío abajo a la derecha, que
-     evita que la mitad inferior quede muerta y le da a la barra flotante algo
-     por debajo que teñirla.
+  .field {
+    width: 100%;
+    border-radius: 0.875rem;
+    background-color: rgb(var(--ink-900));
+    border: 1px solid transparent;
+    padding: 0.7rem 0.9rem;
+    color: rgb(var(--ink-100));
+    transition: border-color 0.15s;
+  }
+  .field::placeholder {
+    color: rgb(var(--ink-500));
+  }
+  .field:focus {
+    outline: none;
+    border-color: rgb(var(--brand-500) / 0.6);
+  }
 
-     Tres decisiones que la separan de "ponerle un degradado al fondo":
+  .hairline {
+    border-color: var(--hairline);
+  }
 
-     1. ES FIJA, NO SCROLLEA. Si viajara con el contenido sería una imagen de
-        fondo; quieta se lee como iluminación del ambiente, y el contenido pasa
-        POR DELANTE de la luz. Además no repinta al scrollear.
+  .btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 9999px;
+    flex-shrink: 0;
+    transition: background-color 0.15s;
+  }
 
-     2. LOS POZOS SALEN DE CUADRO. Los centros están fuera de la pantalla
-        (-10% arriba, 115% abajo) justamente para que nunca se vea el centro de
-        un radial —que es lo que hace que un degradado se lea como una mancha—.
-        Se ve la caída, no la fuente.
+  /* Vidrio: barra inferior, header, botón flotante. */
+  .glass {
+    background-color: var(--glass-bg);
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
+    backdrop-filter: blur(22px) saturate(180%);
+    box-shadow:
+      inset 0 1px 0 var(--glass-shine),
+      0 0 0 0.5px var(--glass-border),
+      0 12px 32px -12px rgb(0 0 0 / 0.55);
+  }
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass {
+      background-color: rgb(var(--ink-800));
+    }
+  }
 
-     3. EL GRANO NO ES DECORACIÓN, ES OBLIGATORIO. Un degradado a 8% sobre casi
-        negro banda feísimo en las pantallas OLED del iPhone: se ven los
-        escalones como anillos. El ruido a 3.5% los rompe (dithering) y de
-        paso le da al material una textura física. El SVG es una tesela de
-        180px que se repite, no una capa a pantalla completa: así el
-        `feTurbulence` se rasteriza una vez sobre un lienzo chico.
+  .nav-floating {
+    @apply glass;
+  }
 
-     El tono lo pone `--ambient`, que rebindean las clases de módulo. Es el
-     único lugar donde el acento del módulo ocupa superficie grande, y no
-     contradice la regla de "acento solo en detalles finos": esto no es un
-     relleno, es la luz de la habitación. Los CTA, las superficies y la
-     estructura siguen exactamente igual en los tres módulos. */
-  .app-ambient {
-    position: fixed;
-    inset: 0;
+  .app-header {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+  }
+  .app-header::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 -18px 0;
     z-index: -1;
     pointer-events: none;
-    /* El pozo frío del lateral no depende del módulo: es la luz de relleno que
-       impide que el costado derecho quede muerto en cualquier pantalla. */
-    background-image: radial-gradient(
-      90% 48% at 104% 42%,
-      rgba(160, 172, 182, 0.12) 0%,
-      rgba(160, 172, 182, 0.04) 45%,
-      rgba(160, 172, 182, 0) 76%
-    );
+    background: linear-gradient(to bottom, rgb(var(--ink-900)) 55%, rgb(var(--ink-900) / 0.85) 75%, rgb(var(--ink-900) / 0));
+  }
+  .app-header-unpinned {
+    position: static;
   }
 
-  /* EL TONO DEL MÓDULO SE CRUZA POR OPACIDAD, NO POR VARIABLE.
-     Primer intento: una sola capa con `--ambient` rebindeada y
-     `transition: background-image`. No funciona — `background-image` es una
-     propiedad DISCRETA, no interpola, y el tono saltaba de golpe. La otra
-     salida "elegante" (registrar `--ambient` con `@property` como `<color>`)
-     sí interpola, pero obliga a repintar un degradado a pantalla completa en
-     cada frame, que es justo lo que no querés pagar en un iPhone.
-
-     Con una capa por módulo y `opacity` cruzada, la transición la hace el
-     compositor: cero repintado. Los 0.6s son a propósito más largos que el
-     cambio de pestaña (0.38s): la luz de una habitación no salta, y que el
-     ambiente siga acomodándose cuando el contenido ya llegó es lo que hace
-     que las tres pantallas se sientan como una sola escena. */
+  /* Luz ambiente detrás de todo: tiñe apenas la parte de arriba con el color
+     del módulo en el que estás. */
+  .app-ambient {
+    position: fixed;
+    inset: 0 0 auto 0;
+    height: 420px;
+    z-index: -1;
+    pointer-events: none;
+  }
   .ambient-tone {
     position: absolute;
     inset: 0;
     opacity: 0;
-    transition: opacity 0.6s linear;
-    background-image:
-      radial-gradient(
-        132% 60% at 50% -14%,
-        rgba(var(--ambient), 0.26) 0%,
-        rgba(var(--ambient), 0.095) 34%,
-        rgba(var(--ambient), 0) 68%
-      ),
-      radial-gradient(
-        100% 52% at 4% 106%,
-        rgba(var(--ambient), 0.13) 0%,
-        rgba(var(--ambient), 0.042) 40%,
-        rgba(var(--ambient), 0) 74%
-      );
+    transition: opacity 0.6s ease;
   }
-  .ambient-tone-on { opacity: 1; }
-
-  .ambient-nutricion { --ambient: 69, 196, 143; }  /* brand.400 */
-  .ambient-entreno   { --ambient: 198, 133, 88; }  /* entreno.400 */
-  .ambient-sueno     { --ambient: 147, 157, 197; } /* sueno.400 */
-
-  /* El grano va en el ::after y no en una capa aparte para que quede ENCIMA de
-     los tonos: tiene que romper las bandas de los degradados, no quedar
-     debajo de ellas. */
-  .app-ambient::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    opacity: 0.035;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
-    background-size: 180px 180px;
+  .ambient-tone-on {
+    opacity: var(--ambient-strength);
+  }
+  .ambient-nutricion {
+    background: radial-gradient(120% 70% at 50% -10%, rgb(var(--brand-500)), transparent 70%);
+  }
+  .ambient-entreno {
+    background: radial-gradient(120% 70% at 50% -10%, rgb(var(--entreno-500)), transparent 70%);
+  }
+  .ambient-sueno {
+    background: radial-gradient(120% 70% at 50% -10%, rgb(var(--sueno-500)), transparent 70%);
   }
 
-  /* Barra de navegación flotante — cristal líquido.
-     En UI oscura "elevado" se lee como MÁS CLARO, no como más sombra: antes
-     usaba ink-900, que es exactamente el color del fondo de página, así que por
-     más sombra que le pusiéramos seguía fundiéndose.
-
-     Lo que hace que se lea como vidrio y no como "un panel medio transparente"
-     son tres capas que trabajan juntas, no la transparencia sola:
-
-     1. EL DESENFOQUE ES LO QUE APORTA OPACIDAD. Arrancó al 92% —con eso el blur
-        no tenía nada que hacer y la barra era, en la práctica, sólida— y hoy
-        está al 22%. Casi todo el cuerpo del material lo pone el filtro: blur de
-        44px con la saturación al 190%. A esta transparencia la barra se TIÑE con
-        lo que pasa por debajo —el CTA verde la vuelve verdosa, una card la
-        levanta— que es la señal que delata al vidrio de verdad.
-
-     2. EL `brightness` VA PARA ABAJO (0.45), NO PARA ARRIBA. Es contraintuitivo
-        y es la corrección más importante de esta versión. El instinto es
-        "iluminar" el vidrio, y funciona mientras detrás haya fondo oscuro; pero
-        cuando pasa el CTA verde por debajo, un `brightness` mayor a 1 lo satura
-        y la barra se vuelve un bloque claro. Medido: con brightness 1.35 las
-        etiquetas quedaban en 1.02:1 contra ese verde. Invisibles.
-
-        En modo oscuro el material tiene que OSCURECER lo que hay detrás, no
-        aclararlo: así el texto claro siempre tiene fondo oscuro donde apoyarse,
-        pase lo que pase por abajo. Es lo que hacen los materiales oscuros de
-        iOS, y es justamente lo que permite bajar tanto el relleno: la
-        legibilidad la garantiza el filtro, no la opacidad. Con brightness 0.45,
-        el peor caso (el CTA verde justo debajo) queda en 4.6:1 y el caso normal
-        en 8.2:1.
-
-        Cualquier cambio a estos dos números —el relleno o el brightness— obliga
-        a rehacer esa cuenta contra el verde de marca, que es la superficie más
-        clara y grande que puede pasar por debajo de la barra.
-
-     3. LA LUZ NO ES UNIFORME. Un `background-image` en degradado —blanco al 14%
-        arriba, nada a media altura— simula la luz cenital entrando por el canto
-        superior y muriendo hacia abajo. Sin este gradiente la superficie parece
-        plástico tintado: es la caída lo que la vuelve vidrio. Que el cuerpo sea
-        oscuro y el filo brillante no se contradice: así se comporta el vidrio
-        grueso, el canto capta la luz y la masa la absorbe.
-
-     4. EL CANTO TIENE ESPESOR. Los tres primeros `inset` son el bisel: filo
-        superior brillante (el borde que capta la luz), aro completo tenue (el
-        canto lateral) y una línea oscura abajo (la sombra propia del espesor
-        del vidrio). Los dos siguientes son la refracción: un halo que reparte la
-        luz del filo hacia adentro, y un rebote más débil desde el canto de abajo
-        —el vidrio grueso devuelve algo de luz por donde apoya—.
-
-     5. EL CANTO NO BRILLA PAREJO. El borde uniforme se fue a favor de un aro en
-     degradado (`::after`, más abajo): fuerte arriba, casi nulo a los costados,
-     con un rebote tenue abajo. Un vidrio real no tiene el mismo brillo en todo
-     el perímetro —la luz viene de algún lado— y un aro parejo es justo lo que
-     delata a un "rectángulo con opacidad". El aro va en un pseudo-elemento y no
-     en `border` porque un borde también se pinta parejo. */
-  .nav-floating {
-    background-color: rgba(28, 34, 41, 0.22);
-    background-image: linear-gradient(
-      to bottom,
-      rgba(255, 255, 255, 0.14) 0%,
-      rgba(255, 255, 255, 0.035) 42%,
-      rgba(255, 255, 255, 0) 100%
-    );
-    backdrop-filter: blur(44px) saturate(190%) brightness(0.45);
-    -webkit-backdrop-filter: blur(44px) saturate(190%) brightness(0.45);
-    box-shadow:
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.40),
-      inset 0 0 0 1px rgba(255, 255, 255, 0.09),
-      inset 0 -1px 0 0 rgba(0, 0, 0, 0.55),
-      inset 0 18px 30px -22px rgba(255, 255, 255, 0.55),
-      inset 0 -20px 26px -26px rgba(255, 255, 255, 0.22),
-      0 16px 40px -10px rgba(0, 0, 0, 0.85),
-      0 6px 14px -6px rgba(0, 0, 0, 0.6);
+  .module-entreno {
+    --focus-ring: rgb(var(--entreno-400));
+  }
+  .module-sueno {
+    --focus-ring: rgb(var(--sueno-400));
   }
 
-  /* EL ARO EN DEGRADADO — el canto que capta la luz.
-     Truco del borde con gradiente: se pinta el degradado en toda la caja y se
-     enmascara con dos capas, una recortada al `content-box`, componiendo por
-     exclusión. Queda solo el marco de 1px, que es lo único que se ve.
-
-     Va dentro de `@supports` a propósito: si `mask-composite` no existiera, el
-     degradado se pintaría ENTERO encima de la barra —un panel claro tapando los
-     íconos—. El fallo tiene que ser "no hay aro", no "hay una mancha". Sin el
-     pseudo, el `inset 0 0 0 1px` del box-shadow ya deja un aro parejo tenue.
-
-     Es paint puro, sin `backdrop-filter` propio: por eso puede ser hijo de
-     `.nav-floating` sin caer en el problema de los filtros anidados. */
-  @supports ((mask-composite: exclude) or (-webkit-mask-composite: xor)) {
-    .nav-floating::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      padding: 1px;
-      pointer-events: none;
-      background-image: linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.46) 0%,
-        rgba(255, 255, 255, 0.14) 18%,
-        rgba(255, 255, 255, 0.05) 52%,
-        rgba(255, 255, 255, 0.20) 100%
-      );
-      -webkit-mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
-      -webkit-mask-clip: content-box, border-box;
-      -webkit-mask-composite: xor;
-      mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
-      mask-clip: content-box, border-box;
-      mask-composite: exclude;
-    }
-  }
-
-  /* Sin soporte de backdrop-filter no hay vidrio posible: lo que se ve es un
-     panel al 22% con el contenido nítido pasando por debajo, ilegible. En ese
-     caso volvemos a una superficie sólida. */
-  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    .nav-floating {
-      background-color: rgba(24, 29, 34, 0.97);
-    }
-  }
-
-  /* CONTRASTE SOBRE VIDRIO MUY TRANSPARENTE — segunda línea de defensa.
-     Al 22% el fondo de la barra ya no es un color: es lo que haya debajo. El
-     `brightness: 0.45` del filtro es lo que mantiene ese fondo oscuro y hace el
-     grueso del trabajo (ver arriba), pero el rango sigue siendo variable: entre
-     el caso normal y el CTA verde hay casi el doble de contraste de diferencia.
-
-     Estas sombras cubren esa variación. Le dan al glifo un borde propio contra
-     CUALQUIER fondo, y como son sombra y no relleno no ensucian la tipografía en
-     el caso habitual. El ícono va con `drop-shadow` en vez de `text-shadow`
-     porque es un SVG y necesita que la sombra siga el trazo, no la caja.
-
-     No son un sustituto de la cuenta de contraste: son el margen que hace que el
-     peor caso se lea cómodo en vez de apenas pasar. */
-  .nav-floating .nav-label {
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
-  }
-  .nav-floating .nav-icon {
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
-  }
-
-  /* Carril del indicador: solo posiciona y traslada. La deformación va en el
-     hijo, separada a propósito —ver .nav-indicator abajo—.
-
-     La curva tiene overshoot (el 1.42 del tercer control): la pastilla se pasa
-     un pelo del destino y vuelve. Es lo que separa un deslizamiento mecánico de
-     algo que se siente con masa, y es la firma del tab bar de iOS. */
-  .nav-indicator-track {
-    transition: transform 0.44s cubic-bezier(0.34, 1.42, 0.5, 1);
-  }
-
-  /* EL REFLEJO QUE VIAJA CON LA PASTILLA.
-     Un halo suave, bastante más grande que la pastilla y sin bordes, que va
-     montado en el mismo carril: cuando cambiás de pestaña, la luz se corre por
-     el vidrio en vez de aparecer de golpe en el destino. Es lo que hace que el
-     material parezca reaccionar al gesto y no solo alojar un rectángulo que se
-     mueve.
-
-     Sale gratis: como cuelga del carril, lo mueve el mismo `transform` que ya
-     estaba animado —una sola capa compuesta, cero repintado por frame—. La
-     alternativa "correcta" (un radial-gradient en la barra con la posición
-     animada) obliga a repintar el degradado en cada frame Y a recalcular el
-     `backdrop-filter` debajo: es justo el tipo de cosa que hace tironear la
-     animación en un iPhone.
-
-     Va antes que la pastilla en orden de pintado (es el ::before del carril),
-     así que el halo queda POR DEBAJO del relleno de color: es luz sobre el
-     vidrio, no una segunda pastilla. */
-  .nav-indicator-track::before {
-    content: '';
-    position: absolute;
-    inset: -85% -55%;
-    border-radius: 999px;
-    pointer-events: none;
-    background-image: radial-gradient(
-      closest-side,
-      rgba(255, 255, 255, 0.085) 0%,
-      rgba(255, 255, 255, 0.03) 45%,
-      rgba(255, 255, 255, 0) 100%
-    );
-  }
-
-  /* Pastilla activa — lente sobre el vidrio.
-     El color de módulo lo sigue poniendo la clase de Tailwind desde el JSX
-     (`bg-sueno-500/25` y compañía); acá va solo el acabado.
-
-     NO lleva `backdrop-filter` propio aunque sea lo primero que uno querría:
-     vive dentro de `.nav-floating`, que ya tiene uno, y anidarlos hace que el
-     hijo no se pinte (es el mismo problema que resolvimos en `.sheet`). El
-     volumen lo dan el gradiente de gloss y los insets. */
-  .nav-indicator {
-    background-image: linear-gradient(
-      to bottom,
-      rgba(255, 255, 255, 0.16) 0%,
-      rgba(255, 255, 255, 0.02) 55%,
-      rgba(0, 0, 0, 0.06) 100%
-    );
-    box-shadow:
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.34),
-      inset 0 -1px 1px 0 rgba(0, 0, 0, 0.22),
-      inset 0 8px 14px -10px rgba(255, 255, 255, 0.5),
-      0 2px 6px -1px rgba(0, 0, 0, 0.35);
-  }
-
-  /* Ícono de pestaña. El activo crece y sube un pelo; al presionar, TODO ícono
-     se hunde. El orden importa: `:active` va después para ganarle al activo,
-     así la pestaña en la que ya estás también responde al toque. */
-  .nav-icon {
-    transition: transform 0.34s cubic-bezier(0.34, 1.5, 0.5, 1);
-  }
-  .nav-btn[aria-current='page'] .nav-icon {
-    transform: translateY(-1px) scale(1.14);
-  }
-  .nav-btn:active .nav-icon {
-    transform: scale(0.86);
-  }
-
-  /* Fondo de modal/hoja. Reemplaza los `bg-black/60` sueltos (11 en 6 archivos,
-     uno de ellos al 50% sin razón).
-
-     Lo importante acá no es oscurecer más: es DESENFOCAR EL FONDO. Un velo negro
-     plano tapa el contenido pero lo deja en el mismo plano —la hoja parece
-     pegada encima de una captura de pantalla—. Al desenfocar, lo de atrás
-     retrocede de verdad y la hoja queda flotando en un espacio con profundidad,
-     que es lo que hace iOS. La desaturación leve ayuda: el color de atrás pierde
-     fuerza y deja de competir con los controles de la hoja.
-
-     Con el fondo ya desenfocado, la hoja de adelante puede ser más translúcida
-     sin perder legibilidad: no hay ningún detalle nítido detrás con el que su
-     texto pueda confundirse. Las dos capas se habilitan mutuamente. */
+  /* Hojas modales */
   .scrim {
-    background-color: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(14px) saturate(0.85);
-    -webkit-backdrop-filter: blur(14px) saturate(0.85);
+    background-color: var(--scrim);
   }
 
-  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    .scrim { background-color: rgba(0, 0, 0, 0.72); }
-  }
-
-  /* Panel de hoja/modal — material grueso.
-     Unifica tres tratamientos que convivían: `bg-slate-800 + border-slate-700`,
-     `.surface` y un `bg-neutral-900 + border-t` suelto.
-
-     LA HOJA NO LLEVA `backdrop-filter` PROPIO, Y ES A PROPÓSITO. Vive dentro del
-     `.scrim`, que sí lo tiene, y `backdrop-filter` anidado está roto: en
-     Chromium el panel hijo directamente no se pinta (verificado en el preview:
-     apagando el blur del scrim, la hoja reaparecía), y en iOS Safari el
-     resultado va de parpadeos a capas negras. Además sería trabajo repetido: lo
-     que la hoja tendría para desenfocar ya lo desenfocó el velo.
-
-     Así que el material lo arma sin filtro: translúcida al 92% sobre un velo que
-     ya está borroso. Se ve exactamente igual que si tuviera blur propio —detrás
-     hay manchas difusas, no contenido nítido— y encima queda más legible, que es
-     lo que corresponde en un panel lleno de inputs y cifras. La regla de la app
-     queda: vidrio fino y con filtro donde mirás a través (la barra), vidrio
-     grueso y sin filtro donde te tenés que concentrar (las hojas).
-
-     El borde superior va más brillante que los laterales: es el canto que da a
-     la luz cuando la hoja sube desde abajo, y es lo que la separa del velo en el
-     punto donde se tocan. */
   .sheet {
-    /* Al llegar al final del scroll de la hoja, el gesto NO sigue en la página
-       de atrás. Es la otra mitad del bloqueo de fondo que hace src/lib/Sheet.jsx
-       (ahí se corta el gesto sobre el velo; acá se corta el encadenamiento desde
-       adentro del panel). Va por `overscroll-behavior` justamente para no tener
-       que tocar el alto del documento, que en iOS es lo que dispara el clampeo
-       de scroll —ver el comentario del `main` en App.jsx—. */
-    overscroll-behavior: contain;
-    background-color: rgba(18, 23, 28, 0.92);
-    background-image: linear-gradient(
-      to bottom,
-      rgba(255, 255, 255, 0.06) 0%,
-      rgba(255, 255, 255, 0) 180px
-    );
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow:
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.22),
-      inset 0 20px 30px -28px rgba(255, 255, 255, 0.45),
-      0 -8px 40px -8px rgba(0, 0, 0, 0.7);
+    background-color: rgb(var(--ink-800));
+    box-shadow: var(--shadow-sheet);
   }
-
-  /* Sin blur en el velo, detrás de la hoja queda contenido nítido: ahí la
-     translucidez sí molesta y el panel pasa a sólido. */
-  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    .sheet { background-color: theme('colors.ink.800'); }
+  :root[data-theme='light'] .sheet {
+    background-color: rgb(var(--ink-900));
   }
-
-  /* Variante de acento: el hairline de la hoja toma el tono del contexto
-     (verde el plan, ámbar lo libre) sin teñir el material entero. */
-  .sheet-plan    { border-color: rgba(38, 165, 120, 0.32); }
-  .sheet-free    { border-color: rgba(188, 136, 64, 0.32); }
-  .sheet-entreno { border-color: rgba(176, 116, 63, 0.32); }
-
-  /* Pantalla completa (notas, PDFs): sin radio ni sombra de hoja que sube. */
   .sheet-full {
     border-radius: 0;
-    border-left: none;
-    border-right: none;
-    border-bottom: none;
     box-shadow: none;
-    background-color: theme('colors.ink.900');
-    background-image: none;
+    background-color: rgb(var(--ink-900));
   }
 
-  /* Bloc de notas: papel un poco más cálido que el resto de la app. */
+  .sheet-handle {
+    width: 2.25rem;
+    height: 0.3125rem;
+    border-radius: 9999px;
+    background-color: rgb(var(--ink-600));
+    margin: 0.5rem auto 0;
+  }
+
+  /* Bloc de notas */
   .writer-sheet {
-    background-color: #12100e;
-    background-image: linear-gradient(
-      to bottom,
-      rgba(232, 210, 170, 0.05) 0%,
-      rgba(232, 210, 170, 0) 220px
-    );
+    background-color: rgb(var(--ink-900));
   }
   .writer-card {
-    background-color: rgba(28, 24, 20, 0.85);
-    border: 1px solid rgba(232, 210, 170, 0.08);
+    background-color: rgb(var(--ink-800));
   }
   .writer-body {
     font-size: 1.125rem;
     line-height: 1.7;
-    letter-spacing: 0.01em;
-    caret-color: theme('colors.brand.400');
+    caret-color: rgb(var(--brand-400));
   }
 
-  /* AVISOS FLOTANTES — la capa que NO empuja el layout.
-     Antes los dos avisos (el "Comida agregada ✓" y el "Deshacer") se
-     insertaban en el flujo, entre el header y el contenido. Cada vez que
-     aparecía uno, TODA la pantalla bajaba ~44px y volvía a subir 2,2s después;
-     si además estabas scrolleado, el documento cambiaba de alto y el navegador
-     recortaba el scroll —el mismo mecanismo que rompió el buscador, contado en
-     el comentario del `main` en App.jsx—. Registrar dos comidas seguidas hacía
-     saltar la lista dos veces.
-
-     La capa es `fixed`: no ocupa lugar en el flujo, así que el aviso puede
-     entrar y salir sin mover un pixel de lo que hay debajo ni tocar el alto del
-     documento.
-
-     VA ARRIBA, ENCIMA DEL HEADER, Y NO DEBAJO. Probado abajo del header, el
-     aviso caía justo sobre el navegador de fecha y se leía como un error de
-     maquetación: dos controles en el mismo lugar. Encima del header tapa el
-     título, que es texto fijo y decorativo, y es además el gesto de siempre en
-     iOS —el aviso baja desde arriba y se va—. La otra alternativa, flotando
-     sobre la barra de navegación, quedaba descartada por el teclado: los
-     elementos anclados abajo son justo los que iOS reubica solo mientras acomoda
-     el foco (ver src/lib/viewport.js).
-
-     Cápsula de ancho automático, no una barra de lado a lado: ocupa lo que mide
-     su texto, así el engranaje de Ajustes y los bordes del header siguen a la
-     vista y se lee como algo que flota, no como una franja que se metió en el
-     layout.
-
-     `pointer-events: none` en la capa y `auto` en el aviso: la franja
-     transparente a los costados no se come los toques del contenido, pero el
-     botón "Deshacer" sigue siendo tocable. */
+  /* Avisos flotantes: capa fija arriba que no empuja el layout. */
   .toast-layer {
     position: fixed;
-    /* Medido con el aviso más largo de la app ("Registrado fuera de plan,
-       ¡disfrutalo con calma!", dos líneas, 60px): a 1.6rem el borde de abajo
-       quedaba pegado al navegador de fecha. A 1.15rem sobran 8px en el peor
-       caso y el aviso de una línea sigue cayendo sobre el título. */
-    top: calc(env(safe-area-inset-top, 0px) + 1.15rem);
+    top: calc(env(safe-area-inset-top, 0px) + 0.75rem);
     left: 0;
     right: 0;
-    z-index: 40;
+    z-index: 70;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 0.5rem;
-    padding: 0 1.25rem;
+    padding: 0 1rem;
     pointer-events: none;
   }
-
-  /* Vidrio fino, con filtro. Es chrome flotante y no cuelga de ninguna capa que
-     ya tenga `backdrop-filter`, así que acá el filtro propio es legítimo (a
-     diferencia de `.sheet`, que vive dentro del velo).
-
-     Mismo criterio que la barra de navegación: `brightness` PARA ABAJO. El
-     aviso pasa por encima de cualquier cosa —incluido el CTA verde, que es la
-     superficie más clara de la app— y el material tiene que oscurecer lo que
-     haya detrás para que el texto claro siempre tenga dónde apoyarse. Medido
-     contra ese peor caso, el texto de marca queda en 7.2:1; sobre fondo normal,
-     ~8.6:1. */
   .toast {
     pointer-events: auto;
-    max-width: 100%;
-    background-color: rgba(20, 25, 30, 0.42);
-    background-image: linear-gradient(
-      to bottom,
-      rgba(255, 255, 255, 0.10) 0%,
-      rgba(255, 255, 255, 0) 60%
-    );
-    backdrop-filter: blur(28px) saturate(180%) brightness(0.5);
-    -webkit-backdrop-filter: blur(28px) saturate(180%) brightness(0.5);
-    border: 1px solid rgba(255, 255, 255, 0.10);
+    max-width: 26rem;
+    background-color: var(--glass-bg);
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
+    backdrop-filter: blur(22px) saturate(180%);
     box-shadow:
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.22),
-      0 12px 28px -10px rgba(0, 0, 0, 0.75);
+      inset 0 1px 0 var(--glass-shine),
+      0 0 0 0.5px var(--glass-border),
+      0 12px 32px -12px rgb(0 0 0 / 0.55);
   }
-
-  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    .toast { background-color: rgba(18, 22, 26, 0.97); }
-  }
-
-  /* El hairline toma el tono del aviso; el material queda igual. Mismo criterio
-     que `.sheet-plan` / `.sheet-free`: se tiñe el canto, no la superficie. */
-  .toast-ok      { border-color: rgba(38, 165, 120, 0.34); }
-  .toast-entreno { border-color: rgba(176, 116, 63, 0.34); }
-
-  /* Header pegajoso con desenfoque progresivo.
-     El vidrio no lo pinta el header sino un ::before: si el desenfoque fuera del
-     propio header, la máscara de abajo se comería también el título y los
-     botones. Así el material se difumina y el contenido queda entero.
-
-     La máscara es lo que evita el problema clásico del header de vidrio: sin
-     ella, el material termina en una línea horizontal dura a media pantalla que
-     se lee como un borde falso. Con el degradado, el desenfoque se disuelve y el
-     contenido parece entrar en foco a medida que sale de abajo del header.
-
-     `z-index: -1` lo mete detrás del contenido del propio header pero delante de
-     la página: el ::before pinta en la capa de z negativos del contexto de
-     apilamiento que crea el header, que está por encima de todo lo que quedó
-     debajo en orden de pintado. */
-  .app-header {
-    position: sticky;
-    top: 0;
-    z-index: 20;
-  }
-
-  /* Teclado abierto: se suelta el anclaje. `static` y no `none` a propósito —el
-     header conserva su lugar en el flujo y el alto del documento no cambia—.
-     También se apaga el vidrio: sin anclaje no hay nada que pase por detrás, y
-     un `backdrop-filter` de más en el momento en que iOS está recomponiendo el
-     viewport es justo lo que conviene no tener. */
-  .app-header-unpinned {
-    position: static;
-  }
-  .app-header-unpinned::before {
-    display: none;
-  }
-
-  .app-header::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    background-image: linear-gradient(
-      to bottom,
-      rgba(10, 12, 14, 0.72) 0%,
-      rgba(10, 12, 14, 0.45) 60%,
-      rgba(10, 12, 14, 0) 100%
-    );
-    backdrop-filter: blur(18px) saturate(180%);
-    -webkit-backdrop-filter: blur(18px) saturate(180%);
-    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 55%, transparent 100%);
-    mask-image: linear-gradient(to bottom, #000 0%, #000 55%, transparent 100%);
-  }
-
-  /* Superficie de card estándar: hairline en vez de sombra difusa, más un
-     highlight interior de 1px arriba que simula luz cenital. Es lo que
-     separa una card "plana" de una que parece física.
-
-     EL RELLENO ES TRANSLÚCIDO (72%) Y NO LLEVA `backdrop-filter`, y las dos
-     cosas van juntas. Sobre la luz ambiente (ver .app-ambient) cada card toma
-     el tono de la zona en la que cae: las de arriba levantan el acento del
-     módulo, las de abajo quedan más frías. Es lo que hace que una columna de
-     cards deje de leerse como seis rectángulos iguales.
-
-     Sin filtro a propósito: lo que hay detrás YA es un degradado suavísimo, o
-     sea que está desenfocado por naturaleza. Un `backdrop-filter` no agregaría
-     nada visible y en cambio pondría ~20 capas filtradas por pantalla, que en
-     un iPhone es exactamente donde el scroll empieza a tironear. Misma regla
-     que las hojas: vidrio grueso sin filtro.
-
-     LA CUENTA DE CONTRASTE, QUE NO ES LA QUE PARECE. El instinto es medir
-     contra el pico de la luz (0.26) y ahí ink-500 caía a 4.3:1, por debajo del
-     mínimo. Pero ese pico está en `50% -14%`, o sea FUERA DE PANTALLA por
-     arriba: donde llega, lo que hay es el header, que es vidrio y no card. El
-     punto más iluminado que una card alcanza de verdad es la esquina inferior
-     izquierda, con ~0.06 de luz. Ahí la luminancia de la superficie pasa de
-     0.00776 a 0.00770 —más oscura, no más clara, porque la luz a esa alfa
-     sigue siendo más oscura que ink-800— y el contraste queda igual que antes.
-
-     La regla que queda: si alguna vez se sube la alfa de los pozos, la cuenta
-     se rehace en la esquina inferior izquierda, no en el centro superior. */
-  .surface {
-    background-color: rgba(18, 22, 26, 0.72);
-    border: 1px solid theme('colors.ink.700');
-    box-shadow:
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.04),
-      0 1px 2px rgba(0, 0, 0, 0.4);
-  }
-
-  /* Contexto de módulo. Solo rebindea el color del foco: el resto de la
-     identidad del módulo ya la dan los íconos y los hairlines. Va en la raíz de
-     WorkoutModule y SleepModule. */
-  .module-entreno { --focus-ring: theme('colors.entreno.400'); }
-  .module-sueno   { --focus-ring: theme('colors.sueno.400'); }
-
-  /* Botón de ícono con área táctil real de 44×44 (mínimo de las HIG de iOS).
-     Los íconos de 16px con `p-2` daban 32px: se fallaba el toque de forma
-     constante en el borde inferior de la pantalla, que es donde peor se apunta.
-     `grid` centra el ícono sin depender del padding, así el área crece sin
-     descolocarlo. */
-  .btn-icon {
-    display: grid;
-    place-items: center;
-    min-width: 2.75rem;
-    min-height: 2.75rem;
-    border-radius: 9999px;
-  }
-
-  /* Fila del registro del día. Antes cada comida era una card teñida entera
-     (verde el plan, ámbar lo libre); con 6 comidas la pantalla se leía como un
-     semáforo y competía con el anillo, que es el dato principal. Ahora la fila
-     es superficie neutra y la clasificación la lleva un filete de 3px al borde
-     izquierdo: se distingue de un vistazo y no grita. */
-  .meal-row {
-    position: relative;
-    background-color: rgba(18, 22, 26, 0.72); /* translúcida como `.surface` */
-    border: 1px solid theme('colors.ink.700');
-    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
-    overflow: hidden;
-  }
-  .meal-row::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background-color: var(--meal-accent, theme('colors.brand.500'));
-  }
-  .meal-row-plan { --meal-accent: theme('colors.brand.500'); }
-  .meal-row-free { --meal-accent: theme('colors.amber.500'); }
 }
 
 /* ---------------------------------------------------------------------------
-   Animaciones. Todas dentro de prefers-reduced-motion: no-preference, así que
-   quien pide menos movimiento en su sistema ve la UI estática (sin saltos).
+   Movimiento. Todo dentro de no-preference: con reduce-motion la UI es estática.
+   Las entradas usan `backwards` (no `both`) para que no quede un transform
+   vivo que convierta al contenedor en bloque contenedor de sus `fixed`.
 --------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: no-preference) {
-  @keyframes meal-in {
-    from { opacity: 0; transform: translateY(6px) scale(0.995); }
-    to   { opacity: 1; transform: none; }
-  }
-  @keyframes meal-out {
-    from { opacity: 1; transform: none; }
-    to   { opacity: 0; transform: translateX(12px); }
-  }
-  @keyframes confetti-fall {
-    0%   { opacity: 1; transform: translate(0, 0) rotate(0deg); }
-    100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); }
-  }
-  @keyframes celebrate-glow {
-    0%   { box-shadow: 0 0 0 0 rgba(38, 165, 120, 0); }
-    35%  { box-shadow: 0 0 20px 2px rgba(38, 165, 120, 0.28); }
-    100% { box-shadow: 0 0 0 0 rgba(38, 165, 120, 0); }
-  }
   @keyframes fade-in-up {
     from { opacity: 0; transform: translateY(8px); }
     to   { opacity: 1; transform: none; }
   }
-
-  /* HOJAS: ENTRADA Y SALIDA.
-     Hasta ahora las hojas y sus velos aparecían y desaparecían de un frame al
-     otro. Era lo que más delataba a la app: en iOS una hoja SIEMPRE viaja, y el
-     velo se funde con ella. Un panel que aparece instantáneamente se lee como
-     un cambio de pantalla, no como una capa que se levanta.
-
-     La curva es la de las hojas de iOS: arranque decidido y frenada larguísima,
-     SIN rebote. El overshoot es la firma de la pastilla del nav (un objeto
-     chico con inercia); una superficie del tamaño de la pantalla que se pasa de
-     largo y vuelve se siente elástica, no pesada.
-
-     El velo entra un poco antes y sale un poco después que el panel: así la
-     profundidad se establece primero y se deshace último, y la hoja nunca se ve
-     recortada sobre contenido nítido. */
-  @keyframes scrim-in {
-    from { opacity: 0; }
-    to   { opacity: 1; }
-  }
-  @keyframes scrim-out {
-    from { opacity: 1; }
-    to   { opacity: 0; }
-  }
-  @keyframes sheet-in {
-    from { opacity: 0.4; transform: translate3d(0, 100%, 0); }
-    35%  { opacity: 1; }
+  @keyframes item-in {
+    from { opacity: 0; transform: translateY(6px) scale(0.99); }
     to   { opacity: 1; transform: none; }
   }
-  @keyframes sheet-out {
+  @keyframes item-out {
     from { opacity: 1; transform: none; }
-    to   { opacity: 0.5; transform: translate3d(0, 100%, 0); }
+    to   { opacity: 0; transform: translateX(16px); }
   }
-
-  /* En pantalla ancha la hoja está centrada, no apoyada abajo: subirla desde
-     fuera de cuadro sería un viaje larguísimo por el medio de la pantalla. Ahí
-     se comporta como un diálogo —crece un pelo y se asienta—. */
-  @media (min-width: 640px) {
-    @keyframes sheet-in {
-      from { opacity: 0; transform: translate3d(0, 12px, 0) scale(0.97); }
-      to   { opacity: 1; transform: none; }
-    }
-    @keyframes sheet-out {
-      from { opacity: 1; transform: none; }
-      to   { opacity: 0; transform: translate3d(0, 8px, 0) scale(0.98); }
-    }
+  @keyframes scrim-in  { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes scrim-out { from { opacity: 1; } to { opacity: 0; } }
+  @keyframes sheet-in {
+    from { transform: translate3d(0, 100%, 0); }
+    to   { transform: none; }
   }
-
-  /* AVISOS: bajan desde arriba con un rebote corto y se van sin ruido.
-     La entrada usa la curva con overshoot de la pastilla del nav —es un objeto
-     chico, ahí el rebote sí corresponde— y la salida es plana y más rápida: un
-     aviso que se retira llamando la atención es exactamente lo contrario de lo
-     que tiene que hacer. */
+  @keyframes sheet-out {
+    from { transform: translate3d(0, var(--drag, 0px), 0); }
+    to   { transform: translate3d(0, 100%, 0); }
+  }
   @keyframes toast-in {
     from { opacity: 0; transform: translate3d(0, -14px, 0) scale(0.96); }
     to   { opacity: 1; transform: none; }
@@ -896,126 +470,68 @@
     from { opacity: 1; transform: none; }
     to   { opacity: 0; transform: translate3d(0, -8px, 0) scale(0.98); }
   }
-
-  /* Pantallas completas (onboarding, perfil, escáner): suben un poco al entrar.
-     Sin esto un `fixed inset-0` opaco reemplaza la app de golpe y parece que la
-     app se cerró y abrió otra. */
   @keyframes screen-in {
     from { opacity: 0; transform: translate3d(0, 18px, 0); }
     to   { opacity: 1; transform: none; }
   }
-  /* Al irse retrocede un pelo en vez de subir: la app que estaba debajo vuelve
-     al frente y la pantalla que se va se "aleja". Si saliera por el mismo lado
-     por el que entró, parecería que se está cancelando el gesto. */
   @keyframes screen-out {
     from { opacity: 1; transform: none; }
     to   { opacity: 0; transform: scale(0.985); }
   }
-
-  /* LA PARTE "LÍQUIDA" DEL VIDRIO.
-     Mientras el carril traslada la pastilla, la pastilla se estira en el sentido
-     del viaje y adelgaza, y al llegar rebota antes de asentarse. Es el gesto que
-     hace que el tab bar de iOS parezca una gota de mercurio y no un rectángulo
-     que se mueve: la materia se deforma por la aceleración y recupera la forma
-     cuando frena.
-
-     Los tiempos están alineados con el `cubic-bezier` del carril: el pico de
-     estiramiento (36%) cae donde la traslación va más rápido, y la corrección
-     por debajo de 1 (72%) coincide con el overshoot del carril. Si las dos
-     curvas se desfasan, se ve como dos animaciones distintas encima. */
+  @keyframes tab-in {
+    from { opacity: 0; transform: translate3d(0, 6px, 0); }
+    to   { opacity: 1; transform: none; }
+  }
+  @keyframes pop {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.18); }
+    100% { transform: scale(1); }
+  }
+  @keyframes confetti-fall {
+    0%   { opacity: 1; transform: translate(0, 0) rotate(0deg); }
+    100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); }
+  }
   @keyframes nav-liquid {
     0%   { transform: scale(1, 1); }
-    36%  { transform: scale(1.20, 0.86); }
-    72%  { transform: scale(0.96, 1.04); }
+    36%  { transform: scale(1.16, 0.88); }
+    72%  { transform: scale(0.97, 1.03); }
     100% { transform: scale(1, 1); }
   }
 
-  /* Cambio de pestaña: el contenido nuevo entra desde el lado hacia el que te
-     moviste en la barra (adelante = por la derecha).
-
-     La opacidad termina antes que el desplazamiento (al 65%): el tramo final es
-     movimiento puro sobre contenido ya opaco, que es lo que se percibe como
-     "asentarse" en vez de "aparecer de golpe". El recorrido es corto —12px—
-     porque lo que vende el movimiento es la curva, no la distancia. */
-  @keyframes tab-forward {
-    from { opacity: 0; transform: translate3d(12px, 0, 0); }
-    65%  { opacity: 1; }
-    to   { opacity: 1; transform: none; }
-  }
-  @keyframes tab-back {
-    from { opacity: 0; transform: translate3d(-12px, 0, 0); }
-    65%  { opacity: 1; }
-    to   { opacity: 1; transform: none; }
-  }
-
-  /* Curvas de salida propias: arrancan rápido y frenan largo. Se sienten
-     más "resueltas" que ease-out y son lo que separa una animación de UI
-     de una animación de plantilla. */
-  .anim-meal-in     { animation: meal-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) both; }
-  .anim-meal-out    { animation: meal-out 0.2s cubic-bezier(0.4, 0, 1, 1) both; }
-  .anim-fade-in-up  { animation: fade-in-up 0.42s cubic-bezier(0.16, 1, 0.3, 1) both; }
-  .anim-glow        { animation: celebrate-glow 1.1s ease-out; }
-  /* Se re-dispara remontando el elemento (`key` en el JSX), no con una clase que
-     se agrega y se saca: sin remontar, el navegador no reinicia una animación
-     que ya corrió y el segundo cambio de pestaña saldría sin deformación. */
+  .anim-fade-in-up  { animation: fade-in-up 0.42s cubic-bezier(0.16, 1, 0.3, 1) backwards; }
+  .anim-meal-in,
+  .anim-item-in     { animation: item-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) backwards; }
+  .anim-meal-out,
+  .anim-item-out    { animation: item-out 0.2s cubic-bezier(0.4, 0, 1, 1) both; }
+  .anim-tab-forward,
+  .anim-tab-back,
+  .anim-tab-in      { animation: tab-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) backwards; }
+  .anim-pop         { animation: pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
   .anim-nav-liquid  { animation: nav-liquid 0.46s cubic-bezier(0.34, 1.42, 0.5, 1) both; }
   .confetti-piece   { animation: confetti-fall 1s ease-out forwards; }
-  /* Estas dos NO usan la curva expo de arriba: con un cambio de pantalla entera
-     el arranque violento del expo (≈88% del recorrido en el primer 30% del
-     tiempo) se siente como un latigazo. easeOutCubic reparte mucho mejor y,
-     con algo más de duración, el cambio de sección se lee como un deslizamiento
-     en vez de un salto. */
-  /* `backwards` y no `both`: con `both` el elemento se queda con el
-     `transform` del último keyframe (una matriz identidad, pero `transform`
-     al fin), y un ancestro con transform es bloque contenedor de
-     `position: fixed`. Resultado: TODO modal abierto dentro de una pestaña de
-     módulo —el alta de rutina, el editor de día, el selector de ejercicios—
-     se anclaba a la pestaña en vez de a la pantalla y quedaba recortado.
-     El último keyframe ya es `transform: none`, así que soltar el fill final
-     no cambia nada visualmente. */
-  .anim-tab-forward { animation: tab-forward 0.38s cubic-bezier(0.33, 1, 0.68, 1) backwards; }
-  .anim-tab-back    { animation: tab-back 0.38s cubic-bezier(0.33, 1, 0.68, 1) backwards; }
 
-  /* NO agregar `will-change: transform` acá para "suavizar": crea bloque
-     contenedor igual que un `transform`, y entonces cualquier modal abierto
-     dentro de una pestaña vuelve a anclarse a la pestaña en vez de a la
-     pantalla (es el mismo bug que documenta el `backwards` de arriba). */
-
-  /* La animación va en las clases del material, no en una clase `.anim-*`
-     aparte: `.scrim` y `.sheet` ya están en las diez hojas de la app, así que
-     todas entran igual sin tocar un solo componente. `backwards` y no `both`
-     por la razón de siempre —un `transform` que sobrevive convierte al panel en
-     bloque contenedor de sus hijos `fixed`—. */
-  .scrim { animation: scrim-in 0.3s cubic-bezier(0.32, 0.72, 0, 1) backwards; }
-  .sheet { animation: sheet-in 0.42s cubic-bezier(0.32, 0.72, 0, 1) backwards; }
-
-  /* El fantasma de salida (ver src/lib/Sheet.jsx): es un clon inerte del velo
-     que se inserta cuando React ya sacó la hoja real. Estas reglas le ganan a
-     las de arriba por especificidad, así el clon sale en vez de volver a
-     entrar. Acá sí va `both`: el clon tiene que quedarse quieto en el último
-     frame hasta que se lo borra. */
-  .scrim.sheet-ghost      { animation: scrim-out 0.26s cubic-bezier(0.4, 0, 0.9, 0.6) both; }
+  .scrim                 { animation: scrim-in 0.3s cubic-bezier(0.32, 0.72, 0, 1) backwards; }
+  .scrim .sheet          { animation: sheet-in 0.44s cubic-bezier(0.32, 0.72, 0, 1) backwards; }
+  .scrim.is-closing,
+  .scrim.sheet-ghost     { animation: scrim-out 0.24s ease-in both; }
+  .scrim.is-closing .sheet,
   .scrim.sheet-ghost .sheet { animation: sheet-out 0.24s cubic-bezier(0.4, 0, 0.9, 0.6) both; }
 
   .screen-ghost   { animation: screen-out 0.26s cubic-bezier(0.4, 0, 0.9, 0.6) both; }
-
   .anim-toast-in  { animation: toast-in 0.4s cubic-bezier(0.34, 1.42, 0.5, 1) backwards; }
   .anim-toast-out { animation: toast-out 0.22s cubic-bezier(0.4, 0, 1, 1) both; }
   .anim-screen-in { animation: screen-in 0.36s cubic-bezier(0.16, 1, 0.3, 1) backwards; }
 
-  /* Feedback táctil: mini "hundido" al presionar cualquier control. */
-  button:active { transform: scale(0.98); }
+  .press:active,
+  button:active:not(:disabled) { transform: scale(0.97); }
 }
 
-/* La transición del transform vive fuera del media query para que el retorno
-   sea suave, pero el scale del :active solo se aplica arriba. */
-button { transition: transform 0.1s cubic-bezier(0.16, 1, 0.3, 1); }
+button { transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s, color 0.15s, opacity 0.15s; }
 
-/* Piso de 16px FUERA de @layer: las utilidades `text-xs`/`text-sm` de Tailwind
-   le ganaban a la regla de @layer base y iOS volvía a hacer zoom al teclado.
-   `.writer-body` queda afuera a propósito: el bloc se lee a 18px. */
+/* iOS hace zoom al enfocar campos de menos de 16px. Va fuera de @layer para
+   ganarle a text-xs/text-sm. */
 @media (pointer: coarse) {
-  input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='hidden']):not([type='range']):not([type='color']):not([type='time']),
+  input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='hidden']):not([type='range']):not([type='color']),
   select,
   textarea:not(.writer-body) {
     font-size: 16px !important;

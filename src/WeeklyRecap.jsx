@@ -76,7 +76,7 @@ export default function WeeklyRecap({ weekStats, goals, modules = { entreno: tru
   const stats = [
     {
       icon: Utensils,
-      color: 'text-emerald-400',
+      color: 'text-brand-400',
       value: `${data.nutrition.daysLogged}/7`,
       label: data.nutrition.daysLogged === 1 ? 'día registrado' : 'días registrados',
     },
@@ -88,7 +88,7 @@ export default function WeeklyRecap({ weekStats, goals, modules = { entreno: tru
     },
     modules.sueno && {
       icon: Moon,
-      color: 'text-violet-400',
+      color: 'text-sueno-400',
       value: data.sleepStats.nightsLogged > 0 ? `${data.sleepStats.avgHours}h` : '—',
       label: 'sueño prom.',
     },
@@ -98,7 +98,7 @@ export default function WeeklyRecap({ weekStats, goals, modules = { entreno: tru
     <div className="rounded-3xl surface-accent p-5">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-emerald-300" />
+          <Sparkles className="w-4 h-4 text-brand-300" />
           <h2 className="label-section">Tu semana</h2>
         </div>
         {data.workout.newPRs > 0 && (
@@ -110,17 +110,17 @@ export default function WeeklyRecap({ weekStats, goals, modules = { entreno: tru
 
       <div className={`grid gap-3 ${stats.length === 1 ? 'grid-cols-1' : stats.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
         {stats.map((s) => (
-          <div key={s.label} className="rounded-2xl bg-slate-900/40 border border-slate-700/60 p-3 flex flex-col items-center text-center">
+          <div key={s.label} className="rounded-2xl bg-ink-900/40 border border-ink-700/60 p-3 flex flex-col items-center text-center">
             <s.icon className={`w-4 h-4 ${s.color} mb-1`} />
-            <span className="font-mono text-xl font-black text-slate-100">{s.value}</span>
-            <span className="text-[10px] text-slate-400 leading-tight mt-0.5">{s.label}</span>
+            <span className="font-mono text-xl font-black text-ink-100">{s.value}</span>
+            <span className="text-[10px] text-ink-400 leading-tight mt-0.5">{s.label}</span>
           </div>
         ))}
       </div>
 
-      <div className="mt-4 flex items-start gap-2 rounded-2xl bg-slate-900/40 border border-slate-700/60 px-3.5 py-3">
-        <Sparkles className="w-4 h-4 text-emerald-300 mt-0.5 shrink-0" />
-        <p className="text-sm text-slate-200 leading-snug">{data.insight}</p>
+      <div className="mt-4 flex items-start gap-2 rounded-2xl bg-ink-900/40 border border-ink-700/60 px-3.5 py-3">
+        <Sparkles className="w-4 h-4 text-brand-300 mt-0.5 shrink-0" />
+        <p className="text-sm text-ink-200 leading-snug">{data.insight}</p>
       </div>
     </div>
   );

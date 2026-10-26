@@ -1,160 +1,130 @@
-// ---------------------------------------------------------------------------
-// COPIA DE SEGURIDAD Y ROBUSTEZ DE ALMACENAMIENTO
-//
-// Toda la app vive en localStorage (sin backend). Esto cubre dos riesgos:
-// 1) Que el navegador libere el storage bajo presión de espacio (pedimos
-//    almacenamiento persistente al sistema operativo).
-// 2) Que el usuario pierda el dispositivo, desinstale la app o limpie datos
-//    del navegador: exportamos/restauramos TODO (nutrición + entreno + sueño)
-//    en un único archivo JSON descargable.
-//
-// No reemplaza un backend con sync real entre dispositivos, pero da una red
-// de seguridad manual mientras esa migración no exista.
-// ---------------------------------------------------------------------------
+// Copia de seguridad: todo vive en localStorage, así que un archivo JSON con
+// todas las claves de la app es la red de seguridad para cambiar de teléfono.
+// Los PDFs (IndexedDB) no entran: son binarios y pesan demasiado.
 
+import { readRaw, writeRaw, removeKey, readJSON } from './lib/storage';
+
+const APP_PREFIXES = ['nutri_', 'workout_', 'sleep_', 'weight_', 'reminder_'];
+const EXCLUDED = new Set(['nutri_pre_v2_backup', 'nutri_last_backup']);
 const NUTRI_LOG_PREFIX = 'nutri_log_';
 
-/** Le pide al navegador que no libere este storage bajo presión de espacio. Best-effort: no rompe nada si el navegador no lo soporta o lo deniega. */
+const isAppKey = (k) => APP_PREFIXES.some((p) => k.startsWith(p)) && !EXCLUDED.has(k);
+
+const appKeys = () => {
+  const out = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && isAppKey(k)) out.push(k);
+    }
+  } catch {
+    // sin storage
+  }
+  return out.sort();
+};
+
+/** Pide al navegador que no libere este storage bajo presión de espacio. */
 export const requestPersistentStorage = async () => {
   try {
-    if (navigator.storage && navigator.storage.persist) {
-      await navigator.storage.persist();
-    }
-  } catch (e) {
-    // no disponible en este navegador, se continúa sin persistencia garantizada
+    await navigator.storage?.persist?.();
+  } catch {
+    // best-effort
   }
 };
 
-const readJSON = (key, fallback) => {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch (e) {
-    return fallback;
-  }
-};
-
-const writeJSON = (key, value) => {
-  if (value === null || value === undefined) return;
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch (e) {
-    // almacenamiento no disponible, se continúa sin persistir
-  }
-};
-
-const collectNutritionLogs = () => {
-  const logs = {};
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key && key.startsWith(NUTRI_LOG_PREFIX)) {
-      logs[key.slice(NUTRI_LOG_PREFIX.length)] = readJSON(key, null);
-    }
-  }
-  return logs;
-};
-
-// Versión 3: suma el bloc de notas. Los archivos viejos se restauran igual
-// —cada campo se escribe solo si viene— así que un backup v1/v2 sigue sirviendo.
+/** v4: copia literal de cada clave (incluye las que agreguen versiones futuras). */
 export const buildFullBackup = () => ({
-  version: 3,
+  version: 4,
+  app: 'nutritrack',
   exportedAt: new Date().toISOString(),
-  nutrition: {
-    goals: readJSON('nutri_goals', null),
-    catalog: readJSON('nutri_catalog', null),
-    // El catálogo de fuera de plan es tan del usuario como el del plan: son los
-    // gustos que fue cargando a mano. Faltaba acá, así que el backup —que
-    // existe justamente para cambiar de teléfono— los descartaba en silencio.
-    freeCatalog: readJSON('nutri_free_catalog', null),
-    // Sin el perfil, en el teléfono nuevo "Recalcular mi plan" abre el
-    // formulario vacío y hay que volver a cargar peso, altura y objetivo.
-    profile: readJSON('nutri_profile', null),
-    // Qué módulos tenías encendidos: es configuración, y restaurar sin ella
-    // deja la app con pestañas que el usuario ya había apagado.
-    modules: readJSON('nutri_modules', null),
-    logs: collectNutritionLogs(),
-  },
-  workout: {
-    exercises: readJSON('workout_exercises', null),
-    routines: readJSON('workout_routines', null),
-    activeRoutineId: readJSON('workout_active_routine_id', null),
-    sessions: readJSON('workout_sessions', null),
-    // Un entrenamiento a medio hacer también es dato: si exportás justo entre
-    // series, sin esto se pierde la sesión entera al restaurar.
-    activeSession: readJSON('workout_active_session', null),
-  },
-  sleep: {
-    logs: readJSON('sleep_logs', null),
-    goalHours: readJSON('sleep_goal_hours', null),
-  },
-  body: {
-    weightLogs: readJSON('weight_logs', null),
-  },
-  settings: {
-    reminders: readJSON('reminder_settings', null),
-  },
-  // Machetes e ideas del bloc de notas. Los PDFs no entran: son Blobs en
-  // IndexedDB y reventarían el JSON (y el cupo de localStorage).
-  notes: readJSON('nutri_notes', null),
+  keys: Object.fromEntries(appKeys().map((k) => [k, readRaw(k)])),
 });
 
-export const downloadFullBackup = () => {
-  const backup = buildFullBackup();
-  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
+export const backupFileName = () => `nutritrack_${new Date().toISOString().slice(0, 10)}.json`;
+
+/**
+ * Comparte el archivo (en iPhone abre la hoja de compartir: Guardar en Archivos,
+ * WhatsApp, etc.) o lo descarga donde compartir archivos no existe.
+ */
+export const downloadFullBackup = async () => {
+  const json = JSON.stringify(buildFullBackup());
+  const name = backupFileName();
+  const file = typeof File === 'function' ? new File([json], name, { type: 'application/json' }) : null;
+  if (file && navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: 'Copia de NutriTrack' });
+      writeRaw('nutri_last_backup', new Date().toISOString());
+      return 'shared';
+    } catch (e) {
+      if (e?.name === 'AbortError') return 'cancelled';
+    }
+  }
+  const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
   const a = document.createElement('a');
   a.href = url;
-  a.download = `nutritrack_backup_${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = name;
   document.body.appendChild(a);
   a.click();
   a.remove();
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  writeRaw('nutri_last_backup', new Date().toISOString());
+  return 'downloaded';
 };
 
-const isValidBackup = (data) =>
-  Boolean(data) && typeof data === 'object' && (data.nutrition || data.workout || data.sleep);
+export const lastBackupAt = () => {
+  const raw = readRaw('nutri_last_backup');
+  const d = raw ? new Date(raw) : null;
+  return d && !Number.isNaN(d.getTime()) ? d : null;
+};
 
-/** Escribe un backup completo de vuelta en localStorage. El caller es responsable de recargar la app para que los tres módulos relean el estado nuevo. */
+const isLegacyBackup = (data) => Boolean(data && typeof data === 'object' && (data.nutrition || data.workout || data.sleep));
+const isV4Backup = (data) => Boolean(data && typeof data === 'object' && data.version >= 4 && data.keys && typeof data.keys === 'object');
+
+/** Convierte un backup v1–v3 a mapa de claves → valor crudo. */
+const legacyToKeys = (data) => {
+  const keys = {};
+  const put = (k, v) => {
+    if (v !== null && v !== undefined) keys[k] = JSON.stringify(v);
+  };
+  const n = data.nutrition || {};
+  put('nutri_goals', n.goals);
+  put('nutri_catalog', n.catalog);
+  put('nutri_free_catalog', n.freeCatalog);
+  put('nutri_profile', n.profile);
+  put('nutri_modules', n.modules);
+  Object.entries(n.logs || {}).forEach(([day, log]) => put(`${NUTRI_LOG_PREFIX}${day}`, log));
+  const w = data.workout || {};
+  put('workout_exercises', w.exercises);
+  put('workout_routines', w.routines);
+  put('workout_active_routine_id', w.activeRoutineId);
+  put('workout_sessions', w.sessions);
+  put('workout_active_session', w.activeSession);
+  const s = data.sleep || {};
+  put('sleep_logs', s.logs);
+  put('sleep_goal_hours', s.goalHours);
+  put('weight_logs', data.body?.weightLogs);
+  put('reminder_settings', data.settings?.reminders);
+  put('nutri_notes', data.notes);
+  return keys;
+};
+
+/**
+ * Reemplaza los datos actuales por los del archivo. El caller recarga la app
+ * después para que todo relea el estado nuevo.
+ */
 export const restoreFullBackup = (data) => {
-  if (!isValidBackup(data)) {
-    throw new Error('El archivo no tiene el formato esperado de copia de seguridad.');
-  }
+  let keys;
+  if (isV4Backup(data)) keys = data.keys;
+  else if (isLegacyBackup(data)) keys = legacyToKeys(data);
+  else throw new Error('El archivo no tiene el formato de una copia de NutriTrack.');
 
-  if (data.nutrition) {
-    writeJSON('nutri_goals', data.nutrition.goals);
-    writeJSON('nutri_catalog', data.nutrition.catalog);
-    writeJSON('nutri_free_catalog', data.nutrition.freeCatalog);
-    writeJSON('nutri_profile', data.nutrition.profile);
-    writeJSON('nutri_modules', data.nutrition.modules);
-    Object.entries(data.nutrition.logs || {}).forEach(([dateKey, log]) => {
-      writeJSON(`${NUTRI_LOG_PREFIX}${dateKey}`, log);
-    });
-  }
+  // v4 es una foto completa: lo que no está en el archivo no existía.
+  if (isV4Backup(data)) appKeys().forEach((k) => !(k in keys) && removeKey(k));
+  else if (!('workout_active_session' in keys)) removeKey('workout_active_session');
 
-  if (data.workout) {
-    writeJSON('workout_exercises', data.workout.exercises);
-    writeJSON('workout_routines', data.workout.routines);
-    writeJSON('workout_active_routine_id', data.workout.activeRoutineId);
-    writeJSON('workout_sessions', data.workout.sessions);
-    writeJSON('workout_active_session', data.workout.activeSession);
-  }
-
-  if (data.sleep) {
-    writeJSON('sleep_logs', data.sleep.logs);
-    writeJSON('sleep_goal_hours', data.sleep.goalHours);
-  }
-
-  if (data.body) {
-    writeJSON('weight_logs', data.body.weightLogs);
-  }
-
-  if (data.settings) {
-    writeJSON('reminder_settings', data.settings.reminders);
-  }
-
-  if (data.notes) {
-    writeJSON('nutri_notes', data.notes);
-  }
+  Object.entries(keys).forEach(([k, raw]) => {
+    if (typeof raw === 'string' && isAppKey(k)) writeRaw(k, raw);
+  });
 };
 
 export const readBackupFile = (file) =>
@@ -163,10 +133,26 @@ export const readBackupFile = (file) =>
     reader.onload = () => {
       try {
         resolve(JSON.parse(reader.result));
-      } catch (e) {
+      } catch {
         reject(new Error('El archivo no es un JSON válido.'));
       }
     };
     reader.onerror = () => reject(new Error('No se pudo leer el archivo.'));
     reader.readAsText(file);
   });
+
+/**
+ * Foto local de todos los datos antes de la primera apertura de esta versión,
+ * por si algo de la migración sale mal. Se guarda una sola vez.
+ */
+export const snapshotBeforeUpgrade = () => {
+  if (readRaw('nutri_pre_v2_backup')) return;
+  const snap = JSON.stringify(buildFullBackup());
+  if (snap.length < 1_500_000) writeRaw('nutri_pre_v2_backup', snap);
+  else writeRaw('nutri_pre_v2_backup', JSON.stringify({ skipped: true, size: snap.length }));
+};
+
+export const preUpgradeBackup = () => {
+  const data = readJSON('nutri_pre_v2_backup', null);
+  return isV4Backup(data) ? data : null;
+};

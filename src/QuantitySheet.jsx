@@ -34,8 +34,8 @@ export default function QuantitySheet({ food, mode = 'plan', onConfirm, onCancel
 
   const accent =
     mode === 'plan'
-      ? { chip: 'bg-emerald-500 text-slate-900', btn: 'bg-emerald-500 hover:bg-emerald-400 text-slate-900', border: 'sheet-plan' }
-      : { chip: 'bg-amber-500 text-slate-900', btn: 'bg-amber-500 hover:bg-amber-400 text-slate-900', border: 'sheet-free' };
+      ? { chip: 'bg-brand-500 text-onaccent', btn: 'bg-brand-500 hover:bg-brand-400 text-onaccent', border: 'sheet-plan' }
+      : { chip: 'bg-amber-500 text-onaccent', btn: 'bg-amber-500 hover:bg-amber-400 text-onaccent', border: 'sheet-free' };
 
   const pick = (value) => {
     setQty(value);
@@ -49,12 +49,12 @@ export default function QuantitySheet({ food, mode = 'plan', onConfirm, onCancel
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }}
       >
         <div className="flex items-start justify-between gap-3 mb-1">
-          <h2 id="cantidad-titulo" className="text-lg font-bold text-slate-100 min-w-0">{food.name}</h2>
-          <button onClick={onCancel} aria-label="Cerrar" className="p-2 -mt-1 -mr-2 rounded-full hover:bg-slate-700 shrink-0">
-            <X className="w-5 h-5 text-slate-400" />
+          <h2 id="cantidad-titulo" className="text-lg font-bold text-ink-100 min-w-0">{food.name}</h2>
+          <button onClick={onCancel} aria-label="Cerrar" className="p-2 -mt-1 -mr-2 rounded-full hover:bg-ink-700 shrink-0">
+            <X className="w-5 h-5 text-ink-400" />
           </button>
         </div>
-        <p className="text-xs text-slate-500 mb-5">
+        <p className="text-xs text-ink-500 mb-5">
           {isGrams ? 'Valores por 100 g — elegí cuánto comiste' : 'Elegí cuántas porciones comiste'}
         </p>
 
@@ -68,7 +68,7 @@ export default function QuantitySheet({ food, mode = 'plan', onConfirm, onCancel
                 onClick={() => pick(value)}
                 aria-pressed={active}
                 className={`py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-                  active ? accent.chip : 'bg-slate-900 border border-slate-700 text-slate-300 hover:border-slate-600'
+                  active ? accent.chip : 'bg-ink-900 border border-ink-700 text-ink-300 hover:border-ink-600'
                 }`}
               >
                 {isGrams ? `${value}g` : `×${value}`}
@@ -79,7 +79,7 @@ export default function QuantitySheet({ food, mode = 'plan', onConfirm, onCancel
 
         {/* Cantidad libre */}
         <label className="block mt-3">
-          <span className="text-xs font-semibold text-slate-400 mb-1 block">
+          <span className="text-xs font-semibold text-ink-400 mb-1 block">
             {isGrams ? 'Otra cantidad (g)' : 'Otra cantidad (porciones)'}
           </span>
           <input
@@ -87,16 +87,16 @@ export default function QuantitySheet({ food, mode = 'plan', onConfirm, onCancel
             onChange={(e) => setCustom(e.target.value)}
             inputMode="decimal"
             placeholder={isGrams ? 'Ej: 75' : 'Ej: 1.25'}
-            className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder-slate-500`}
+            className={`w-full bg-ink-900 border border-ink-700 rounded-xl px-3 py-2.5 text-sm text-ink-100 placeholder-ink-500`}
           />
         </label>
 
         {/* Vista previa de lo que se va a registrar */}
-        <div className="mt-5 rounded-2xl bg-slate-900/60 border border-slate-700 px-4 py-3">
-          <p className="font-mono text-lg font-bold text-slate-100">
-            {valid ? preview.kcal : '—'} <span className="text-sm font-semibold text-slate-500">kcal</span>
+        <div className="mt-5 rounded-2xl bg-ink-900/60 border border-ink-700 px-4 py-3">
+          <p className="font-mono text-lg font-bold text-ink-100">
+            {valid ? preview.kcal : '—'} <span className="text-sm font-semibold text-ink-500">kcal</span>
           </p>
-          <p className="text-xs text-slate-400 font-mono mt-0.5">
+          <p className="text-xs text-ink-400 font-mono mt-0.5">
             {valid ? `P ${preview.p}g · C ${preview.c}g · G ${preview.f}g` : 'Ingresá una cantidad válida'}
           </p>
         </div>
@@ -104,7 +104,7 @@ export default function QuantitySheet({ food, mode = 'plan', onConfirm, onCancel
         <div className="flex gap-3 mt-5">
           <button
             onClick={onCancel}
-            className="flex-1 rounded-xl border border-slate-600 text-slate-300 font-semibold py-3 hover:bg-slate-700/50"
+            className="flex-1 rounded-xl border border-ink-600 text-ink-300 font-semibold py-3 hover:bg-ink-700/50"
           >
             Cancelar
           </button>
@@ -112,7 +112,7 @@ export default function QuantitySheet({ food, mode = 'plan', onConfirm, onCancel
             onClick={() => valid && onConfirm(amount)}
             disabled={!valid}
             className={`flex-1 rounded-xl font-bold py-3 flex items-center justify-center gap-2 transition-colors ${
-              valid ? accent.btn : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+              valid ? accent.btn : 'bg-ink-700 text-ink-500 cursor-not-allowed'
             }`}
           >
             <PlusCircle className="w-5 h-5" />

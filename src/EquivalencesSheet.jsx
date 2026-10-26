@@ -31,7 +31,7 @@ const signed = (n, suffix = '') => {
 function ResultGroups({ groups, addedId, onLog, A }) {
   if (groups.length === 0) {
     return (
-      <p className="text-sm text-slate-500 text-center py-6">
+      <p className="text-sm text-ink-500 text-center py-6">
         No hay equivalencias para ese objetivo.
       </p>
     );
@@ -39,7 +39,7 @@ function ResultGroups({ groups, addedId, onLog, A }) {
 
   return groups.map((g) => (
     <div key={g.id}>
-      <p className="label-section text-slate-500 mb-1.5">{g.label}</p>
+      <p className="label-section text-ink-500 mb-1.5">{g.label}</p>
       <div className="space-y-1.5">
         {g.items.map((item) => {
           const added = addedId === item.id;
@@ -57,14 +57,14 @@ function ResultGroups({ groups, addedId, onLog, A }) {
               }`}
             >
               <div className="min-w-0">
-                <p className="text-sm text-slate-200 truncate">{item.name}</p>
-                <p className="text-xs text-slate-500 font-mono mt-0.5">
+                <p className="text-sm text-ink-200 truncate">{item.name}</p>
+                <p className="text-xs text-ink-500 font-mono mt-0.5">
                   <span className={`font-bold ${A.text}`}>{item.label}</span>
-                  <span className="text-slate-600"> · </span>
+                  <span className="text-ink-600"> · </span>
                   {item.kcal} kcal · P {item.p} · C {item.c} · G {item.f}
                 </p>
                 {item.delta && (
-                  <p className="text-[11px] text-slate-600 font-mono mt-0.5">
+                  <p className="text-[11px] text-ink-600 font-mono mt-0.5">
                     vs origen {signed(item.delta.kcal, ' kcal')} · P {signed(item.delta.p)} · C {signed(item.delta.c)} · G {signed(item.delta.f)}
                   </p>
                 )}
@@ -102,7 +102,7 @@ export default function EquivalencesSheet({ onClose, onLog, accent = 'emerald', 
   const A =
     accent === 'amber'
       ? {
-          solid: 'bg-amber-500 text-slate-900',
+          solid: 'bg-amber-500 text-onaccent',
           border: 'border-amber-400',
           text: 'text-amber-400',
           soft: 'bg-amber-500/10 border-amber-500/30 text-amber-300',
@@ -110,12 +110,12 @@ export default function EquivalencesSheet({ onClose, onLog, accent = 'emerald', 
           addedRow: 'bg-amber-500/10 border-amber-500/40',
         }
       : {
-          solid: 'bg-emerald-500 text-slate-900',
-          border: 'border-emerald-400',
-          text: 'text-emerald-400',
-          soft: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300',
-          hover: 'hover:border-emerald-500/50',
-          addedRow: 'bg-emerald-500/10 border-emerald-500/40',
+          solid: 'bg-brand-500 text-onaccent',
+          border: 'border-brand-400',
+          text: 'text-brand-400',
+          soft: 'bg-brand-500/10 border-brand-500/30 text-brand-300',
+          hover: 'hover:border-brand-500/50',
+          addedRow: 'bg-brand-500/10 border-brand-500/40',
         };
 
   const macroInfo = MACROS[macro];
@@ -192,26 +192,26 @@ export default function EquivalencesSheet({ onClose, onLog, accent = 'emerald', 
       <div className="w-full max-w-md sheet rounded-t-3xl sm:rounded-3xl p-5 h-[88vh] flex flex-col overflow-hidden">
         <div className="flex items-start justify-between gap-2 mb-1 shrink-0">
           <div className="min-w-0">
-            <h2 id="equiv-titulo" className="text-lg font-bold text-slate-100 flex items-center gap-2">
+            <h2 id="equiv-titulo" className="text-lg font-bold text-ink-100 flex items-center gap-2">
               <Scale className={`w-5 h-5 ${A.text}`} /> Equivalencias
             </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-ink-500 mt-0.5">
               {mode === 'meta'
                 ? 'Cuánto de cada alimento te da lo mismo. Tocá para registrarlo.'
                 : 'Reemplazá un alimento del plan por otro con los mismos macros.'}
             </p>
           </div>
-          <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-slate-800 shrink-0">
-            <X className="w-5 h-5 text-slate-400" />
+          <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-ink-800 shrink-0">
+            <X className="w-5 h-5 text-ink-400" />
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-1 bg-slate-800 border border-slate-700 rounded-2xl p-1 mt-3 shrink-0">
+        <div className="grid grid-cols-2 gap-1 bg-ink-800 border border-ink-700 rounded-2xl p-1 mt-3 shrink-0">
           <button
             onClick={() => setMode('meta')}
             aria-pressed={mode === 'meta'}
             className={`py-2 rounded-xl text-xs font-semibold transition-colors ${
-              mode === 'meta' ? `${A.solid} ${A.border}` : 'text-slate-400'
+              mode === 'meta' ? `${A.solid} ${A.border}` : 'text-ink-400'
             }`}
           >
             Meta del día
@@ -220,7 +220,7 @@ export default function EquivalencesSheet({ onClose, onLog, accent = 'emerald', 
             onClick={() => setMode('swap')}
             aria-pressed={mode === 'swap'}
             className={`py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors ${
-              mode === 'swap' ? `${A.solid} ${A.border}` : 'text-slate-400'
+              mode === 'swap' ? `${A.solid} ${A.border}` : 'text-ink-400'
             }`}
           >
             <ArrowLeftRight className="w-3.5 h-3.5" /> Reemplazar
@@ -238,7 +238,7 @@ export default function EquivalencesSheet({ onClose, onLog, accent = 'emerald', 
                     onClick={() => switchMacro(m.key)}
                     aria-pressed={active}
                     className={`py-2 rounded-xl text-sm font-semibold border transition-colors ${
-                      active ? `${A.solid} ${A.border}` : 'bg-slate-800 border-slate-700 text-slate-400'
+                      active ? `${A.solid} ${A.border}` : 'bg-ink-800 border-ink-700 text-ink-400'
                     }`}
                   >
                     {m.label}
@@ -252,23 +252,23 @@ export default function EquivalencesSheet({ onClose, onLog, accent = 'emerald', 
                 <button
                   onClick={() => stepTarget(-macroInfo.step)}
                   aria-label={`Restar ${macroInfo.step} ${unit}`}
-                  className="btn-icon bg-slate-800 border border-slate-700 hover:bg-slate-700"
+                  className="btn-icon bg-ink-800 border border-ink-700 hover:bg-ink-700"
                 >
-                  <Minus className="w-4 h-4 text-slate-200" />
+                  <Minus className="w-4 h-4 text-ink-200" />
                 </button>
                 <div className="text-center">
-                  <p className="font-mono text-3xl font-black text-slate-100 leading-none">
+                  <p className="font-mono text-3xl font-black text-ink-100 leading-none">
                     {target}
-                    <span className="text-lg font-bold text-slate-400 ml-1">{unit}</span>
+                    <span className="text-lg font-bold text-ink-400 ml-1">{unit}</span>
                   </p>
-                  <p className="text-[11px] text-slate-500 mt-1">de {macroInfo.label.toLowerCase()}</p>
+                  <p className="text-[11px] text-ink-500 mt-1">de {macroInfo.label.toLowerCase()}</p>
                 </div>
                 <button
                   onClick={() => stepTarget(macroInfo.step)}
                   aria-label={`Sumar ${macroInfo.step} ${unit}`}
-                  className="btn-icon bg-slate-800 border border-slate-700 hover:bg-slate-700"
+                  className="btn-icon bg-ink-800 border border-ink-700 hover:bg-ink-700"
                 >
-                  <Plus className="w-4 h-4 text-slate-200" />
+                  <Plus className="w-4 h-4 text-ink-200" />
                 </button>
               </div>
 
@@ -278,7 +278,7 @@ export default function EquivalencesSheet({ onClose, onLog, accent = 'emerald', 
                     key={v}
                     onClick={() => setTarget(v)}
                     className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-colors ${
-                      target === v ? `${A.solid} ${A.border}` : 'bg-slate-800 border-slate-700 text-slate-300'
+                      target === v ? `${A.solid} ${A.border}` : 'bg-ink-800 border-ink-700 text-ink-300'
                     }`}
                   >
                     {v}
@@ -306,14 +306,14 @@ export default function EquivalencesSheet({ onClose, onLog, accent = 'emerald', 
             {!sourceFood ? (
               <div className="mt-3 flex flex-col min-h-0 flex-1">
                 <div className="relative shrink-0">
-                  <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Search className="w-4 h-4 text-ink-500 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     value={swapQuery}
                     onChange={(e) => setSwapQuery(e.target.value)}
                     onFocus={() => setSwapSearchFocused(true)}
                     onBlur={() => setSwapSearchFocused(false)}
                     placeholder="¿Qué alimento reemplazás? (huevo…)"
-                    className="w-full surface rounded-2xl pl-9 pr-3 py-3 text-slate-100 placeholder-slate-500"
+                    className="w-full surface rounded-2xl pl-9 pr-3 py-3 text-ink-100 placeholder-ink-500"
                   />
                 </div>
                 <div className="flex-1 min-h-0 overflow-y-auto mt-2 -mx-1 px-1 space-y-1.5">
@@ -323,14 +323,14 @@ export default function EquivalencesSheet({ onClose, onLog, accent = 'emerald', 
                       onClick={() => pickSource(food)}
                       className={`w-full text-left rounded-xl surface px-3.5 py-2.5 ${A.hover}`}
                     >
-                      <p className="text-sm text-slate-200">{food.name}</p>
-                      <p className="text-xs text-slate-500 font-mono mt-0.5">
+                      <p className="text-sm text-ink-200">{food.name}</p>
+                      <p className="text-xs text-ink-500 font-mono mt-0.5">
                         por {food.unit === 'u' ? `1 ${food.single}` : `${food.per} ${food.unit}`} · {food.kcal} kcal · P {food.p} · C {food.c} · G {food.f}
                       </p>
                     </button>
                   ))}
                   {foodHits.length === 0 && (
-                    <p className="text-sm text-slate-500 text-center py-6">Nada con ese nombre.</p>
+                    <p className="text-sm text-ink-500 text-center py-6">Nada con ese nombre.</p>
                   )}
                 </div>
               </div>
@@ -339,12 +339,12 @@ export default function EquivalencesSheet({ onClose, onLog, accent = 'emerald', 
                 <div className="mt-3 rounded-2xl surface p-3 shrink-0">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">Origen</p>
-                      <p className="text-sm font-semibold text-slate-100 mt-0.5">{sourceFood.name}</p>
+                      <p className="text-[11px] uppercase tracking-wide text-ink-500 font-semibold">Origen</p>
+                      <p className="text-sm font-semibold text-ink-100 mt-0.5">{sourceFood.name}</p>
                     </div>
                     <button
                       onClick={() => setSourceFood(null)}
-                      className="text-xs font-semibold text-slate-400 hover:text-slate-200 shrink-0 mt-0.5"
+                      className="text-xs font-semibold text-ink-400 hover:text-ink-200 shrink-0 mt-0.5"
                     >
                       Cambiar
                     </button>
@@ -354,18 +354,18 @@ export default function EquivalencesSheet({ onClose, onLog, accent = 'emerald', 
                     <button
                       onClick={() => stepQty(-qtyStep)}
                       aria-label="Restar cantidad"
-                      className="btn-icon bg-slate-800 border border-slate-700 hover:bg-slate-700"
+                      className="btn-icon bg-ink-800 border border-ink-700 hover:bg-ink-700"
                     >
-                      <Minus className="w-4 h-4 text-slate-200" />
+                      <Minus className="w-4 h-4 text-ink-200" />
                     </button>
                     <div className="text-center">
-                      <p className="font-mono text-3xl font-black text-slate-100 leading-none">
+                      <p className="font-mono text-3xl font-black text-ink-100 leading-none">
                         {sourceQty}
-                        <span className="text-lg font-bold text-slate-400 ml-1">
+                        <span className="text-lg font-bold text-ink-400 ml-1">
                           {sourceFood.unit === 'u' ? '' : sourceFood.unit}
                         </span>
                       </p>
-                      <p className="text-[11px] text-slate-500 mt-1">
+                      <p className="text-[11px] text-ink-500 mt-1">
                         {sourceFood.unit === 'u'
                           ? sourceQty === 1
                             ? sourceFood.single
@@ -376,9 +376,9 @@ export default function EquivalencesSheet({ onClose, onLog, accent = 'emerald', 
                     <button
                       onClick={() => stepQty(qtyStep)}
                       aria-label="Sumar cantidad"
-                      className="btn-icon bg-slate-800 border border-slate-700 hover:bg-slate-700"
+                      className="btn-icon bg-ink-800 border border-ink-700 hover:bg-ink-700"
                     >
-                      <Plus className="w-4 h-4 text-slate-200" />
+                      <Plus className="w-4 h-4 text-ink-200" />
                     </button>
                   </div>
 
@@ -388,7 +388,7 @@ export default function EquivalencesSheet({ onClose, onLog, accent = 'emerald', 
                         key={v}
                         onClick={() => setSourceQty(v)}
                         className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-colors ${
-                          sourceQty === v ? `${A.solid} ${A.border}` : 'bg-slate-800 border-slate-700 text-slate-300'
+                          sourceQty === v ? `${A.solid} ${A.border}` : 'bg-ink-800 border-ink-700 text-ink-300'
                         }`}
                       >
                         {sourceFood.unit === 'u' ? v : `${v}${sourceFood.unit}`}
@@ -397,13 +397,13 @@ export default function EquivalencesSheet({ onClose, onLog, accent = 'emerald', 
                   </div>
 
                   {swap.source && (
-                    <p className="text-xs text-slate-400 font-mono mt-3 text-center">
+                    <p className="text-xs text-ink-400 font-mono mt-3 text-center">
                       {swap.source.label} · {swap.source.kcal} kcal · P {swap.source.p} · C {swap.source.c} · G {swap.source.f}
                     </p>
                   )}
                 </div>
 
-                <p className="text-[11px] text-slate-500 mt-3 mb-1.5 shrink-0">Igualar por</p>
+                <p className="text-[11px] text-ink-500 mt-3 mb-1.5 shrink-0">Igualar por</p>
                 <div className="grid grid-cols-4 gap-1.5 shrink-0">
                   {Object.values(MACROS).map((m) => {
                     const active = m.key === matchKey;
@@ -413,7 +413,7 @@ export default function EquivalencesSheet({ onClose, onLog, accent = 'emerald', 
                         onClick={() => setMatchKey(m.key)}
                         aria-pressed={active}
                         className={`py-2 rounded-xl text-[11px] font-semibold border transition-colors ${
-                          active ? `${A.solid} ${A.border}` : 'bg-slate-800 border-slate-700 text-slate-400'
+                          active ? `${A.solid} ${A.border}` : 'bg-ink-800 border-ink-700 text-ink-400'
                         }`}
                       >
                         {m.key === 'kcal' ? 'Kcal' : m.key.toUpperCase()}
@@ -430,7 +430,7 @@ export default function EquivalencesSheet({ onClose, onLog, accent = 'emerald', 
           </>
         )}
 
-        <p className="text-[11px] text-slate-600 text-center mt-3 shrink-0">
+        <p className="text-[11px] text-ink-600 text-center mt-3 shrink-0">
           Valores aproximados de referencia. Ajustá la porción a tu gusto.
         </p>
       </div>

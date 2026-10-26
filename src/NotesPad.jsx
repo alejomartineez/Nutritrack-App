@@ -94,19 +94,19 @@ export default function NotesPad({ onClose }) {
         {view === 'list' ? (
           <>
             <header className="flex items-center justify-between px-4 py-3">
-              <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-slate-800">
-                <X className="w-5 h-5 text-slate-400" />
+              <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-ink-800">
+                <X className="w-5 h-5 text-ink-400" />
               </button>
-              <h2 id="notas-titulo" className="text-sm font-semibold tracking-wide text-slate-200">
+              <h2 id="notas-titulo" className="text-sm font-semibold tracking-wide text-ink-200">
                 Notas
               </h2>
-              <button onClick={startNew} aria-label="Nueva nota" className="btn-icon hover:bg-slate-800">
-                <Plus className="w-5 h-5 text-slate-300" />
+              <button onClick={startNew} aria-label="Nueva nota" className="btn-icon hover:bg-ink-800">
+                <Plus className="w-5 h-5 text-ink-300" />
               </button>
             </header>
             <div className="flex-1 overflow-y-auto px-4 pb-8">
               {listed.length === 0 ? (
-                <p className="text-sm text-slate-500 text-center py-16 leading-relaxed">
+                <p className="text-sm text-ink-500 text-center py-16 leading-relaxed">
                   Todavía no hay nada escrito.
                   <br />
                   Tocá + para una página en blanco.
@@ -123,14 +123,14 @@ export default function NotesPad({ onClose }) {
                           <p className="text-[15px] text-amber-100/90 truncate leading-snug">
                             {titleFromBody(n.body)}
                           </p>
-                          <p className="text-xs text-slate-500 mt-1">{formatWhen(n.updatedAt)}</p>
+                          <p className="text-xs text-ink-500 mt-1">{formatWhen(n.updatedAt)}</p>
                         </button>
                         <button
                           onClick={() => removeNote(n.id)}
                           aria-label={`Borrar ${titleFromBody(n.body)}`}
-                          className="btn-icon shrink-0 self-center mr-1 hover:bg-slate-800"
+                          className="btn-icon shrink-0 self-center mr-1 hover:bg-ink-800"
                         >
-                          <Trash2 className="w-4 h-4 text-slate-500" />
+                          <Trash2 className="w-4 h-4 text-ink-500" />
                         </button>
                       </div>
                     </li>
@@ -145,25 +145,25 @@ export default function NotesPad({ onClose }) {
               <button
                 onClick={() => (listed.length > 0 ? setView('list') : onClose())}
                 aria-label={listed.length > 0 ? 'Ver todas las notas' : 'Cerrar'}
-                className="btn-icon hover:bg-slate-800"
+                className="btn-icon hover:bg-ink-800"
               >
                 {listed.length > 0 ? (
-                  <ChevronLeft className="w-5 h-5 text-slate-400" />
+                  <ChevronLeft className="w-5 h-5 text-ink-400" />
                 ) : (
-                  <X className="w-5 h-5 text-slate-400" />
+                  <X className="w-5 h-5 text-ink-400" />
                 )}
               </button>
-              <h2 id="notas-titulo" className="text-sm font-semibold tracking-wide text-slate-400 flex items-center gap-1.5">
+              <h2 id="notas-titulo" className="text-sm font-semibold tracking-wide text-ink-400 flex items-center gap-1.5">
                 <PenLine className="w-3.5 h-3.5" /> Escribir
               </h2>
               <div className="flex items-center">
                 {listed.length > 0 && (
-                  <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-slate-800">
-                    <X className="w-5 h-5 text-slate-400" />
+                  <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-ink-800">
+                    <X className="w-5 h-5 text-ink-400" />
                   </button>
                 )}
-                <button onClick={startNew} aria-label="Nueva nota" className="btn-icon hover:bg-slate-800">
-                  <Plus className="w-5 h-5 text-slate-300" />
+                <button onClick={startNew} aria-label="Nueva nota" className="btn-icon hover:bg-ink-800">
+                  <Plus className="w-5 h-5 text-ink-300" />
                 </button>
               </div>
             </header>
@@ -172,7 +172,7 @@ export default function NotesPad({ onClose }) {
               value={writing?.body ?? ''}
               onChange={(e) => setBody(e.target.value)}
               placeholder="Un machete, una idea, lo que se te ocurra…"
-              className="writer-body flex-1 min-h-0 w-full px-6 pb-10 bg-transparent text-amber-50/90 placeholder-slate-600 resize-none border-0 outline-none"
+              className="writer-body flex-1 min-h-0 w-full px-6 pb-10 bg-transparent text-amber-50/90 placeholder-ink-600 resize-none border-0 outline-none"
               style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 2.5rem)' }}
               spellCheck
             />

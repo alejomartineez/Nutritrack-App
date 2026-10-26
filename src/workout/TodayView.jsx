@@ -60,7 +60,7 @@ function WeekStrip({ weekPlan, onSelectDay }) {
                 {d.short}
               </span>
               <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${dot}`}>
-                {state === 'done' && <Check className="w-3.5 h-3.5 text-ink-900" strokeWidth={3} />}
+                {state === 'done' && <Check className="w-3.5 h-3.5 text-onaccent" strokeWidth={3} />}
                 {state === 'rest' && <span className="w-2.5 h-0.5 rounded-full bg-ink-600" />}
               </span>
             </button>
@@ -117,7 +117,7 @@ export default function TodayView({
             frente a otra card vacía con el mismo botón. */}
         <button
           onClick={onCreateRoutine}
-          className="rounded-xl bg-entreno-500 text-ink-900 px-5 py-3 text-sm font-bold hover:bg-entreno-400"
+          className="rounded-xl bg-entreno-500 text-onaccent px-5 py-3 text-sm font-bold hover:bg-entreno-400"
         >
           Crear rutina
         </button>
@@ -139,7 +139,7 @@ export default function TodayView({
           <>
             <div className="flex items-center gap-2.5 mt-2">
               <span className="w-9 h-9 rounded-full bg-entreno-500 flex items-center justify-center shrink-0">
-                <Check className="w-5 h-5 text-ink-900" strokeWidth={3} />
+                <Check className="w-5 h-5 text-onaccent" strokeWidth={3} />
               </span>
               <div className="min-w-0">
                 <h2 className="text-xl font-bold text-ink-100 truncate">Entrenaste hoy</h2>
@@ -191,7 +191,7 @@ export default function TodayView({
             {exerciseCount === 0 ? (
               <button
                 onClick={() => onEditDay(todayDay)}
-                className="mt-4 w-full rounded-2xl bg-entreno-500 text-ink-900 py-3.5 text-sm font-bold hover:bg-entreno-400 flex items-center justify-center gap-2"
+                className="mt-4 w-full rounded-2xl bg-entreno-500 text-onaccent py-3.5 text-sm font-bold hover:bg-entreno-400 flex items-center justify-center gap-2"
               >
                 <Settings2 className="w-4 h-4" /> Armar este día
               </button>
@@ -199,7 +199,7 @@ export default function TodayView({
               <div className="mt-4 flex items-center gap-2">
                 <button
                   onClick={() => onStartSession(todayDay)}
-                  className="flex-1 rounded-2xl bg-entreno-500 text-ink-900 py-3.5 text-sm font-bold hover:bg-entreno-400 flex items-center justify-center gap-2"
+                  className="flex-1 rounded-2xl bg-entreno-500 text-onaccent py-3.5 text-sm font-bold hover:bg-entreno-400 flex items-center justify-center gap-2"
                 >
                   <Play className="w-4 h-4" fill="currentColor" /> Empezar entreno
                 </button>

@@ -1,116 +1,80 @@
 import { useEffect, useLayoutEffect, useState } from 'react';
 
-// ---------------------------------------------------------------------------
-// Detección de teclado virtual.
-//
-// Contexto del problema: en iOS, una barra `position: fixed; bottom: 0` queda
-// anclada al *layout viewport*, que con el teclado abierto sigue midiendo la
-// pantalla entera. La barra queda detrás del teclado y, peor, Safari despega
-// los elementos fijos durante el scroll y los reacomoda solo — así que termina
-// apareciendo en medio de la pantalla. La única solución confiable es
-// esconderla mientras el teclado está abierto.
-//
-// Historial de intentos fallidos, para no repetirlos:
-//
-//   1. Subir la barra con un transform del alto del teclado. No sirve: durante
-//      el scroll iOS la reposiciona igual.
-//   2. Medir `innerHeight - (vv.offsetTop + vv.height)`. Mal: `offsetTop` es
-//      posición de scroll, así que al scrollear la cuenta daba cada vez menos
-//      y la barra reaparecía.
-//   3. Medir `innerHeight - vv.height`. Funciona en Safari, pero NO en la PWA
-//      instalada (standalone), donde iOS sí achica el layout viewport y la
-//      diferencia da casi cero.
-//
-// Conclusión: no hay una medición de viewport que valga en todos los modos. El
-// foco sí es inequívoco — si hay un campo de texto enfocado en un dispositivo
-// táctil, hay teclado. Eso es lo que se usa como señal principal.
-// ---------------------------------------------------------------------------
+// Utilidades para convivir con el teclado de iOS. Los elementos `fixed` no se
+// mueven cuando aparece el teclado (se quedan en el layout viewport), así que
+// todo lo que flota abajo queda tapado salvo que lo corramos a mano.
 
-const TEXTLESS_INPUT_TYPES = ['button', 'submit', 'reset', 'checkbox', 'radio', 'range', 'file', 'color'];
+const TEXTLESS = ['button', 'submit', 'reset', 'checkbox', 'radio', 'range', 'file', 'color', 'time', 'date'];
 
 const isTextField = (el) =>
-  !!el &&
-  (el.tagName === 'TEXTAREA' ||
-    el.isContentEditable ||
-    (el.tagName === 'INPUT' && !TEXTLESS_INPUT_TYPES.includes(el.type)));
+  !!el && (el.tagName === 'TEXTAREA' || el.isContentEditable || (el.tagName === 'INPUT' && !TEXTLESS.includes(el.type)));
 
-/**
- * ¿Este dispositivo abre un teclado virtual al enfocar un campo?
- *
- * Se combinan dos señales independientes en vez de confiar en una sola: en un
- * iPhone `maxTouchPoints` es 5 y `pointer: coarse` da true, así que con que
- * ande cualquiera de las dos alcanza. Se evalúa en cada evento (y no una vez al
- * montar) para que el comportamiento no quede congelado si el navegador reporta
- * distinto más tarde.
- */
-const hasVirtualKeyboard = () =>
-  navigator.maxTouchPoints > 0 || window.matchMedia('(pointer: coarse)').matches;
+const hasVirtualKeyboard = () => navigator.maxTouchPoints > 0 || window.matchMedia('(pointer: coarse)').matches;
 
-/**
- * true cuando hay un teclado virtual abierto.
- *
- * Se apoya en el foco, no en medir el viewport: es la única señal que se
- * comporta igual en Safari y en la PWA instalada. En desktop devuelve siempre
- * false (no hay teclado virtual que tape nada), así que enfocar el buscador no
- * esconde la barra ahí.
- */
+/** true mientras un campo de texto tiene el foco en un dispositivo táctil. */
 export function useKeyboardOpen() {
   const [open, setOpen] = useState(false);
-
   useEffect(() => {
-    const onFocusIn = (e) => {
-      if (hasVirtualKeyboard() && isTextField(e.target)) setOpen(true);
-    };
-
-    // `focusout` llega antes de que el teclado termine de bajar, pero eso está
-    // bien: la barra reaparece con su fade mientras el teclado se va.
-    const onFocusOut = () => setOpen(false);
-
-    // Por si al montar ya hay algo enfocado (vuelta de un modal, autofocus).
-    if (hasVirtualKeyboard() && isTextField(document.activeElement)) setOpen(true);
-
-    document.addEventListener('focusin', onFocusIn);
-    document.addEventListener('focusout', onFocusOut);
+    const onIn = (e) => hasVirtualKeyboard() && isTextField(e.target) && setOpen(true);
+    const onOut = () => setOpen(false);
+    document.addEventListener('focusin', onIn);
+    document.addEventListener('focusout', onOut);
     return () => {
-      document.removeEventListener('focusin', onFocusIn);
-      document.removeEventListener('focusout', onFocusOut);
+      document.removeEventListener('focusin', onIn);
+      document.removeEventListener('focusout', onOut);
     };
   }, []);
-
   return open;
 }
 
 /**
- * Para hojas `fixed`. iOS scrollea la ventana para dejar el input encima del
- * teclado; si el listado cambia de alto en cada tecla, ese scroll se re-clampea
- * y el campo termina debajo del teclado. La hoja no necesita el scroll de la
- * página: se deja la ventana arriba mientras el buscador está enfocado.
- *
- * NO usarlo en campos que viven en el documento (p. ej. Registrar): ahí el
- * scroll SÍ tiene que dejar el campo a la vista.
+ * Píxeles que el teclado le quita a la parte de abajo de la pantalla, medidos
+ * con visualViewport. Las hojas los usan como padding inferior para que el
+ * campo enfocado y el botón principal sigan a la vista.
+ */
+export function useKeyboardInset() {
+  const [inset, setInset] = useState(0);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return undefined;
+    const update = () => {
+      const hidden = window.innerHeight - vv.height - vv.offsetTop;
+      setInset(hidden > 80 ? Math.round(hidden) : 0);
+    };
+    update();
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+    };
+  }, []);
+  return inset;
+}
+
+/**
+ * Para hojas `fixed` con buscador: iOS scrollea la ventana para "mostrar" el
+ * campo, y como la hoja no se mueve con ese scroll, el campo se termina yendo
+ * de la vista. Mientras está activo, la ventana queda quieta arriba.
  */
 export function useFreezeWindowScroll(enabled) {
   useLayoutEffect(() => {
     if (!enabled) return undefined;
+    const y = window.scrollY;
     const freeze = () => {
-      if (window.scrollY !== 0) window.scrollTo(0, 0);
+      if (window.scrollY !== y) window.scrollTo(0, y);
     };
-    freeze();
     window.addEventListener('scroll', freeze, { passive: true });
     return () => window.removeEventListener('scroll', freeze);
   }, [enabled]);
 }
 
-/**
- * Corta pellizco y gestos de zoom de iOS. El viewport ya trae maximum-scale=1;
- * esto cubre Safari, que a veces ignora user-scalable=no.
- */
+/** Bloquea el pellizco: la app se usa a pantalla completa como nativa. */
 export function lockViewportZoom() {
   const blockMultiTouch = (e) => {
     if (e.touches && e.touches.length > 1) e.preventDefault();
   };
   const blockGesture = (e) => e.preventDefault();
-
   document.addEventListener('touchmove', blockMultiTouch, { passive: false });
   document.addEventListener('gesturestart', blockGesture);
   document.addEventListener('gesturechange', blockGesture);

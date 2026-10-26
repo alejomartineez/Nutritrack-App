@@ -156,9 +156,9 @@ export default function DailyRings({ log, modules = { entreno: true, sueno: true
       >
         {/* Única excepción al acento verde: la racha va en ámbar. Es un logro,
             no un estado del plan, y en verde se confundía con "meta cumplida". */}
-        <Flame className={`w-4 h-4 ${streak > 0 ? 'text-amber-400' : 'text-slate-600'}`} />
-        <span className="font-mono font-bold text-slate-100">{streak}</span>
-        <span className="text-slate-400 text-xs">{streak === 1 ? 'día' : 'días'}</span>
+        <Flame className={`w-4 h-4 ${streak > 0 ? 'text-amber-400' : 'text-ink-600'}`} />
+        <span className="font-mono font-bold text-ink-100">{streak}</span>
+        <span className="text-ink-400 text-xs">{streak === 1 ? 'día' : 'días'}</span>
       </div>
     </div>
   );

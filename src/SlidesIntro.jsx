@@ -14,8 +14,8 @@ import { useExitGhost } from './lib/exitGhost';
 
 export default function SlidesIntro({
   slides,
-  dotActiveClass = 'bg-emerald-400',
-  buttonClass = 'bg-emerald-500 hover:bg-emerald-400 text-slate-900 ',
+  dotActiveClass = 'bg-brand-400',
+  buttonClass = 'bg-brand-500 hover:bg-brand-400 text-onaccent ',
   finalLabel = 'Empezar',
   finalIcon = null,
   onDone,
@@ -44,7 +44,7 @@ export default function SlidesIntro({
   return (
     <div
       ref={rootRef}
-      className="fixed inset-0 z-50 bg-slate-900 text-slate-100 flex justify-center anim-screen-in"
+      className="fixed inset-0 z-50 bg-ink-900 text-ink-100 flex justify-center anim-screen-in"
       role="dialog"
       aria-modal="true"
       aria-label="Introducción"
@@ -61,7 +61,7 @@ export default function SlidesIntro({
           {!isLast && (
             <button
               onClick={onDone}
-              className="text-sm font-semibold text-slate-400 hover:text-slate-200 rounded px-2 py-1"
+              className="text-sm font-semibold text-ink-400 hover:text-ink-200 rounded px-2 py-1"
             >
               Saltar
             </button>
@@ -80,10 +80,10 @@ export default function SlidesIntro({
               className={i === index ? 'flex flex-col items-center gap-6 anim-fade-in-up' : 'hidden'}
             >
               {s.visual}
-              <h2 className="text-2xl font-semibold tracking-tight text-slate-100">
+              <h2 className="text-2xl font-semibold tracking-tight text-ink-100">
                 {s.title}
               </h2>
-              <p className="text-sm text-slate-400 leading-relaxed max-w-xs">{s.text}</p>
+              <p className="text-sm text-ink-400 leading-relaxed max-w-xs">{s.text}</p>
             </div>
           ))}
         </div>
@@ -97,7 +97,7 @@ export default function SlidesIntro({
               aria-label={`Ir al paso ${i + 1}`}
               aria-current={i === index ? 'true' : undefined}
               className={`h-2 rounded-full transition-all ${
-                i === index ? `w-6 ${dotActiveClass}` : 'w-2 bg-slate-600 hover:bg-slate-500'
+                i === index ? `w-6 ${dotActiveClass}` : 'w-2 bg-ink-600 hover:bg-ink-500'
               }`}
             />
           ))}

@@ -34,21 +34,21 @@ export default function ExercisePickerModal({ title, exercises, onSelect, onCrea
       {/* Altura fija: si el panel se achica al filtrar, el buscador baja al teclado. */}
       <div className="w-full max-w-md sheet rounded-t-3xl sm:rounded-3xl p-5 h-[88vh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between mb-3 shrink-0">
-          <h2 id="picker-ejercicio-titulo" className="text-lg font-bold text-slate-100">{title || 'Elegí un ejercicio'}</h2>
-          <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-neutral-800">
-            <X className="w-5 h-5 text-slate-400" />
+          <h2 id="picker-ejercicio-titulo" className="text-lg font-bold text-ink-100">{title || 'Elegí un ejercicio'}</h2>
+          <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-ink-800">
+            <X className="w-5 h-5 text-ink-400" />
           </button>
         </div>
 
         <div className="relative mb-3 shrink-0">
-          <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-ink-500 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setSearchFocused(true)}
             onBlur={() => setSearchFocused(false)}
             placeholder="Buscar ejercicio..."
-            className="w-full bg-neutral-800 border border-neutral-700 rounded-xl pl-9 pr-3 py-2.5 text-slate-100 placeholder-slate-500"
+            className="w-full bg-ink-800 border border-ink-700 rounded-xl pl-9 pr-3 py-2.5 text-ink-100 placeholder-ink-500"
           />
         </div>
 
@@ -59,8 +59,8 @@ export default function ExercisePickerModal({ title, exercises, onSelect, onCrea
               onClick={() => setMuscleFilter(m)}
               className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border ${
                 muscleFilter === m
-                  ? 'bg-entreno-500 text-neutral-900 border-entreno-400'
-                  : 'bg-neutral-800 text-slate-400 border-neutral-700'
+                  ? 'bg-entreno-500 text-onaccent border-entreno-400'
+                  : 'bg-ink-800 text-ink-400 border-ink-700'
               }`}
             >
               {m}
@@ -73,11 +73,11 @@ export default function ExercisePickerModal({ title, exercises, onSelect, onCrea
             <button
               key={ex.id}
               onClick={() => onSelect(ex.id)}
-              className="w-full text-left rounded-2xl bg-neutral-800/60 border border-neutral-700 p-3.5 flex items-center justify-between gap-3 hover:border-entreno-500/50"
+              className="w-full text-left rounded-2xl bg-ink-800/60 border border-ink-700 p-3.5 flex items-center justify-between gap-3 hover:border-entreno-500/50"
             >
               <div className="min-w-0">
-                <p className="text-sm font-medium text-slate-200">{ex.name}</p>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-sm font-medium text-ink-200">{ex.name}</p>
+                <p className="text-xs text-ink-500 mt-0.5">
                   {ex.muscleGroup} · {ex.equipment}
                   {ex.isCustom && <span className="ml-1.5 text-entreno-400">· personalizado</span>}
                 </p>
@@ -85,7 +85,7 @@ export default function ExercisePickerModal({ title, exercises, onSelect, onCrea
             </button>
           ))}
           {filtered.length === 0 && (
-            <p className="text-center text-sm text-slate-500 py-6">No encontramos ejercicios con ese filtro.</p>
+            <p className="text-center text-sm text-ink-500 py-6">No encontramos ejercicios con ese filtro.</p>
           )}
         </div>
 
@@ -102,13 +102,13 @@ export default function ExercisePickerModal({ title, exercises, onSelect, onCrea
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="Nombre del ejercicio"
-              className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-500"
+              className="w-full bg-ink-900 border border-ink-700 rounded-xl px-3 py-2 text-sm text-ink-100 placeholder-ink-500"
             />
             <div className="grid grid-cols-2 gap-2">
               <select
                 value={newMuscle}
                 onChange={(e) => setNewMuscle(e.target.value)}
-                className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-slate-100"
+                className="bg-ink-900 border border-ink-700 rounded-xl px-3 py-2 text-sm text-ink-100"
               >
                 {MUSCLE_GROUPS.map((m) => (
                   <option key={m} value={m}>{m}</option>
@@ -117,7 +117,7 @@ export default function ExercisePickerModal({ title, exercises, onSelect, onCrea
               <select
                 value={newEquipment}
                 onChange={(e) => setNewEquipment(e.target.value)}
-                className="bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-slate-100"
+                className="bg-ink-900 border border-ink-700 rounded-xl px-3 py-2 text-sm text-ink-100"
               >
                 {EQUIPMENT_TYPES.map((eq) => (
                   <option key={eq} value={eq}>{eq}</option>
@@ -127,13 +127,13 @@ export default function ExercisePickerModal({ title, exercises, onSelect, onCrea
             <div className="flex gap-2">
               <button
                 onClick={() => setShowNewForm(false)}
-                className="flex-1 rounded-xl border border-neutral-700 text-slate-300 py-2 text-sm font-semibold hover:bg-neutral-700"
+                className="flex-1 rounded-xl border border-ink-700 text-ink-300 py-2 text-sm font-semibold hover:bg-ink-700"
               >
                 Cancelar
               </button>
               <button
                 onClick={submitNew}
-                className="flex-1 rounded-xl bg-entreno-500 text-neutral-900 py-2 text-sm font-bold hover:bg-entreno-400"
+                className="flex-1 rounded-xl bg-entreno-500 text-onaccent py-2 text-sm font-bold hover:bg-entreno-400"
               >
                 Crear y usar
               </button>

@@ -76,11 +76,11 @@ export default function RestTimer({ durationSec, onDismiss }) {
             44px cada uno (área táctil mínima), así que en pantallas angostas el
             que tiene que ceder es este bloque de texto, no la fila. */}
         <div className="flex items-center gap-2 min-w-0">
-          <Timer className={`w-5 h-5 shrink-0 ${isDone ? 'text-neutral-900' : 'text-entreno-400'}`} />
-          <span className={`font-mono text-xl font-black shrink-0 ${isDone ? 'text-neutral-900' : 'text-entreno-300'}`}>
+          <Timer className={`w-5 h-5 shrink-0 ${isDone ? 'text-onaccent' : 'text-entreno-400'}`} />
+          <span className={`font-mono text-xl font-black shrink-0 ${isDone ? 'text-onaccent' : 'text-entreno-300'}`}>
             {mm}:{ss}
           </span>
-          <span className={`text-xs font-semibold truncate ${isDone ? 'text-neutral-900' : 'text-slate-400'}`}>
+          <span className={`text-xs font-semibold truncate ${isDone ? 'text-onaccent' : 'text-ink-400'}`}>
             {isDone ? '¡A seguir!' : 'descanso'}
           </span>
         </div>
@@ -88,23 +88,23 @@ export default function RestTimer({ durationSec, onDismiss }) {
           <button
             onClick={() => setRemaining((r) => Math.max(0, r - 15))}
             aria-label="Restar 15 segundos"
-            className={`btn-icon ${isDone ? 'hover:bg-entreno-400' : 'hover:bg-neutral-800'}`}
+            className={`btn-icon ${isDone ? 'hover:bg-entreno-400' : 'hover:bg-ink-800'}`}
           >
-            <Minus className={`w-4 h-4 ${isDone ? 'text-neutral-900' : 'text-slate-300'}`} />
+            <Minus className={`w-4 h-4 ${isDone ? 'text-onaccent' : 'text-ink-300'}`} />
           </button>
           <button
             onClick={() => setRemaining((r) => Math.max(0, r) + 15)}
             aria-label="Sumar 15 segundos"
-            className={`btn-icon ${isDone ? 'hover:bg-entreno-400' : 'hover:bg-neutral-800'}`}
+            className={`btn-icon ${isDone ? 'hover:bg-entreno-400' : 'hover:bg-ink-800'}`}
           >
-            <Plus className={`w-4 h-4 ${isDone ? 'text-neutral-900' : 'text-slate-300'}`} />
+            <Plus className={`w-4 h-4 ${isDone ? 'text-onaccent' : 'text-ink-300'}`} />
           </button>
           <button
             onClick={onDismiss}
             aria-label="Cerrar temporizador"
-            className={`btn-icon ${isDone ? 'hover:bg-entreno-400' : 'hover:bg-neutral-800'}`}
+            className={`btn-icon ${isDone ? 'hover:bg-entreno-400' : 'hover:bg-ink-800'}`}
           >
-            <X className={`w-4 h-4 ${isDone ? 'text-neutral-900' : 'text-slate-300'}`} />
+            <X className={`w-4 h-4 ${isDone ? 'text-onaccent' : 'text-ink-300'}`} />
           </button>
         </div>
       </div>

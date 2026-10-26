@@ -14,15 +14,15 @@ import React from 'react';
 
 const ACCENTS = {
   entreno: {
-    active: 'bg-entreno-500 text-ink-900',
+    active: 'bg-entreno-500 text-onaccent',
     idle: 'text-ink-400 hover:text-ink-200',
   },
   sueno: {
-    active: 'bg-sueno-500 text-ink-900',
+    active: 'bg-sueno-500 text-onaccent',
     idle: 'text-ink-400 hover:text-ink-200',
   },
   brand: {
-    active: 'bg-brand-500 text-ink-900',
+    active: 'bg-brand-500 text-onaccent',
     idle: 'text-ink-400 hover:text-ink-200',
   },
 };

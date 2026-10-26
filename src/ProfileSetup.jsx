@@ -92,7 +92,7 @@ export default function ProfileSetup({
   return (
     <div
       ref={rootRef}
-      className="fixed inset-0 z-50 bg-slate-900 text-slate-100 flex justify-center anim-screen-in"
+      className="fixed inset-0 z-50 bg-ink-900 text-ink-100 flex justify-center anim-screen-in"
       role="dialog"
       aria-modal="true"
       aria-label="Calculá tu plan"
@@ -108,7 +108,7 @@ export default function ProfileSetup({
         <div className="h-8 px-5 flex justify-end">
           <button
             onClick={onSkip}
-            className="text-sm font-semibold text-slate-400 hover:text-slate-200 rounded px-2 py-1"
+            className="text-sm font-semibold text-ink-400 hover:text-ink-200 rounded px-2 py-1"
           >
             {dismissLabel}
           </button>
@@ -118,13 +118,13 @@ export default function ProfileSetup({
         <div className="flex-1 overflow-y-auto px-6 pt-2 space-y-6">
           {/* Encabezado */}
           <div className="flex flex-col items-center text-center gap-3">
-            <div className="flex items-center justify-center w-20 h-20 rounded-full bg-emerald-500/10 border border-emerald-500/30">
-              <Calculator className="w-9 h-9 text-emerald-400" />
+            <div className="flex items-center justify-center w-20 h-20 rounded-full bg-brand-500/10 border border-brand-500/30">
+              <Calculator className="w-9 h-9 text-brand-400" />
             </div>
-            <h2 className="text-2xl font-semibold tracking-tight text-slate-100">
+            <h2 className="text-2xl font-semibold tracking-tight text-ink-100">
               Calculemos tu plan
             </h2>
-            <p className="text-sm text-slate-400 leading-relaxed max-w-xs">
+            <p className="text-sm text-ink-400 leading-relaxed max-w-xs">
               Con estos datos estimamos tus calorías diarias con la fórmula
               Mifflin-St Jeor, la más usada en nutrición clínica. Podés ajustarlo
               después.
@@ -164,17 +164,17 @@ export default function ProfileSetup({
                   onClick={() => setActivityLevel(o.value)}
                   className={`w-full flex items-center justify-between rounded-xl border px-4 py-2.5 text-left transition-colors ${
                     activityLevel === o.value
-                      ? 'bg-emerald-500/10 border-emerald-500/40'
-                      : 'bg-slate-800/60 border-slate-700 hover:border-slate-600'
+                      ? 'bg-brand-500/10 border-brand-500/40'
+                      : 'bg-ink-800/60 border-ink-700 hover:border-ink-600'
                   }`}
                 >
                   <div className="min-w-0">
-                    <p className={`text-sm font-semibold ${activityLevel === o.value ? 'text-emerald-300' : 'text-slate-200'}`}>
+                    <p className={`text-sm font-semibold ${activityLevel === o.value ? 'text-brand-300' : 'text-ink-200'}`}>
                       {o.label}
                     </p>
-                    <p className="text-xs text-slate-500 truncate">{o.hint}</p>
+                    <p className="text-xs text-ink-500 truncate">{o.hint}</p>
                   </div>
-                  {activityLevel === o.value && <Check className="w-4 h-4 text-emerald-400 shrink-0 ml-2" />}
+                  {activityLevel === o.value && <Check className="w-4 h-4 text-brand-400 shrink-0 ml-2" />}
                 </button>
               ))}
             </div>
@@ -196,29 +196,29 @@ export default function ProfileSetup({
 
           {/* Vista previa del plan calculado */}
           {plan ? (
-            <div className="rounded-2xl bg-emerald-500/5 border border-emerald-500/25 p-4 anim-fade-in-up">
+            <div className="rounded-2xl bg-brand-500/5 border border-brand-500/25 p-4 anim-fade-in-up">
               <div className="flex items-center gap-2 mb-3">
-                <Flame className="w-5 h-5 text-emerald-400" />
-                <span className="text-sm font-bold text-slate-200">Tu plan estimado</span>
+                <Flame className="w-5 h-5 text-brand-400" />
+                <span className="text-sm font-bold text-ink-200">Tu plan estimado</span>
               </div>
               <div className="flex items-baseline gap-1.5 mb-3">
-                <span className="font-mono text-4xl font-black text-emerald-300">{plan.calories}</span>
-                <span className="text-sm text-slate-400 font-semibold">kcal / día</span>
+                <span className="font-mono text-4xl font-black text-brand-300">{plan.calories}</span>
+                <span className="text-sm text-ink-400 font-semibold">kcal / día</span>
               </div>
               <div className="grid grid-cols-3 gap-2">
-                <MacroPill label="Proteína" value={`${Math.round(plan.protein)} g`} color="text-emerald-300" />
+                <MacroPill label="Proteína" value={`${Math.round(plan.protein)} g`} color="text-brand-300" />
                 <MacroPill label="Carbos" value={`${Math.round(plan.carbs)} g`} color="text-amber-300" />
-                <MacroPill label="Grasas" value={`${Math.round(plan.fat)} g`} color="text-slate-300" />
+                <MacroPill label="Grasas" value={`${Math.round(plan.fat)} g`} color="text-ink-300" />
               </div>
-              <p className="mt-3 text-[11px] text-slate-500 leading-snug flex items-start gap-1.5">
+              <p className="mt-3 text-[11px] text-ink-500 leading-snug flex items-start gap-1.5">
                 <Info className="w-3.5 h-3.5 shrink-0 mt-px" />
                 Es una estimación orientativa, no un consejo médico. Ante dudas,
                 consultá a un profesional de la salud.
               </p>
             </div>
           ) : (
-            <div className="rounded-2xl border border-dashed border-slate-700 p-4 text-center">
-              <p className="text-xs text-slate-500">
+            <div className="rounded-2xl border border-dashed border-ink-700 p-4 text-center">
+              <p className="text-xs text-ink-500">
                 Completá edad, peso y altura para ver tu plan estimado.
               </p>
             </div>
@@ -232,8 +232,8 @@ export default function ProfileSetup({
             disabled={!isComplete}
             className={`w-full flex items-center justify-center gap-2 rounded-2xl font-bold py-3.5 transition-colors ${
               isComplete
-                ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-900'
-                : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                ? 'bg-brand-500 hover:bg-brand-400 text-onaccent'
+                : 'bg-ink-800 text-ink-500 cursor-not-allowed'
             }`}
           >
             {submitLabel}
@@ -264,8 +264,8 @@ function SegButton({ active, onClick, children }) {
       onClick={onClick}
       className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition-colors ${
         active
-          ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
-          : 'bg-slate-800/60 border-slate-700 text-slate-300 hover:border-slate-600'
+          ? 'bg-brand-500/15 border-brand-500/40 text-brand-300'
+          : 'bg-ink-800/60 border-ink-700 text-ink-300 hover:border-ink-600'
       }`}
     >
       {children}
@@ -278,8 +278,8 @@ function NumberField({ label, unit, value, onChange, invalid, placeholder }) {
     <div className="space-y-1.5">
       <p className="label-section">{label}</p>
       <div
-        className={`rounded-xl border bg-slate-800/60 px-3 py-2.5 flex items-baseline gap-1 ${
-          invalid ? 'border-red-500/50' : 'border-slate-700 focus-within:border-emerald-500/50'
+        className={`rounded-xl border bg-ink-800/60 px-3 py-2.5 flex items-baseline gap-1 ${
+          invalid ? 'border-red-500/50' : 'border-ink-700 focus-within:border-brand-500/50'
         }`}
       >
         <input
@@ -289,9 +289,9 @@ function NumberField({ label, unit, value, onChange, invalid, placeholder }) {
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           aria-label={label}
-          className="w-full bg-transparent text-lg font-bold text-slate-100 placeholder:text-slate-600 focus:outline-none min-w-0"
+          className="w-full bg-transparent text-lg font-bold text-ink-100 placeholder:text-ink-600 focus:outline-none min-w-0"
         />
-        <span className="text-xs text-slate-500 shrink-0">{unit}</span>
+        <span className="text-xs text-ink-500 shrink-0">{unit}</span>
       </div>
     </div>
   );
@@ -301,7 +301,7 @@ function MacroPill({ label, value, color }) {
   return (
     <div className="rounded-xl surface px-2 py-2 text-center">
       <p className={`font-mono text-base font-bold ${color}`}>{value}</p>
-      <p className="label-section text-slate-500 mt-0.5">{label}</p>
+      <p className="label-section text-ink-500 mt-0.5">{label}</p>
     </div>
   );
 }

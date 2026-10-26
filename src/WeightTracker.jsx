@@ -52,7 +52,7 @@ function Sparkline({ entries }) {
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-16" preserveAspectRatio="none">
         <polyline points={points} fill="none" stroke={theme.accentBright} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
       </svg>
-      <div className="flex justify-between text-[10px] text-slate-500 font-mono">
+      <div className="flex justify-between text-[10px] text-ink-500 font-mono">
         <span>{entries[0].date.slice(5)}</span>
         <span>
           {min}kg – {max}kg
@@ -94,19 +94,19 @@ export default function WeightTracker() {
   };
 
   const DeltaIcon = delta == null ? Minus : delta < 0 ? TrendingDown : delta > 0 ? TrendingUp : Minus;
-  const deltaColor = delta == null || delta === 0 ? 'text-slate-400' : delta < 0 ? 'text-emerald-400' : 'text-amber-400';
+  const deltaColor = delta == null || delta === 0 ? 'text-ink-400' : delta < 0 ? 'text-brand-400' : 'text-amber-400';
 
   return (
     <div className="rounded-3xl surface p-5">
       <div className="flex items-center gap-2 mb-3">
-        <Scale className="w-4 h-4 text-emerald-400" />
+        <Scale className="w-4 h-4 text-brand-400" />
         <h2 className="label-section">Peso corporal</h2>
       </div>
 
       {/* Sin registros el texto explicativo va en su propia fila: al costado del
           input quedaba en una columna de 4 palabras de ancho, partido en 4 líneas. */}
       {!latest && (
-        <p className="text-sm text-slate-500 leading-relaxed mb-3">
+        <p className="text-sm text-ink-500 leading-relaxed mb-3">
           Registrá tu peso para ver la tendencia y saber si el plan está funcionando.
         </p>
       )}
@@ -114,9 +114,9 @@ export default function WeightTracker() {
       <div className={`flex items-end gap-3 ${latest ? 'justify-between' : 'justify-end'}`}>
         {latest && (
           <div>
-            <p className="num-display text-3xl text-slate-100">
+            <p className="num-display text-3xl text-ink-100">
               {latest.kg}
-              <span className="text-base font-medium text-slate-400 ml-1 tracking-normal">kg</span>
+              <span className="text-base font-medium text-ink-400 ml-1 tracking-normal">kg</span>
             </p>
             <p className={`text-xs mt-0.5 flex items-center gap-1 ${deltaColor}`}>
               <DeltaIcon className="w-3.5 h-3.5" />
@@ -135,19 +135,19 @@ export default function WeightTracker() {
             onChange={(e) => setInput(e.target.value)}
             placeholder={latest ? String(latest.kg) : 'kg'}
             inputMode="decimal"
-            className="w-20 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono text-center"
+            className="w-20 bg-ink-900 border border-ink-700 rounded-xl px-3 py-2.5 text-ink-100 font-mono text-center"
           />
           <button
             onClick={submit}
             aria-label="Guardar peso de hoy"
-            className="p-2.5 rounded-xl bg-emerald-500 text-slate-900 hover:bg-emerald-400"
+            className="p-2.5 rounded-xl bg-brand-500 text-onaccent hover:bg-brand-400"
           >
             <Check className="w-5 h-5" />
           </button>
         </div>
       </div>
 
-      {savedMsg && <p className="text-xs text-emerald-400 mt-2">Peso de hoy guardado ✓</p>}
+      {savedMsg && <p className="text-xs text-brand-400 mt-2">Peso de hoy guardado ✓</p>}
 
       <Sparkline entries={entries} />
     </div>

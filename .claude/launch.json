@@ -3,13 +3,9 @@
   "configurations": [
     {
       "name": "nutritrack-dev",
-      "runtimeExecutable": "/Users/alejo/.nvm/versions/node/v24.18.0/bin/node",
-      "runtimeArgs": ["/Users/alejo/.nvm/versions/node/v24.18.0/lib/node_modules/npm/bin/npm-cli.js", "run", "dev"],
-      "port": 5173,
-      "autoPort": true,
-      "env": {
-        "PATH": "/Users/alejo/.nvm/versions/node/v24.18.0/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
-      }
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 5173
     }
   ]
 }

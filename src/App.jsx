@@ -1038,7 +1038,7 @@ export default function NutriTrackApp() {
   // ---------------------------------------------------------------------
 
   return (
-    <div className="min-h-screen w-full bg-slate-900 text-slate-100 flex justify-center">
+    <div className="min-h-screen w-full bg-ink-900 text-ink-100 flex justify-center">
       {/* `isolate` crea contexto de apilamiento, y sin eso la luz ambiente no
           se ve: un `z-index: -1` sin contexto propio se va detrás del fondo
           opaco del contenedor de afuera. `isolation` no crea bloque contenedor
@@ -1088,9 +1088,9 @@ export default function NutriTrackApp() {
               <button
                 onClick={() => setShowInstallGuide(true)}
                 aria-label="Instalar la app en tu iPhone"
-                className="btn-icon bg-slate-800 border border-slate-700 hover:bg-slate-700 transition-colors shrink-0"
+                className="btn-icon bg-ink-800 border border-ink-700 hover:bg-ink-700 transition-colors shrink-0"
               >
-                <Download className="w-5 h-5 text-slate-300" />
+                <Download className="w-5 h-5 text-ink-300" />
               </button>
             )}
             <div className="min-w-0">
@@ -1102,7 +1102,7 @@ export default function NutriTrackApp() {
                     ? 'text-entreno-400'
                     : activeTab === 'sueno'
                     ? 'text-sueno-400'
-                    : 'text-slate-500'
+                    : 'text-ink-500'
                 }`}
               >
                 {activeTab === 'entreno' ? 'Seguimiento semanal' : activeTab === 'sueno' ? 'Sueño y recuperación' : formatDisplayDate(selectedDate)}
@@ -1110,7 +1110,7 @@ export default function NutriTrackApp() {
               {/* Título en blanco sólido, no en degradado de color. El degradado
                   hacía que el nombre de la pantalla compitiera con el dato
                   principal; el acento se reserva para los números. */}
-              <h1 className="text-2xl font-semibold tracking-tight text-slate-100 truncate">
+              <h1 className="text-2xl font-semibold tracking-tight text-ink-100 truncate">
                 {activeTab === 'entreno' ? 'Mis Entrenamientos' : activeTab === 'sueno' ? 'Mi Descanso' : 'Mi Plan Nutricional'}
               </h1>
             </div>
@@ -1119,23 +1119,23 @@ export default function NutriTrackApp() {
             <button
               onClick={() => setShowNotes(true)}
               aria-label="Bloc de notas"
-              className="btn-icon bg-slate-800 border border-slate-700 hover:bg-slate-700 transition-colors"
+              className="btn-icon bg-ink-800 border border-ink-700 hover:bg-ink-700 transition-colors"
             >
-              <PenLine className="w-5 h-5 text-slate-300" />
+              <PenLine className="w-5 h-5 text-ink-300" />
             </button>
             <button
               onClick={() => setShowPdfs(true)}
               aria-label="Planes en PDF"
-              className="btn-icon bg-slate-800 border border-slate-700 hover:bg-slate-700 transition-colors"
+              className="btn-icon bg-ink-800 border border-ink-700 hover:bg-ink-700 transition-colors"
             >
-              <FileText className="w-5 h-5 text-slate-300" />
+              <FileText className="w-5 h-5 text-ink-300" />
             </button>
             <button
               onClick={openSettings}
               aria-label="Ajustes del plan"
-              className="btn-icon bg-slate-800 border border-slate-700 hover:bg-slate-700 transition-colors"
+              className="btn-icon bg-ink-800 border border-ink-700 hover:bg-ink-700 transition-colors"
             >
-              <Settings className="w-5 h-5 text-slate-300" />
+              <Settings className="w-5 h-5 text-ink-300" />
             </button>
           </div>
         </header>
@@ -1389,7 +1389,7 @@ export default function NutriTrackApp() {
               <span
                 key={activeNavIndex}
                 className={`nav-indicator anim-nav-liquid block h-full w-full rounded-full ${
-                  navTabs[activeNavIndex]?.indicatorClass ?? 'bg-emerald-500/20'
+                  navTabs[activeNavIndex]?.indicatorClass ?? 'bg-brand-500/20'
                 }`}
               />
             </span>
@@ -1510,16 +1510,16 @@ function DateNav({ isToday, label, onPrev, onNext, onToday }) {
       <button
         onClick={onPrev}
         aria-label="Ver día anterior"
-        className="btn-icon hover:bg-slate-700"
+        className="btn-icon hover:bg-ink-700"
       >
-        <ChevronLeft className="w-4 h-4 text-slate-300" />
+        <ChevronLeft className="w-4 h-4 text-ink-300" />
       </button>
       <div className="text-center min-w-[120px]">
-        <p className="text-sm font-semibold text-slate-200">{label}</p>
+        <p className="text-sm font-semibold text-ink-200">{label}</p>
         {!isToday && (
           <button
             onClick={onToday}
-            className="text-[11px] text-emerald-400 font-semibold mt-0.5 rounded"
+            className="text-[11px] text-brand-400 font-semibold mt-0.5 rounded"
           >
             Volver a hoy
           </button>
@@ -1530,10 +1530,10 @@ function DateNav({ isToday, label, onPrev, onNext, onToday }) {
         disabled={isToday}
         aria-label="Ver día siguiente"
         className={`btn-icon ${
-          isToday ? 'opacity-30 cursor-not-allowed' : 'hover:bg-slate-700'
+          isToday ? 'opacity-30 cursor-not-allowed' : 'hover:bg-ink-700'
         }`}
       >
-        <ChevronRight className="w-4 h-4 text-slate-300" />
+        <ChevronRight className="w-4 h-4 text-ink-300" />
       </button>
     </div>
   );
@@ -1544,7 +1544,7 @@ function NavButton({
   label,
   active,
   onClick,
-  activeColorClass = 'text-emerald-300',
+  activeColorClass = 'text-brand-300',
 }) {
   return (
     <button
@@ -1562,7 +1562,7 @@ function NavButton({
       // la activa se distingue por color de módulo, por la cápsula que lleva
       // debajo y porque su ícono está escalado (ver .nav-icon en index.css).
       className={`nav-btn relative flex-1 flex flex-col items-center gap-1 py-1.5 rounded-full transition-colors duration-200 ${
-        active ? activeColorClass : 'text-slate-300 hover:text-slate-100'
+        active ? activeColorClass : 'text-ink-300 hover:text-ink-100'
       }`}
     >
       {/* El fondo activo ya no vive acá: lo dibuja el indicador deslizante del
@@ -1577,11 +1577,11 @@ function NavButton({
 
 // Fallback mientras se descarga el chunk de un módulo opcional (React.lazy).
 // Ocupa alto para que la pantalla no salte cuando llega el contenido real.
-function ModuleLoading({ accentClass = 'text-slate-400' }) {
+function ModuleLoading({ accentClass = 'text-ink-400' }) {
   return (
     <div className="flex flex-col items-center justify-center py-24 gap-3" role="status" aria-live="polite">
       <Loader2 className={`w-6 h-6 animate-spin ${accentClass}`} />
-      <p className="text-xs text-slate-500">Cargando…</p>
+      <p className="text-xs text-ink-500">Cargando…</p>
     </div>
   );
 }
@@ -1592,15 +1592,15 @@ function FeedbackBanner({ feedback }) {
   const styleFor = (type) => {
     switch (type) {
       case 'positive':
-        return { wrap: 'bg-emerald-500/10 border-emerald-500/30', icon: Award, iconClass: 'text-emerald-400' };
+        return { wrap: 'bg-brand-500/10 border-brand-500/30', icon: Award, iconClass: 'text-brand-400' };
       case 'free':
         return { wrap: 'bg-amber-500/10 border-amber-500/30', icon: Sparkles, iconClass: 'text-amber-400' };
       case 'reminder':
-        return { wrap: 'bg-teal-500/10 border-teal-500/30', icon: Info, iconClass: 'text-teal-300' };
+        return { wrap: 'bg-brand-500/10 border-brand-500/30', icon: Info, iconClass: 'text-brand-300' };
       case 'water':
-        return { wrap: 'bg-cyan-500/10 border-cyan-500/30', icon: Droplet, iconClass: 'text-cyan-300' };
+        return { wrap: 'bg-ink-500/10 border-ink-500/30', icon: Droplet, iconClass: 'text-ink-300' };
       default:
-        return { wrap: 'bg-slate-800 border-slate-700', icon: Info, iconClass: 'text-slate-400' };
+        return { wrap: 'bg-ink-800 border-ink-700', icon: Info, iconClass: 'text-ink-400' };
     }
   };
 
@@ -1618,7 +1618,7 @@ function FeedbackBanner({ feedback }) {
     return (
       <div className={`rounded-2xl border px-4 py-3 flex items-start gap-3 ${s.wrap}`} style={style}>
         <Icon className={`w-5 h-5 mt-0.5 shrink-0 ${s.iconClass}`} />
-        <p className="text-sm text-slate-200 leading-snug">{f.text}</p>
+        <p className="text-sm text-ink-200 leading-snug">{f.text}</p>
       </div>
     );
   };
@@ -1641,7 +1641,7 @@ function FeedbackBanner({ feedback }) {
           <button
             onClick={() => setExpanded((v) => !v)}
             aria-expanded={expanded}
-            className="w-full min-h-11 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-slate-500 hover:text-slate-300 rounded-xl transition-colors"
+            className="w-full min-h-11 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-ink-500 hover:text-ink-300 rounded-xl transition-colors"
           >
             <ChevronDown
               className={`w-4 h-4 transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`}
@@ -1792,7 +1792,7 @@ function TabMiDia({
             x={ring.center}
             y={ring.center - 2}
             textAnchor="middle"
-            className="fill-slate-100"
+            className="fill-ink-100"
             style={{ fontSize: 38, fontWeight: 680, letterSpacing: '-0.035em', fontVariantNumeric: 'tabular-nums' }}
           >
             {Math.round(animatedKcal)}
@@ -1801,13 +1801,13 @@ function TabMiDia({
             x={ring.center}
             y={ring.center + 22}
             textAnchor="middle"
-            className="fill-slate-500"
+            className="fill-ink-500"
             style={{ fontSize: 12, fontWeight: 500, letterSpacing: '0.01em' }}
           >
             de {Math.round(goals.calories)} kcal
           </text>
         </svg>
-        <p className={`mt-1 text-xs font-semibold ${ring.overshoot ? 'text-amber-400' : 'text-emerald-400'}`}>{statusText}</p>
+        <p className={`mt-1 text-xs font-semibold ${ring.overshoot ? 'text-amber-400' : 'text-brand-400'}`}>{statusText}</p>
 
         {/* Progreso por macro contra su meta (se omite en arranque calmo, donde
             todo estaría en cero) */}
@@ -1822,7 +1822,7 @@ function TabMiDia({
         {/* Acción principal: el corazón de la dinámica diaria */}
         <button
           onClick={onRegister}
-          className="w-full mt-4 flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold py-3 transition-colors"
+          className="w-full mt-4 flex items-center justify-center gap-2 rounded-2xl bg-brand-500 hover:bg-brand-400 text-onaccent font-bold py-3 transition-colors"
         >
           <PlusCircle className="w-5 h-5" />
           Registrar comida
@@ -1846,7 +1846,7 @@ function TabMiDia({
           <div className="rounded-2xl surface px-4 py-3 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
               <Droplets className="w-5 h-5 text-ink-300 shrink-0" />
-              <span className="text-sm font-semibold text-slate-200">Agua</span>
+              <span className="text-sm font-semibold text-ink-200">Agua</span>
               <span className="font-mono text-xs text-ink-400 truncate">
                 {waterGlasses}/{waterGoalGlasses} vasos
               </span>
@@ -1855,11 +1855,11 @@ function TabMiDia({
               <button
                 onClick={() => addWater(-1)}
                 aria-label="Quitar un vaso de agua"
-                className="btn-icon bg-slate-700 hover:bg-slate-600 transition-colors"
+                className="btn-icon bg-ink-700 hover:bg-ink-600 transition-colors"
               >
-                <Minus className="w-4 h-4 text-slate-200" />
+                <Minus className="w-4 h-4 text-ink-200" />
               </button>
-              <span className="font-mono text-sm text-slate-200 w-16 text-center">{log.water} ml</span>
+              <span className="font-mono text-sm text-ink-200 w-16 text-center">{log.water} ml</span>
               <button
                 onClick={() => addWater(1)}
                 aria-label="Agregar un vaso de agua"
@@ -1884,11 +1884,11 @@ function TabMiDia({
         {allEntries.length === 0 ? (
           <button
             onClick={onRegister}
-            className="w-full rounded-2xl border border-dashed border-slate-700 p-6 text-center hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-colors"
+            className="w-full rounded-2xl border border-dashed border-ink-700 p-6 text-center hover:border-brand-500/50 hover:bg-brand-500/5 transition-colors"
           >
-            <Utensils className="w-6 h-6 text-slate-500 mx-auto mb-2" />
-            <p className="text-sm font-semibold text-slate-300">Empezá tu día</p>
-            <p className="text-xs text-slate-500 mt-1">Registrá tu primera comida para ver el anillo llenarse.</p>
+            <Utensils className="w-6 h-6 text-ink-500 mx-auto mb-2" />
+            <p className="text-sm font-semibold text-ink-300">Empezá tu día</p>
+            <p className="text-xs text-ink-500 mt-1">Registrá tu primera comida para ver el anillo llenarse.</p>
           </button>
         ) : (
           <ul className="space-y-2">
@@ -1908,9 +1908,9 @@ function TabMiDia({
                     <span className={`label-section ${entry.kind === 'plan' ? 'text-brand-400' : 'text-amber-400'}`}>
                       {entry.kind === 'plan' ? 'Plan oficial' : 'Fuera de plan'}
                     </span>
-                    <span className="text-[11px] text-slate-500">{entry.time}</span>
+                    <span className="text-[11px] text-ink-500">{entry.time}</span>
                   </div>
-                  <p className="text-sm text-slate-200 truncate mt-0.5">{entry.name}</p>
+                  <p className="text-sm text-ink-200 truncate mt-0.5">{entry.name}</p>
                   {/* El alcohol solo se muestra cuando existe (3 ítems del
                       catálogo). Sin él la fila de una cerveza dice "205 kcal ·
                       P 2 · C 17 · G 0", que a ojo no cierra: las 129 kcal que
@@ -1918,7 +1918,7 @@ function TabMiDia({
                   {/* Los `|| 0` no son decorativos: una comida vieja puede no
                       tener la clave del macro (no es 0, no existe), y round1()
                       de undefined imprimía "P NaNg". */}
-                  <p className="text-xs text-slate-400 font-mono mt-0.5">
+                  <p className="text-xs text-ink-400 font-mono mt-0.5">
                     {Math.round(kcalOf(entry))} kcal · P {round1(entry.p || 0)}g · C{' '}
                     {round1(entry.c || 0)}g · G {round1(entry.f || 0)}g
                     {entry.alc ? ` · Alc ${round1(entry.alc)}g` : ''}
@@ -1942,16 +1942,16 @@ function TabMiDia({
                   <button
                     onClick={() => onEdit(entry, entry.kind === 'plan')}
                     aria-label="Editar comida"
-                    className="btn-icon hover:bg-slate-700"
+                    className="btn-icon hover:bg-ink-700"
                   >
-                    <Pencil className="w-4 h-4 text-slate-500" />
+                    <Pencil className="w-4 h-4 text-ink-500" />
                   </button>
                   <button
                     onClick={() => handleRemove(entry.id, entry.kind === 'plan')}
                     aria-label="Eliminar registro"
-                    className="btn-icon hover:bg-slate-700"
+                    className="btn-icon hover:bg-ink-700"
                   >
-                    <Trash2 className="w-4 h-4 text-slate-500" />
+                    <Trash2 className="w-4 h-4 text-ink-500" />
                   </button>
                 </div>
               </li>
@@ -1978,16 +1978,16 @@ function MacroProgress({ label, color, value = 0, goal = 0, tol = 0 }) {
     <div className="min-w-0">
       <div className="flex items-center gap-1.5">
         <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
-        <span className="text-[11px] text-slate-400 truncate">{label}</span>
+        <span className="text-[11px] text-ink-400 truncate">{label}</span>
       </div>
       <p className="mt-1 font-mono text-xs">
-        <span className={over ? 'text-amber-400 font-semibold' : inRange ? 'text-emerald-400 font-semibold' : 'text-slate-200'}>
+        <span className={over ? 'text-amber-400 font-semibold' : inRange ? 'text-brand-400 font-semibold' : 'text-ink-200'}>
           {grams}
         </span>
-        <span className="text-slate-500">/{target}g</span>
+        <span className="text-ink-500">/{target}g</span>
       </p>
       <div
-        className="mt-1 h-1.5 rounded-full bg-slate-700 overflow-hidden"
+        className="mt-1 h-1.5 rounded-full bg-ink-700 overflow-hidden"
         role="progressbar"
         aria-label={label}
         aria-valuenow={grams}
@@ -2100,11 +2100,11 @@ function TabRegistrar({
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-2 gap-2 bg-slate-800 border border-slate-700 rounded-2xl p-1">
+      <div className="grid grid-cols-2 gap-2 bg-ink-800 border border-ink-700 rounded-2xl p-1">
         <button
           onClick={() => setRegisterMode('plan')}
           className={`py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors ${
-            registerMode === 'plan' ? 'bg-emerald-500 text-slate-900' : 'text-slate-400'
+            registerMode === 'plan' ? 'bg-brand-500 text-onaccent' : 'text-ink-400'
           }`}
         >
           <Utensils className="w-4 h-4" /> Plan Oficial
@@ -2112,7 +2112,7 @@ function TabRegistrar({
         <button
           onClick={() => setRegisterMode('libre')}
           className={`py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors ${
-            registerMode === 'libre' ? 'bg-amber-500 text-slate-900' : 'text-slate-400'
+            registerMode === 'libre' ? 'bg-amber-500 text-onaccent' : 'text-ink-400'
           }`}
         >
           <Coffee className="w-4 h-4" /> Fuera de Plan
@@ -2123,21 +2123,21 @@ function TabRegistrar({
       <button
         onClick={() => setShowEquiv(true)}
         className={`w-full rounded-2xl surface p-3.5 flex items-center gap-3 transition-colors ${
-          registerMode === 'plan' ? 'hover:border-emerald-500/50' : 'hover:border-amber-500/50'
+          registerMode === 'plan' ? 'hover:border-brand-500/50' : 'hover:border-amber-500/50'
         }`}
       >
         <span
           className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-            registerMode === 'plan' ? 'bg-emerald-500/15' : 'bg-amber-500/15'
+            registerMode === 'plan' ? 'bg-brand-500/15' : 'bg-amber-500/15'
           }`}
         >
-          <Scale className={`w-4 h-4 ${registerMode === 'plan' ? 'text-emerald-400' : 'text-amber-400'}`} />
+          <Scale className={`w-4 h-4 ${registerMode === 'plan' ? 'text-brand-400' : 'text-amber-400'}`} />
         </span>
         <div className="min-w-0 text-left flex-1">
-          <p className="text-sm font-semibold text-slate-100">Equivalencias de macros</p>
-          <p className="text-xs text-slate-500">Lo que falta del día, o un alimento por otro (2 huevos → ?)</p>
+          <p className="text-sm font-semibold text-ink-100">Equivalencias de macros</p>
+          <p className="text-xs text-ink-500">Lo que falta del día, o un alimento por otro (2 huevos → ?)</p>
         </div>
-        <ChevronRight className="w-4 h-4 text-slate-500 shrink-0" />
+        <ChevronRight className="w-4 h-4 text-ink-500 shrink-0" />
       </button>
 
       {showEquiv && (
@@ -2152,7 +2152,7 @@ function TabRegistrar({
       {/* FRECUENTES: tus alimentos más registrados, a un toque. Se ocultan mientras buscás. */}
       {frequents.length > 0 && foodQuery.trim().length < 2 && (
         <div>
-          <p className="label-section text-slate-500 mb-2 flex items-center gap-1.5">
+          <p className="label-section text-ink-500 mb-2 flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5" /> Frecuentes
           </p>
           <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
@@ -2161,14 +2161,14 @@ function TabRegistrar({
                 key={food.name}
                 onClick={() => addFrequent(food)}
                 aria-label={`Agregar ${food.name}`}
-                className={`shrink-0 max-w-[75%] rounded-full border pl-3.5 pr-2.5 py-2 text-sm text-slate-200 flex items-center gap-1.5 transition-colors ${
+                className={`shrink-0 max-w-[75%] rounded-full border pl-3.5 pr-2.5 py-2 text-sm text-ink-200 flex items-center gap-1.5 transition-colors ${
                   registerMode === 'plan'
-                    ? 'border-emerald-500/30 bg-emerald-500/5 hover:border-emerald-500/60'
+                    ? 'border-brand-500/30 bg-brand-500/5 hover:border-brand-500/60'
                     : 'border-amber-500/30 bg-amber-500/5 hover:border-amber-500/60'
                 }`}
               >
                 <span className="truncate">{food.name}</span>
-                <Plus className={`w-3.5 h-3.5 shrink-0 ${registerMode === 'plan' ? 'text-emerald-400' : 'text-amber-400'}`} />
+                <Plus className={`w-3.5 h-3.5 shrink-0 ${registerMode === 'plan' ? 'text-brand-400' : 'text-amber-400'}`} />
               </button>
             ))}
           </div>
@@ -2179,7 +2179,7 @@ function TabRegistrar({
       <div>
         <div className="flex gap-2">
           <div className="relative flex-1 min-w-0">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-ink-500 absolute left-3 top-1/2 -translate-y-1/2" />
             {/* Con los campos a 16px la lista de tres ejemplos no entraba —de
                 hecho ya se cortaba a 13px, mostrando "…(banana, milane"—. Un
                 solo ejemplo alcanza para transmitir que se busca por nombre. */}
@@ -2187,16 +2187,16 @@ function TabRegistrar({
               value={foodQuery}
               onChange={(e) => setFoodQuery(e.target.value)}
               placeholder="Buscar alimento (banana…)"
-              className="w-full surface rounded-2xl pl-9 pr-3 py-3 text-sm text-slate-100 placeholder-slate-500"
+              className="w-full surface rounded-2xl pl-9 pr-3 py-3 text-sm text-ink-100 placeholder-ink-500"
             />
           </div>
           {/* Escanear el paquete evita tipear los macros de un producto envasado */}
           <button
             onClick={onScan}
             aria-label="Escanear código de barras"
-            className="shrink-0 px-3.5 rounded-2xl surface hover:border-emerald-500/50 transition-colors"
+            className="shrink-0 px-3.5 rounded-2xl surface hover:border-brand-500/50 transition-colors"
           >
-            <ScanLine className="w-5 h-5 text-slate-300" />
+            <ScanLine className="w-5 h-5 text-ink-300" />
           </button>
         </div>
         {foodQuery.trim().length >= 2 && (
@@ -2209,22 +2209,22 @@ function TabRegistrar({
                 key={food.id}
                 onClick={() => pickFood(food)}
                 className={`w-full text-left rounded-xl surface px-3.5 py-2.5 flex items-center justify-between gap-3 transition-colors ${
-                  registerMode === 'plan' ? 'hover:border-emerald-500/50' : 'hover:border-amber-500/50'
+                  registerMode === 'plan' ? 'hover:border-brand-500/50' : 'hover:border-amber-500/50'
                 }`}
               >
                 <div className="min-w-0">
-                  <p className="text-sm text-slate-200 truncate">{food.name}</p>
-                  <p className="text-xs text-slate-500 font-mono mt-0.5">
+                  <p className="text-sm text-ink-200 truncate">{food.name}</p>
+                  <p className="text-xs text-ink-500 font-mono mt-0.5">
                     {Math.round(kcalOf(food))} kcal · P {food.p}g · C {food.c}g · G {food.f}g
                   </p>
                 </div>
                 <PlusCircle
-                  className={`w-5 h-5 shrink-0 ${registerMode === 'plan' ? 'text-emerald-400' : 'text-amber-400'}`}
+                  className={`w-5 h-5 shrink-0 ${registerMode === 'plan' ? 'text-brand-400' : 'text-amber-400'}`}
                 />
               </button>
             ))}
             {foodResults.length === 0 && offState !== 'loading' && offResults.length === 0 && (
-              <p className="text-xs text-slate-500 text-center py-2">
+              <p className="text-xs text-ink-500 text-center py-2">
                 Sin resultados. Podés cargarlo manualmente más abajo.
               </p>
             )}
@@ -2233,27 +2233,27 @@ function TabRegistrar({
                 locales: son más lentos y menos curados, pero cubren lo que la
                 base local no tiene, que es justo lo que obligaba a buscar afuera. */}
             {offState === 'loading' && (
-              <p className="text-xs text-slate-500 text-center py-2 flex items-center justify-center gap-2">
+              <p className="text-xs text-ink-500 text-center py-2 flex items-center justify-center gap-2">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 Buscando productos envasados…
               </p>
             )}
 
             {offState === 'offline' && (
-              <p className="text-xs text-slate-500 text-center py-2">
+              <p className="text-xs text-ink-500 text-center py-2">
                 Estás sin conexión. Los productos envasados necesitan internet.
               </p>
             )}
 
             {offState === 'error' && (
               <div className="text-center py-2">
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-ink-500">
                   El buscador de envasados no responde ahora. Los alimentos de arriba
                   siguen disponibles.
                 </p>
                 <button
                   onClick={() => setOffRetry((n) => n + 1)}
-                  className="mt-2 inline-flex items-center gap-1.5 rounded-lg surface px-3 py-1.5 text-xs font-semibold text-slate-200 hover:border-emerald-500/50 transition-colors"
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-lg surface px-3 py-1.5 text-xs font-semibold text-ink-200 hover:border-brand-500/50 transition-colors"
                 >
                   <RotateCcw className="w-3.5 h-3.5" /> Reintentar
                 </button>
@@ -2262,7 +2262,7 @@ function TabRegistrar({
 
             {offResults.length > 0 && (
               <>
-                <p className="label-section text-slate-500 pt-2 flex items-center gap-1.5">
+                <p className="label-section text-ink-500 pt-2 flex items-center gap-1.5">
                   <Barcode className="w-3.5 h-3.5" /> Productos envasados
                 </p>
                 {offResults.map((food) => (
@@ -2270,18 +2270,18 @@ function TabRegistrar({
                     key={food.id}
                     onClick={() => pickFood(food)}
                     className={`w-full text-left rounded-xl surface px-3.5 py-2.5 flex items-center justify-between gap-3 transition-colors ${
-                      registerMode === 'plan' ? 'hover:border-emerald-500/50' : 'hover:border-amber-500/50'
+                      registerMode === 'plan' ? 'hover:border-brand-500/50' : 'hover:border-amber-500/50'
                     }`}
                   >
                     <div className="min-w-0">
-                      <p className="text-sm text-slate-200 truncate">{food.name}</p>
-                      <p className="text-xs text-slate-500 font-mono mt-0.5">
+                      <p className="text-sm text-ink-200 truncate">{food.name}</p>
+                      <p className="text-xs text-ink-500 font-mono mt-0.5">
                         {Math.round(kcalOf(food))} kcal · P {food.p}g · C {food.c}g · G {food.f}g
-                        <span className="text-slate-600"> · por 100g</span>
+                        <span className="text-ink-600"> · por 100g</span>
                       </p>
                     </div>
                     <PlusCircle
-                      className={`w-5 h-5 shrink-0 ${registerMode === 'plan' ? 'text-emerald-400' : 'text-amber-400'}`}
+                      className={`w-5 h-5 shrink-0 ${registerMode === 'plan' ? 'text-brand-400' : 'text-amber-400'}`}
                     />
                   </button>
                 ))}
@@ -2297,39 +2297,39 @@ function TabRegistrar({
             {catalog.map((item) => (
               <div
                 key={item.id}
-                className="rounded-2xl surface flex items-center gap-1 pr-1 hover:border-emerald-500/50 transition-colors"
+                className="rounded-2xl surface flex items-center gap-1 pr-1 hover:border-brand-500/50 transition-colors"
               >
                 <button
                   onClick={() => askQuantity(item, 'plan')}
                   className="flex-1 min-w-0 text-left p-4 flex items-center justify-between gap-3 rounded-2xl"
                 >
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-slate-200">{item.name}</p>
-                    <p className="text-xs text-slate-500 font-mono mt-0.5">
+                    <p className="text-sm font-medium text-ink-200">{item.name}</p>
+                    <p className="text-xs text-ink-500 font-mono mt-0.5">
                       {Math.round(kcalOf(item))} kcal · P {item.p}g · C {item.c}g · G {item.f}g
                     </p>
                   </div>
-                  <PlusCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+                  <PlusCircle className="w-5 h-5 text-brand-400 shrink-0" />
                 </button>
                 <button
                   onClick={() => onEditCatalogItem(item)}
                   aria-label="Editar esta opción del plan"
-                  className="btn-icon hover:bg-slate-700 shrink-0"
+                  className="btn-icon hover:bg-ink-700 shrink-0"
                 >
-                  <Pencil className="w-4 h-4 text-slate-500" />
+                  <Pencil className="w-4 h-4 text-ink-500" />
                 </button>
               </div>
             ))}
 
             {catalog.length === 0 && (
-              <div className="rounded-2xl border border-dashed border-slate-700 p-6 text-center text-slate-500 text-sm">
+              <div className="rounded-2xl border border-dashed border-ink-700 p-6 text-center text-ink-500 text-sm">
                 Buscá un alimento arriba para registrarlo. Guardá acá tus comidas frecuentes para tenerlas a un toque.
               </div>
             )}
 
             <button
               onClick={onAddCatalogItem}
-              className="w-full rounded-2xl border border-dashed border-emerald-500/40 text-emerald-300 py-3 text-sm font-semibold hover:bg-emerald-500/5"
+              className="w-full rounded-2xl border border-dashed border-brand-500/40 text-brand-300 py-3 text-sm font-semibold hover:bg-brand-500/5"
             >
               + Agregar comida frecuente
             </button>
@@ -2339,7 +2339,7 @@ function TabRegistrar({
 
       {registerMode === 'libre' && (
         <div className="space-y-4">
-          <p className="label-section text-slate-500">Gustos frecuentes</p>
+          <p className="label-section text-ink-500">Gustos frecuentes</p>
           <div className="space-y-2">
             {freeCatalog.map((item) => (
               <div
@@ -2351,8 +2351,8 @@ function TabRegistrar({
                   className="flex-1 min-w-0 text-left p-4 flex items-center justify-between gap-3 rounded-2xl"
                 >
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-slate-200">{item.name}</p>
-                    <p className="text-xs text-slate-500 font-mono mt-0.5">
+                    <p className="text-sm font-medium text-ink-200">{item.name}</p>
+                    <p className="text-xs text-ink-500 font-mono mt-0.5">
                       {Math.round(kcalOf(item))} kcal · P {item.p}g · C {item.c}g · G {item.f}g
                     </p>
                   </div>
@@ -2361,15 +2361,15 @@ function TabRegistrar({
                 <button
                   onClick={() => onEditFreeCatalogItem(item)}
                   aria-label="Editar esta opción fuera de plan"
-                  className="btn-icon hover:bg-slate-700 shrink-0"
+                  className="btn-icon hover:bg-ink-700 shrink-0"
                 >
-                  <Pencil className="w-4 h-4 text-slate-500" />
+                  <Pencil className="w-4 h-4 text-ink-500" />
                 </button>
               </div>
             ))}
 
             {freeCatalog.length === 0 && (
-              <div className="rounded-2xl border border-dashed border-slate-700 p-6 text-center text-slate-500 text-sm">
+              <div className="rounded-2xl border border-dashed border-ink-700 p-6 text-center text-ink-500 text-sm">
                 Buscá un alimento arriba o cargá uno abajo: queda guardado acá para reusarlo de un toque.
               </div>
             )}
@@ -2383,18 +2383,18 @@ function TabRegistrar({
               + Cargar otra comida fuera de plan
             </button>
           ) : (
-            <div className="rounded-2xl bg-slate-800/60 border border-amber-500/30 p-4 space-y-3">
+            <div className="rounded-2xl bg-ink-800/60 border border-amber-500/30 p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold text-amber-300">Nueva comida libre</p>
                 <button onClick={() => setShowCustomForm(false)} aria-label="Cerrar formulario">
-                  <X className="w-4 h-4 text-slate-400" />
+                  <X className="w-4 h-4 text-ink-400" />
                 </button>
               </div>
               <input
                 value={customName}
                 onChange={(e) => setCustomName(e.target.value)}
                 placeholder="¿Qué comiste?"
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-500"
+                className="w-full bg-ink-900 border border-ink-700 rounded-xl px-3 py-2 text-sm text-ink-100 placeholder-ink-500"
               />
               <div className="grid grid-cols-2 gap-2">
                 <input
@@ -2402,14 +2402,14 @@ function TabRegistrar({
                   onChange={(e) => setCustomKcal(e.target.value)}
                   placeholder="Kcal"
                   inputMode="decimal"
-                  className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-500"
+                  className="bg-ink-900 border border-ink-700 rounded-xl px-3 py-2 text-sm text-ink-100 placeholder-ink-500"
                 />
                 <input
                   value={customP}
                   onChange={(e) => setCustomP(e.target.value)}
                   placeholder="Proteínas (g)"
                   inputMode="decimal"
-                  className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-500"
+                  className="bg-ink-900 border border-ink-700 rounded-xl px-3 py-2 text-sm text-ink-100 placeholder-ink-500"
                 />
                 {/* "Carbos" y no "Carbohidratos": con los campos a 16px —el piso
                     que evita el zoom al enfocar, ver index.css— el nombre largo
@@ -2420,19 +2420,19 @@ function TabRegistrar({
                   onChange={(e) => setCustomC(e.target.value)}
                   placeholder="Carbos (g)"
                   inputMode="decimal"
-                  className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-500"
+                  className="bg-ink-900 border border-ink-700 rounded-xl px-3 py-2 text-sm text-ink-100 placeholder-ink-500"
                 />
                 <input
                   value={customF}
                   onChange={(e) => setCustomF(e.target.value)}
                   placeholder="Grasas (g)"
                   inputMode="decimal"
-                  className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-500"
+                  className="bg-ink-900 border border-ink-700 rounded-xl px-3 py-2 text-sm text-ink-100 placeholder-ink-500"
                 />
               </div>
               <button
                 onClick={submitCustomFree}
-                className="w-full rounded-xl bg-amber-500 text-slate-900 font-semibold py-2.5 text-sm hover:bg-amber-400"
+                className="w-full rounded-xl bg-amber-500 text-onaccent font-semibold py-2.5 text-sm hover:bg-amber-400"
               >
                 Agregar a mi registro
               </button>
@@ -2460,18 +2460,18 @@ function TabProgreso({ weekStats, goals, tipIndex, setTipIndex, streak, weeklyFr
               estado del plan. Ver DailyRings. */}
           <div className="flex items-center gap-1.5 text-amber-400">
             <Flame className="w-5 h-5" />
-            <span className="num-display text-2xl text-slate-100">{streak}</span>
+            <span className="num-display text-2xl text-ink-100">{streak}</span>
           </div>
-          <p className="text-[11px] text-slate-400 mt-1 leading-tight">
+          <p className="text-[11px] text-ink-400 mt-1 leading-tight">
             {streak === 1 ? 'día seguido dentro de rango' : 'días seguidos dentro de rango'}
           </p>
         </div>
         <div className="rounded-2xl surface p-4 flex flex-col items-center justify-center text-center">
           <div className="flex items-center gap-1.5 text-amber-400">
             <Sparkles className="w-5 h-5" />
-            <span className="num-display text-2xl text-slate-100">{weeklyFreeCount}</span>
+            <span className="num-display text-2xl text-ink-100">{weeklyFreeCount}</span>
           </div>
-          <p className="text-[11px] text-slate-400 mt-1 leading-tight">
+          <p className="text-[11px] text-ink-400 mt-1 leading-tight">
             {weeklyFreeCount === 1 ? 'gusto esta semana' : 'gustos esta semana'}
           </p>
         </div>
@@ -2488,45 +2488,45 @@ function TabProgreso({ weekStats, goals, tipIndex, setTipIndex, streak, weeklyFr
                 <div className="w-full h-28 flex items-end">
                   <div
                     className={`w-full rounded-t-md ${
-                      d.kcal === 0 ? 'bg-slate-700' : withinTol ? 'bg-emerald-500' : 'bg-amber-500'
+                      d.kcal === 0 ? 'bg-ink-700' : withinTol ? 'bg-brand-500' : 'bg-amber-500'
                     }`}
                     style={{ height: `${h}%` }}
                   />
                 </div>
-                <span className="text-[10px] text-slate-500 uppercase font-medium">{d.label}</span>
+                <span className="text-[10px] text-ink-500 uppercase font-medium">{d.label}</span>
               </div>
             );
           })}
         </div>
-        <div className="flex items-center gap-2 mt-3 text-[11px] text-slate-500">
-          <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block" /> Dentro de rango
+        <div className="flex items-center gap-2 mt-3 text-[11px] text-ink-500">
+          <span className="w-2.5 h-2.5 rounded-sm bg-brand-500 inline-block" /> Dentro de rango
           <span className="w-2.5 h-2.5 rounded-sm bg-amber-500 inline-block ml-3" /> Fuera de rango
         </div>
       </div>
 
       <div className="rounded-3xl surface-accent p-5">
         <div className="flex items-center gap-2 mb-3">
-          <Lightbulb className="w-5 h-5 text-emerald-300" />
+          <Lightbulb className="w-5 h-5 text-brand-300" />
           <h2 className="label-section">Tip del día</h2>
         </div>
-        <p className="text-sm text-slate-200 leading-relaxed min-h-[3rem]">{TIPS[tipIndex]}</p>
+        <p className="text-sm text-ink-200 leading-relaxed min-h-[3rem]">{TIPS[tipIndex]}</p>
         <div className="flex items-center justify-between mt-4">
           <button
             onClick={prevTip}
             aria-label="Tip anterior"
-            className="btn-icon bg-slate-800/60 hover:bg-slate-700"
+            className="btn-icon bg-ink-800/60 hover:bg-ink-700"
           >
-            <ChevronLeft className="w-4 h-4 text-slate-300" />
+            <ChevronLeft className="w-4 h-4 text-ink-300" />
           </button>
-          <span className="text-xs text-slate-500 font-mono">
+          <span className="text-xs text-ink-500 font-mono">
             {tipIndex + 1} / {TIPS.length}
           </span>
           <button
             onClick={nextTip}
             aria-label="Tip siguiente"
-            className="btn-icon bg-slate-800/60 hover:bg-slate-700"
+            className="btn-icon bg-ink-800/60 hover:bg-ink-700"
           >
-            <ChevronRight className="w-4 h-4 text-slate-300" />
+            <ChevronRight className="w-4 h-4 text-ink-300" />
           </button>
         </div>
       </div>
@@ -2540,7 +2540,7 @@ function TabProgreso({ weekStats, goals, tipIndex, setTipIndex, streak, weeklyFr
           <GoalChip label="Grasas" value={`${round1(goals.fat)} g`} />
           <GoalChip label="Agua" value={`${goals.water} ml`} />
         </div>
-        <p className="text-xs text-slate-500 mt-3">
+        <p className="text-xs text-ink-500 mt-3">
           Podés editar estos valores desde el ícono de ajustes en la parte superior de la app.
         </p>
       </div>
@@ -2550,25 +2550,25 @@ function TabProgreso({ weekStats, goals, tipIndex, setTipIndex, streak, weeklyFr
 
 function GoalChip({ label, value }) {
   return (
-    <div className="rounded-xl bg-slate-900/60 border border-slate-700 px-3 py-2">
-      <p className="label-section text-slate-500">{label}</p>
-      <p className="font-mono text-slate-200 font-semibold">{value}</p>
+    <div className="rounded-xl bg-ink-900/60 border border-ink-700 px-3 py-2">
+      <p className="label-section text-ink-500">{label}</p>
+      <p className="font-mono text-ink-200 font-semibold">{value}</p>
     </div>
   );
 }
 
 function EditEntryModal({ isPlan, name, setName, kcal, setKcal, p, setP, c, setC, f, setF, onSave, onCancel }) {
-  const accentText = isPlan ? 'text-emerald-300' : 'text-amber-300';
+  const accentText = isPlan ? 'text-brand-300' : 'text-amber-300';
   const accentBorder = isPlan ? 'sheet-plan' : 'sheet-free';
-  const accentBg = isPlan ? 'bg-emerald-500' : 'bg-amber-500';
+  const accentBg = isPlan ? 'bg-brand-500' : 'bg-amber-500';
 
   return (
     <Sheet onClose={onCancel} labelledBy="editar-comida-titulo">
       <div className={`w-full max-w-md sheet ${accentBorder} rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto`}>
         <div className="flex items-center justify-between mb-1">
-          <h2 id="editar-comida-titulo" className="text-lg font-bold text-slate-100">Editar comida</h2>
-          <button onClick={onCancel} aria-label="Cerrar edición" className="btn-icon hover:bg-slate-700">
-            <X className="w-5 h-5 text-slate-400" />
+          <h2 id="editar-comida-titulo" className="text-lg font-bold text-ink-100">Editar comida</h2>
+          <button onClick={onCancel} aria-label="Cerrar edición" className="btn-icon hover:bg-ink-700">
+            <X className="w-5 h-5 text-ink-400" />
           </button>
         </div>
         <p className={`text-xs font-semibold mb-5 ${accentText}`}>
@@ -2577,52 +2577,52 @@ function EditEntryModal({ isPlan, name, setName, kcal, setKcal, p, setP, c, setC
 
         <div className="space-y-4">
           <div>
-            <label className="text-xs font-semibold text-slate-400 mb-1 block">Nombre</label>
+            <label className="text-xs font-semibold text-ink-400 mb-1 block">Nombre</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100`}
+              className={`w-full bg-ink-900 border border-ink-700 rounded-xl px-3 py-2.5 text-ink-100`}
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-semibold text-slate-400 mb-1 block">Calorías (kcal)</label>
+              <label className="text-xs font-semibold text-ink-400 mb-1 block">Calorías (kcal)</label>
               <input
                 type="number"
                 inputMode="decimal"
                 value={kcal}
                 onChange={(e) => setKcal(e.target.value)}
-                className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono`}
+                className={`w-full bg-ink-900 border border-ink-700 rounded-xl px-3 py-2.5 text-ink-100 font-mono`}
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-400 mb-1 block">Proteínas (g)</label>
+              <label className="text-xs font-semibold text-ink-400 mb-1 block">Proteínas (g)</label>
               <input
                 type="number"
                 inputMode="decimal"
                 value={p}
                 onChange={(e) => setP(e.target.value)}
-                className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono`}
+                className={`w-full bg-ink-900 border border-ink-700 rounded-xl px-3 py-2.5 text-ink-100 font-mono`}
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-400 mb-1 block">Carbohidratos (g)</label>
+              <label className="text-xs font-semibold text-ink-400 mb-1 block">Carbohidratos (g)</label>
               <input
                 type="number"
                 inputMode="decimal"
                 value={c}
                 onChange={(e) => setC(e.target.value)}
-                className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono`}
+                className={`w-full bg-ink-900 border border-ink-700 rounded-xl px-3 py-2.5 text-ink-100 font-mono`}
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-400 mb-1 block">Grasas (g)</label>
+              <label className="text-xs font-semibold text-ink-400 mb-1 block">Grasas (g)</label>
               <input
                 type="number"
                 inputMode="decimal"
                 value={f}
                 onChange={(e) => setF(e.target.value)}
-                className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono`}
+                className={`w-full bg-ink-900 border border-ink-700 rounded-xl px-3 py-2.5 text-ink-100 font-mono`}
               />
             </div>
           </div>
@@ -2631,13 +2631,13 @@ function EditEntryModal({ isPlan, name, setName, kcal, setKcal, p, setP, c, setC
         <div className="flex gap-3 mt-6">
           <button
             onClick={onCancel}
-            className="flex-1 rounded-xl border border-slate-600 text-slate-300 py-2.5 text-sm font-semibold hover:bg-slate-700"
+            className="flex-1 rounded-xl border border-ink-600 text-ink-300 py-2.5 text-sm font-semibold hover:bg-ink-700"
           >
             Cancelar
           </button>
           <button
             onClick={onSave}
-            className={`flex-1 rounded-xl ${accentBg} text-slate-900 py-2.5 text-sm font-bold flex items-center justify-center gap-2`}
+            className={`flex-1 rounded-xl ${accentBg} text-onaccent py-2.5 text-sm font-bold flex items-center justify-center gap-2`}
           >
             <Save className="w-4 h-4" /> Guardar
           </button>
@@ -2657,66 +2657,66 @@ function CatalogItemModal({ isNew, isFree, name, setName, kcal, setKcal, p, setP
         }`}
       >
         <div className="flex items-center justify-between mb-1">
-          <h2 id="opcion-catalogo-titulo" className="text-lg font-bold text-slate-100">
+          <h2 id="opcion-catalogo-titulo" className="text-lg font-bold text-ink-100">
             {isNew ? `Nueva opción ${noun}` : `Editar opción ${noun}`}
           </h2>
-          <button onClick={onCancel} aria-label="Cerrar" className="btn-icon hover:bg-slate-700">
-            <X className="w-5 h-5 text-slate-400" />
+          <button onClick={onCancel} aria-label="Cerrar" className="btn-icon hover:bg-ink-700">
+            <X className="w-5 h-5 text-ink-400" />
           </button>
         </div>
-        <p className={`text-xs font-semibold mb-5 ${isFree ? 'text-amber-300' : 'text-emerald-300'}`}>
+        <p className={`text-xs font-semibold mb-5 ${isFree ? 'text-amber-300' : 'text-brand-300'}`}>
           Estos valores son los que va a usar la app cada vez que agregues esta opción
         </p>
 
         <div className="space-y-4">
           <div>
-            <label className="text-xs font-semibold text-slate-400 mb-1 block">Nombre</label>
+            <label className="text-xs font-semibold text-ink-400 mb-1 block">Nombre</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ej: Tostadas con palta"
-              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 placeholder-slate-500"
+              className="w-full bg-ink-900 border border-ink-700 rounded-xl px-3 py-2.5 text-ink-100 placeholder-ink-500"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-semibold text-slate-400 mb-1 block">Calorías (kcal)</label>
+              <label className="text-xs font-semibold text-ink-400 mb-1 block">Calorías (kcal)</label>
               <input
                 type="number"
                 inputMode="decimal"
                 value={kcal}
                 onChange={(e) => setKcal(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono"
+                className="w-full bg-ink-900 border border-ink-700 rounded-xl px-3 py-2.5 text-ink-100 font-mono"
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-400 mb-1 block">Proteínas (g)</label>
+              <label className="text-xs font-semibold text-ink-400 mb-1 block">Proteínas (g)</label>
               <input
                 type="number"
                 inputMode="decimal"
                 value={p}
                 onChange={(e) => setP(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono"
+                className="w-full bg-ink-900 border border-ink-700 rounded-xl px-3 py-2.5 text-ink-100 font-mono"
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-400 mb-1 block">Carbohidratos (g)</label>
+              <label className="text-xs font-semibold text-ink-400 mb-1 block">Carbohidratos (g)</label>
               <input
                 type="number"
                 inputMode="decimal"
                 value={c}
                 onChange={(e) => setC(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono"
+                className="w-full bg-ink-900 border border-ink-700 rounded-xl px-3 py-2.5 text-ink-100 font-mono"
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-400 mb-1 block">Grasas (g)</label>
+              <label className="text-xs font-semibold text-ink-400 mb-1 block">Grasas (g)</label>
               <input
                 type="number"
                 inputMode="decimal"
                 value={f}
                 onChange={(e) => setF(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono"
+                className="w-full bg-ink-900 border border-ink-700 rounded-xl px-3 py-2.5 text-ink-100 font-mono"
               />
             </div>
           </div>
@@ -2725,7 +2725,7 @@ function CatalogItemModal({ isNew, isFree, name, setName, kcal, setKcal, p, setP
         {!isNew && (
           <button
             onClick={onDelete}
-            className="w-full mt-4 text-center text-xs text-rose-400 hover:text-rose-300 py-1 flex items-center justify-center gap-1.5"
+            className="w-full mt-4 text-center text-xs text-red-400 hover:text-red-300 py-1 flex items-center justify-center gap-1.5"
           >
             <Trash2 className="w-3.5 h-3.5" /> Eliminar esta opción {noun}
           </button>
@@ -2734,13 +2734,13 @@ function CatalogItemModal({ isNew, isFree, name, setName, kcal, setKcal, p, setP
         <div className="flex gap-3 mt-5">
           <button
             onClick={onCancel}
-            className="flex-1 rounded-xl border border-slate-600 text-slate-300 py-2.5 text-sm font-semibold hover:bg-slate-700"
+            className="flex-1 rounded-xl border border-ink-600 text-ink-300 py-2.5 text-sm font-semibold hover:bg-ink-700"
           >
             Cancelar
           </button>
           <button
             onClick={onSave}
-            className="flex-1 rounded-xl bg-emerald-500 text-slate-900 py-2.5 text-sm font-bold flex items-center justify-center gap-2 hover:bg-emerald-400"
+            className="flex-1 rounded-xl bg-brand-500 text-onaccent py-2.5 text-sm font-bold flex items-center justify-center gap-2 hover:bg-brand-400"
           >
             <Save className="w-4 h-4" /> Guardar
           </button>
@@ -2776,28 +2776,28 @@ function InstallGuideModal({ onClose }) {
     <Sheet onClose={onClose} closeOnBackdrop labelledBy="instalar-titulo">
       <div className="w-full max-w-md sheet rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-1">
-          <h2 id="instalar-titulo" className="text-lg font-bold text-slate-100">Instalar en tu iPhone</h2>
-          <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-slate-700">
-            <X className="w-5 h-5 text-slate-400" />
+          <h2 id="instalar-titulo" className="text-lg font-bold text-ink-100">Instalar en tu iPhone</h2>
+          <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-ink-700">
+            <X className="w-5 h-5 text-ink-400" />
           </button>
         </div>
-        <p className="text-sm text-slate-400 mb-1">
+        <p className="text-sm text-ink-400 mb-1">
           Agregá esta app a tu pantalla de inicio para abrirla como una app nativa, con ícono propio y sin la barra de
           direcciones.
         </p>
-        <p className="text-xs font-semibold text-emerald-400 mb-5">Funciona desde Safari (no desde Chrome u otros navegadores).</p>
+        <p className="text-xs font-semibold text-brand-400 mb-5">Funciona desde Safari (no desde Chrome u otros navegadores).</p>
 
         <div className="space-y-4">
           {steps.map((step, i) => (
             <div key={i} className="flex items-start gap-3">
-              <div className="shrink-0 w-9 h-9 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
-                <step.icon className="w-4 h-4 text-emerald-400" />
+              <div className="shrink-0 w-9 h-9 rounded-full bg-brand-500/15 border border-brand-500/30 flex items-center justify-center">
+                <step.icon className="w-4 h-4 text-brand-400" />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-slate-200">
+                <p className="text-sm font-semibold text-ink-200">
                   {i + 1}. {step.title}
                 </p>
-                <p className="text-xs text-slate-400 mt-0.5 leading-snug">{step.text}</p>
+                <p className="text-xs text-ink-400 mt-0.5 leading-snug">{step.text}</p>
               </div>
             </div>
           ))}
@@ -2805,7 +2805,7 @@ function InstallGuideModal({ onClose }) {
 
         <button
           onClick={onClose}
-          className="w-full mt-6 rounded-xl bg-emerald-500 text-slate-900 py-2.5 text-sm font-bold hover:bg-emerald-400"
+          className="w-full mt-6 rounded-xl bg-brand-500 text-onaccent py-2.5 text-sm font-bold hover:bg-brand-400"
         >
           Entendido
         </button>
@@ -2861,22 +2861,22 @@ function SettingsModal({ tempGoals, setTempGoals, onSave, onCancel, onReset, onR
     <Sheet onClose={onCancel} labelledBy="ajustes-titulo">
       <div className="w-full max-w-md sheet rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-5">
-          <h2 id="ajustes-titulo" className="text-lg font-bold text-slate-100">Ajustes de mi plan</h2>
-          <button onClick={onCancel} aria-label="Cerrar ajustes" className="btn-icon hover:bg-slate-700">
-            <X className="w-5 h-5 text-slate-400" />
+          <h2 id="ajustes-titulo" className="text-lg font-bold text-ink-100">Ajustes de mi plan</h2>
+          <button onClick={onCancel} aria-label="Cerrar ajustes" className="btn-icon hover:bg-ink-700">
+            <X className="w-5 h-5 text-ink-400" />
           </button>
         </div>
 
         <div className="space-y-4">
           {fields.map((f) => (
             <div key={f.key}>
-              <label className="text-xs font-semibold text-slate-400 mb-1 block">{f.label}</label>
+              <label className="text-xs font-semibold text-ink-400 mb-1 block">{f.label}</label>
               <input
                 type="number"
                 step={f.step}
                 value={tempGoals[f.key]}
                 onChange={(e) => setTempGoals((prev) => ({ ...prev, [f.key]: e.target.value }))}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 font-mono"
+                className="w-full bg-ink-900 border border-ink-700 rounded-xl px-3 py-2.5 text-ink-100 font-mono"
               />
             </div>
           ))}
@@ -2885,45 +2885,45 @@ function SettingsModal({ tempGoals, setTempGoals, onSave, onCancel, onReset, onR
         <div className="flex gap-3 mt-6">
           <button
             onClick={onReset}
-            className="flex-1 rounded-xl border border-slate-600 text-slate-300 py-2.5 text-sm font-semibold flex items-center justify-center gap-2 hover:bg-slate-700"
+            className="flex-1 rounded-xl border border-ink-600 text-ink-300 py-2.5 text-sm font-semibold flex items-center justify-center gap-2 hover:bg-ink-700"
           >
             <RotateCcw className="w-4 h-4" /> Restaurar
           </button>
           <button
             onClick={onSave}
-            className="flex-1 rounded-xl bg-emerald-500 text-slate-900 py-2.5 text-sm font-bold flex items-center justify-center gap-2 hover:bg-emerald-400"
+            className="flex-1 rounded-xl bg-brand-500 text-onaccent py-2.5 text-sm font-bold flex items-center justify-center gap-2 hover:bg-brand-400"
           >
             <Save className="w-4 h-4" /> Guardar
           </button>
         </div>
 
         {/* Recalcular el plan a partir del perfil (fórmula Mifflin-St Jeor) */}
-        <div className="mt-6 pt-5 border-t border-slate-700">
+        <div className="mt-6 pt-5 border-t border-ink-700">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <Calculator className="w-4 h-4 text-emerald-400" />
-                <h3 className="text-sm font-bold text-slate-100">Recalcular mi plan</h3>
+                <Calculator className="w-4 h-4 text-brand-400" />
+                <h3 className="text-sm font-bold text-ink-100">Recalcular mi plan</h3>
               </div>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-ink-500 mt-1">
                 Estimá tus calorías y macros según tu peso, altura y objetivo actuales.
               </p>
             </div>
             <button
               onClick={onRecalculate}
-              className="shrink-0 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 px-3.5 py-2 text-sm font-semibold hover:bg-emerald-500/25"
+              className="shrink-0 rounded-xl bg-brand-500/15 border border-brand-500/40 text-brand-300 px-3.5 py-2 text-sm font-semibold hover:bg-brand-500/25"
             >
               Recalcular
             </button>
           </div>
         </div>
 
-        <div className="mt-6 pt-5 border-t border-slate-700">
+        <div className="mt-6 pt-5 border-t border-ink-700">
           <div className="flex items-center gap-2 mb-1">
-            <LayoutGrid className="w-4 h-4 text-emerald-400" />
-            <h3 className="text-sm font-bold text-slate-100">Módulos</h3>
+            <LayoutGrid className="w-4 h-4 text-brand-400" />
+            <h3 className="text-sm font-bold text-ink-100">Módulos</h3>
           </div>
-          <p className="text-xs text-slate-500 mb-3">
+          <p className="text-xs text-ink-500 mb-3">
             Activá solo lo que quieras trackear. La nutrición siempre está activa.
           </p>
           <div className="space-y-3">
@@ -2936,10 +2936,10 @@ function SettingsModal({ tempGoals, setTempGoals, onSave, onCancel, onReset, onR
               return (
                 <div key={mod.key} className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 min-w-0">
-                    <Icon className="w-4 h-4 text-slate-300 shrink-0" />
+                    <Icon className="w-4 h-4 text-ink-300 shrink-0" />
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-200">{mod.label}</p>
-                      <p className="text-xs text-slate-500 leading-tight">{mod.desc}</p>
+                      <p className="text-sm font-semibold text-ink-200">{mod.label}</p>
+                      <p className="text-xs text-ink-500 leading-tight">{mod.desc}</p>
                     </div>
                   </div>
                   <button
@@ -2947,7 +2947,7 @@ function SettingsModal({ tempGoals, setTempGoals, onSave, onCancel, onReset, onR
                     role="switch"
                     aria-checked={on}
                     aria-label={`Activar ${mod.label}`}
-                    className={`shrink-0 w-12 h-7 rounded-full p-0.5 transition-colors ${on ? 'bg-emerald-500' : 'bg-slate-600'}`}
+                    className={`shrink-0 w-12 h-7 rounded-full p-0.5 transition-colors ${on ? 'bg-brand-500' : 'bg-ink-600'}`}
                   >
                     <span
                       className={`block w-6 h-6 rounded-full bg-white transition-transform ${on ? 'translate-x-5' : 'translate-x-0'}`}
@@ -2959,12 +2959,12 @@ function SettingsModal({ tempGoals, setTempGoals, onSave, onCancel, onReset, onR
           </div>
         </div>
 
-        <div className="mt-6 pt-5 border-t border-slate-700">
+        <div className="mt-6 pt-5 border-t border-ink-700">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <Bell className="w-4 h-4 text-emerald-400" />
-                <h3 className="text-sm font-bold text-slate-100">Recordatorios</h3>
+                <Bell className="w-4 h-4 text-brand-400" />
+                <h3 className="text-sm font-bold text-ink-100">Recordatorios</h3>
               </div>
               {/* La copy dice exactamente lo que el interruptor hace. La anterior
                   —"te avisamos si pasan varias horas..."— se leía como una
@@ -2973,7 +2973,7 @@ function SettingsModal({ tempGoals, setTempGoals, onSave, onCancel, onReset, onR
                   app, y en iPhone el sistema le congela los temporizadores
                   apenas pasa a segundo plano. Prometer un aviso que no llega es
                   peor que no ofrecerlo. */}
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-ink-500 mt-1">
                 Al abrir la app te avisamos si pasaron varias horas sin registrar. En iPhone no
                 llegan con la app cerrada: el sistema la suspende y no hay servidor que la despierte.
               </p>
@@ -2984,7 +2984,7 @@ function SettingsModal({ tempGoals, setTempGoals, onSave, onCancel, onReset, onR
               aria-checked={remindersEnabled}
               aria-label="Activar recordatorios"
               className={`shrink-0 w-12 h-7 rounded-full p-0.5 transition-colors ${
-                remindersEnabled ? 'bg-emerald-500' : 'bg-slate-600'
+                remindersEnabled ? 'bg-brand-500' : 'bg-ink-600'
               }`}
             >
               <span
@@ -2996,32 +2996,32 @@ function SettingsModal({ tempGoals, setTempGoals, onSave, onCancel, onReset, onR
           </div>
         </div>
 
-        <div className="mt-6 pt-5 border-t border-slate-700">
+        <div className="mt-6 pt-5 border-t border-ink-700">
           <div className="flex items-center gap-2 mb-1">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <h3 className="text-sm font-bold text-slate-100">Copia de seguridad</h3>
+            <ShieldCheck className="w-4 h-4 text-brand-400" />
+            <h3 className="text-sm font-bold text-ink-100">Copia de seguridad</h3>
           </div>
-          <p className="text-xs text-slate-500 mb-3">
+          <p className="text-xs text-ink-500 mb-3">
             Guarda o restaura todos tus datos (nutrición, entreno y sueño) en un solo archivo. Útil antes de cambiar de
             teléfono o desinstalar la app.
           </p>
           <div className="flex gap-3">
             <button
               onClick={handleExport}
-              className="flex-1 rounded-xl border border-slate-600 text-slate-300 py-2.5 text-sm font-semibold flex items-center justify-center gap-2 hover:bg-slate-700"
+              className="flex-1 rounded-xl border border-ink-600 text-ink-300 py-2.5 text-sm font-semibold flex items-center justify-center gap-2 hover:bg-ink-700"
             >
               <Download className="w-4 h-4" /> Exportar todo
             </button>
             <button
               onClick={handleImportClick}
-              className="flex-1 rounded-xl border border-slate-600 text-slate-300 py-2.5 text-sm font-semibold flex items-center justify-center gap-2 hover:bg-slate-700"
+              className="flex-1 rounded-xl border border-ink-600 text-ink-300 py-2.5 text-sm font-semibold flex items-center justify-center gap-2 hover:bg-ink-700"
             >
               <Upload className="w-4 h-4" /> Restaurar copia
             </button>
           </div>
           <input ref={fileInputRef} type="file" accept="application/json" onChange={handleFileSelected} className="hidden" />
           {backupMsg && (
-            <p className={`text-xs mt-2.5 ${backupMsg.type === 'ok' ? 'text-emerald-400' : 'text-rose-400'}`}>{backupMsg.text}</p>
+            <p className={`text-xs mt-2.5 ${backupMsg.type === 'ok' ? 'text-brand-400' : 'text-red-400'}`}>{backupMsg.text}</p>
           )}
         </div>
       </div>

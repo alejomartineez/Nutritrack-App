@@ -26,12 +26,12 @@ function RoutineManagerModal({ routines, activeRoutineId, onSelect, onRename, on
     <Sheet onClose={onClose} labelledBy="rutinas-titulo">
       <div className="w-full max-w-md sheet rounded-t-3xl sm:rounded-3xl p-5 max-h-[85vh] flex flex-col">
         <div className="flex items-center justify-between mb-1">
-          <h2 id="rutinas-titulo" className="text-lg font-bold text-slate-100">Mis rutinas</h2>
-          <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-neutral-800">
-            <X className="w-5 h-5 text-slate-400" />
+          <h2 id="rutinas-titulo" className="text-lg font-bold text-ink-100">Mis rutinas</h2>
+          <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-ink-800">
+            <X className="w-5 h-5 text-ink-400" />
           </button>
         </div>
-        <p className="text-xs text-slate-500 mb-4">Tocá una rutina para activarla. La activa es la que ves en la semana.</p>
+        <p className="text-xs text-ink-500 mb-4">Tocá una rutina para activarla. La activa es la que ves en la semana.</p>
 
         <div className="flex-1 overflow-y-auto space-y-2">
           {routines.map((r) => {
@@ -39,19 +39,19 @@ function RoutineManagerModal({ routines, activeRoutineId, onSelect, onRename, on
 
             if (renamingId === r.id) {
               return (
-                <div key={r.id} className="rounded-2xl border border-entreno-500/40 bg-neutral-800/60 p-2.5 flex items-center gap-2">
+                <div key={r.id} className="rounded-2xl border border-entreno-500/40 bg-ink-800/60 p-2.5 flex items-center gap-2">
                   <input
                     autoFocus
                     value={renameValue}
                     onChange={(e) => setRenameValue(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && commitRename()}
-                    className="flex-1 min-w-0 bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-slate-100"
+                    className="flex-1 min-w-0 bg-ink-900 border border-ink-700 rounded-lg px-3 py-2 text-sm text-ink-100"
                   />
-                  <button onClick={commitRename} className="px-3 py-2 rounded-lg bg-entreno-500 text-neutral-900 text-xs font-bold shrink-0">
+                  <button onClick={commitRename} className="px-3 py-2 rounded-lg bg-entreno-500 text-onaccent text-xs font-bold shrink-0">
                     Guardar
                   </button>
-                  <button onClick={() => setRenamingId(null)} aria-label="Cancelar" className="p-2 rounded-lg hover:bg-neutral-700 shrink-0">
-                    <X className="w-4 h-4 text-slate-400" />
+                  <button onClick={() => setRenamingId(null)} aria-label="Cancelar" className="p-2 rounded-lg hover:bg-ink-700 shrink-0">
+                    <X className="w-4 h-4 text-ink-400" />
                   </button>
                 </div>
               );
@@ -59,10 +59,10 @@ function RoutineManagerModal({ routines, activeRoutineId, onSelect, onRename, on
 
             if (confirmDeleteId === r.id) {
               return (
-                <div key={r.id} className="rounded-2xl border border-rose-500/40 bg-rose-500/5 p-3.5 flex items-center justify-between gap-2">
-                  <p className="text-sm text-slate-200 min-w-0 truncate">¿Eliminar “{r.name}”?</p>
+                <div key={r.id} className="rounded-2xl border border-red-500/40 bg-red-500/5 p-3.5 flex items-center justify-between gap-2">
+                  <p className="text-sm text-ink-200 min-w-0 truncate">¿Eliminar “{r.name}”?</p>
                   <div className="flex items-center gap-2 shrink-0">
-                    <button onClick={() => setConfirmDeleteId(null)} className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:bg-neutral-700">
+                    <button onClick={() => setConfirmDeleteId(null)} className="px-3 py-1.5 rounded-lg text-xs font-semibold text-ink-300 hover:bg-ink-700">
                       Cancelar
                     </button>
                     <button
@@ -70,7 +70,7 @@ function RoutineManagerModal({ routines, activeRoutineId, onSelect, onRename, on
                         onDelete(r.id);
                         setConfirmDeleteId(null);
                       }}
-                      className="px-3 py-1.5 rounded-lg bg-rose-500 text-white text-xs font-bold hover:bg-rose-400"
+                      className="px-3 py-1.5 rounded-lg bg-red-500 text-white text-xs font-bold hover:bg-red-400"
                     >
                       Eliminar
                     </button>
@@ -83,7 +83,7 @@ function RoutineManagerModal({ routines, activeRoutineId, onSelect, onRename, on
               <div
                 key={r.id}
                 className={`rounded-2xl border flex items-center gap-1 pr-1.5 ${
-                  active ? 'bg-entreno-500/10 border-entreno-500/40' : 'bg-neutral-800/60 border-neutral-700'
+                  active ? 'bg-entreno-500/10 border-entreno-500/40' : 'bg-ink-800/60 border-ink-700'
                 }`}
               >
                 <button onClick={() => onSelect(r.id)} className="flex-1 min-w-0 text-left p-3.5 flex items-center gap-2.5">
@@ -91,16 +91,16 @@ function RoutineManagerModal({ routines, activeRoutineId, onSelect, onRename, on
                     <Check className="w-4 h-4" />
                   </span>
                   <span className="min-w-0">
-                    <span className={`block text-sm font-semibold truncate ${active ? 'text-entreno-200' : 'text-slate-200'}`}>{r.name}</span>
-                    <span className="block text-xs text-slate-500 mt-0.5">{trainingDays(r)} días de entreno por semana</span>
+                    <span className={`block text-sm font-semibold truncate ${active ? 'text-entreno-200' : 'text-ink-200'}`}>{r.name}</span>
+                    <span className="block text-xs text-ink-500 mt-0.5">{trainingDays(r)} días de entreno por semana</span>
                   </span>
                 </button>
-                <button onClick={() => startRename(r)} aria-label="Renombrar rutina" className="btn-icon hover:bg-neutral-700 shrink-0">
-                  <Pencil className="w-4 h-4 text-slate-500" />
+                <button onClick={() => startRename(r)} aria-label="Renombrar rutina" className="btn-icon hover:bg-ink-700 shrink-0">
+                  <Pencil className="w-4 h-4 text-ink-500" />
                 </button>
                 {routines.length > 1 && (
-                  <button onClick={() => setConfirmDeleteId(r.id)} aria-label="Eliminar rutina" className="btn-icon hover:bg-neutral-700 shrink-0">
-                    <Trash2 className="w-4 h-4 text-slate-500" />
+                  <button onClick={() => setConfirmDeleteId(r.id)} aria-label="Eliminar rutina" className="btn-icon hover:bg-ink-700 shrink-0">
+                    <Trash2 className="w-4 h-4 text-ink-500" />
                   </button>
                 )}
               </div>
@@ -127,9 +127,9 @@ function NewRoutineModal({ onCreate, onClose }) {
     <Sheet onClose={onClose} labelledBy="nueva-rutina-titulo">
       <div className="w-full max-w-md sheet rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
-          <h2 id="nueva-rutina-titulo" className="text-lg font-bold text-slate-100">Nueva rutina semanal</h2>
-          <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-neutral-800">
-            <X className="w-5 h-5 text-slate-400" />
+          <h2 id="nueva-rutina-titulo" className="text-lg font-bold text-ink-100">Nueva rutina semanal</h2>
+          <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-ink-800">
+            <X className="w-5 h-5 text-ink-400" />
           </button>
         </div>
         <p className="label-section text-entreno-300 mb-2">Distribución semanal</p>
@@ -139,11 +139,11 @@ function NewRoutineModal({ onCreate, onClose }) {
               key={t.id}
               onClick={() => setTemplateId(t.id)}
               className={`w-full text-left rounded-2xl border p-3.5 ${
-                templateId === t.id ? 'bg-entreno-500/15 border-entreno-500/50' : 'bg-neutral-800/60 border-neutral-700'
+                templateId === t.id ? 'bg-entreno-500/15 border-entreno-500/50' : 'bg-ink-800/60 border-ink-700'
               }`}
             >
-              <p className="text-sm font-semibold text-slate-100">{t.name}</p>
-              <p className="text-xs text-slate-500 mt-0.5">{t.days.join(' · ')}</p>
+              <p className="text-sm font-semibold text-ink-100">{t.name}</p>
+              <p className="text-xs text-ink-500 mt-0.5">{t.days.join(' · ')}</p>
             </button>
           ))}
         </div>
@@ -151,11 +151,11 @@ function NewRoutineModal({ onCreate, onClose }) {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Nombre de la rutina (opcional)"
-          className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder-slate-500 mb-4"
+          className="w-full bg-ink-800 border border-ink-700 rounded-xl px-3 py-2.5 text-sm text-ink-100 placeholder-ink-500 mb-4"
         />
         <button
           onClick={() => onCreate(templateId, name)}
-          className="w-full rounded-xl bg-entreno-500 text-neutral-900 py-3 text-sm font-bold hover:bg-entreno-400"
+          className="w-full rounded-xl bg-entreno-500 text-onaccent py-3 text-sm font-bold hover:bg-entreno-400"
         >
           Crear rutina
         </button>
@@ -172,17 +172,17 @@ function DayEditor({ day, exercises, exercisesById, onAddExercise, onRemoveExerc
       <div className="w-full max-w-md sheet rounded-t-3xl sm:rounded-3xl p-5 max-h-[85vh] flex flex-col">
         <div className="flex items-center justify-between mb-1">
           <div>
-            <p className="label-section text-slate-500">{day.weekday}</p>
-            <h2 id="editor-dia-titulo" className="text-lg font-bold text-slate-100">{day.name}</h2>
+            <p className="label-section text-ink-500">{day.weekday}</p>
+            <h2 id="editor-dia-titulo" className="text-lg font-bold text-ink-100">{day.name}</h2>
           </div>
-          <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-neutral-800">
-            <X className="w-5 h-5 text-slate-400" />
+          <button onClick={onClose} aria-label="Cerrar" className="btn-icon hover:bg-ink-800">
+            <X className="w-5 h-5 text-ink-400" />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto mt-3 space-y-2">
           {day.exercises.length === 0 && (
-            <div className="rounded-2xl border border-dashed border-neutral-700 p-6 text-center text-slate-500 text-sm">
+            <div className="rounded-2xl border border-dashed border-ink-700 p-6 text-center text-ink-500 text-sm">
               Todavía no agregaste ejercicios a este día.
             </div>
           )}
@@ -190,44 +190,44 @@ function DayEditor({ day, exercises, exercisesById, onAddExercise, onRemoveExerc
             const exercise = exercisesById[rex.exerciseId];
             if (!exercise) return null;
             return (
-              <div key={rex.id} className="rounded-2xl bg-neutral-800/60 border border-neutral-700 p-3.5">
+              <div key={rex.id} className="rounded-2xl bg-ink-800/60 border border-ink-700 p-3.5">
                 <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-slate-200 truncate">{exercise.name}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{exercise.muscleGroup} · {exercise.equipment}</p>
+                    <p className="text-sm font-medium text-ink-200 truncate">{exercise.name}</p>
+                    <p className="text-xs text-ink-500 mt-0.5">{exercise.muscleGroup} · {exercise.equipment}</p>
                   </div>
                   <button
                     onClick={() => onRemoveExercise(rex.id)}
                     aria-label="Quitar ejercicio"
-                    className="btn-icon hover:bg-neutral-700 shrink-0"
+                    className="btn-icon hover:bg-ink-700 shrink-0"
                   >
-                    <Trash2 className="w-4 h-4 text-slate-500" />
+                    <Trash2 className="w-4 h-4 text-ink-500" />
                   </button>
                 </div>
                 <div className="flex items-center gap-2 mt-2.5 text-xs">
-                  <label className="text-slate-500">Series objetivo</label>
+                  <label className="text-ink-500">Series objetivo</label>
                   <input
                     type="number"
                     min="1"
                     value={rex.targetSets}
                     onChange={(e) => onUpdateTarget(rex.id, { targetSets: parseInt(e.target.value) || 1 })}
-                    className="w-14 bg-neutral-900 border border-neutral-700 rounded-lg px-2 py-1 text-slate-100 font-mono"
+                    className="w-14 bg-ink-900 border border-ink-700 rounded-lg px-2 py-1 text-ink-100 font-mono"
                   />
-                  <label className="text-slate-500 ml-1">Reps</label>
+                  <label className="text-ink-500 ml-1">Reps</label>
                   <input
                     type="number"
                     min="1"
                     value={rex.targetRepsMin}
                     onChange={(e) => onUpdateTarget(rex.id, { targetRepsMin: parseInt(e.target.value) || 1 })}
-                    className="w-12 bg-neutral-900 border border-neutral-700 rounded-lg px-2 py-1 text-slate-100 font-mono"
+                    className="w-12 bg-ink-900 border border-ink-700 rounded-lg px-2 py-1 text-ink-100 font-mono"
                   />
-                  <span className="text-slate-600">-</span>
+                  <span className="text-ink-600">-</span>
                   <input
                     type="number"
                     min="1"
                     value={rex.targetRepsMax}
                     onChange={(e) => onUpdateTarget(rex.id, { targetRepsMax: parseInt(e.target.value) || 1 })}
-                    className="w-12 bg-neutral-900 border border-neutral-700 rounded-lg px-2 py-1 text-slate-100 font-mono"
+                    className="w-12 bg-ink-900 border border-ink-700 rounded-lg px-2 py-1 text-ink-100 font-mono"
                   />
                 </div>
               </div>
@@ -299,14 +299,14 @@ export default function WeekView({
       <div className="space-y-5">
         <div className="rounded-3xl surface-accent surface-accent-entreno p-6 text-center">
           <Dumbbell className="w-10 h-10 text-entreno-400 mx-auto mb-3" />
-          <h2 className="text-lg font-bold text-slate-100 mb-1">Creá tu primera rutina</h2>
-          <p className="text-sm text-slate-400 mb-4">
+          <h2 className="text-lg font-bold text-ink-100 mb-1">Creá tu primera rutina</h2>
+          <p className="text-sm text-ink-400 mb-4">
             Elegí una distribución semanal (Push/Pull/Legs, Torso/Pierna, Full Body o Calistenia) y armá tus días de
             entrenamiento.
           </p>
           <button
             onClick={() => setShowNewRoutine(true)}
-            className="rounded-xl bg-entreno-500 text-neutral-900 px-5 py-3 text-sm font-bold hover:bg-entreno-400"
+            className="rounded-xl bg-entreno-500 text-onaccent px-5 py-3 text-sm font-bold hover:bg-entreno-400"
           >
             + Crear rutina
           </button>
@@ -337,8 +337,8 @@ export default function WeekView({
             <Dumbbell className="w-4 h-4 text-entreno-400" />
           </div>
           <div className="min-w-0 text-left">
-            <p className="label-section text-slate-500">Rutina activa</p>
-            <p className="text-sm font-bold text-slate-100 truncate">{activeRoutine.name}</p>
+            <p className="label-section text-ink-500">Rutina activa</p>
+            <p className="text-sm font-bold text-ink-100 truncate">{activeRoutine.name}</p>
           </div>
         </div>
         <div className="flex items-center gap-1 text-entreno-400 shrink-0">
@@ -362,8 +362,8 @@ export default function WeekView({
               className={`rounded-2xl p-4 ${
                 // El día de descanso va con borde punteado y sin relleno: se lee
                 // como "hueco a propósito", no como card a medio renderizar.
-                // Antes usaba bg-neutral-900/40 sobre un fondo casi igual y
-                // border-neutral-800 (que es el color de card, no de borde), así
+                // Antes usaba bg-ink-900/40 sobre un fondo casi igual y
+                // border-ink-800 (que es el color de card, no de borde), así
                 // que el contenedor directamente no se veía.
                 day.isRest
                   ? `border border-dashed bg-ink-950/40 ${isToday ? 'border-ink-500' : 'border-ink-700/80'}`
@@ -413,7 +413,7 @@ export default function WeekView({
                         exCount === 0 ? 'bg-ink-700 opacity-40' : 'bg-entreno-500 hover:bg-entreno-400'
                       }`}
                     >
-                      <Play className={`w-4 h-4 ${exCount === 0 ? 'text-ink-400' : 'text-ink-900'}`} fill="currentColor" />
+                      <Play className={`w-4 h-4 ${exCount === 0 ? 'text-ink-400' : 'text-onaccent'}`} fill="currentColor" />
                     </button>
                   </div>
                 )}

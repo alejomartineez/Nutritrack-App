@@ -14,8 +14,8 @@ const SLIDES = [
   {
     key: 'bienvenida',
     visual: (
-      <div className="flex items-center justify-center w-28 h-28 rounded-full bg-emerald-500/10 border border-emerald-500/30">
-        <Utensils className="w-12 h-12 text-emerald-400" />
+      <div className="flex items-center justify-center w-28 h-28 rounded-full bg-brand-500/10 border border-brand-500/30">
+        <Utensils className="w-12 h-12 text-brand-400" />
       </div>
     ),
     title: 'Bienvenido a NutriTrack',
@@ -24,8 +24,8 @@ const SLIDES = [
   {
     key: 'registrar',
     visual: (
-      <div className="flex items-center justify-center w-28 h-28 rounded-full bg-emerald-500/10 border border-emerald-500/30">
-        <PlusCircle className="w-12 h-12 text-emerald-400" />
+      <div className="flex items-center justify-center w-28 h-28 rounded-full bg-brand-500/10 border border-brand-500/30">
+        <PlusCircle className="w-12 h-12 text-brand-400" />
       </div>
     ),
     title: 'Registrá tus comidas',
@@ -36,17 +36,17 @@ const SLIDES = [
     visual: (
       <div className="flex flex-col items-center gap-3">
         <div className="flex items-center gap-3">
-          <span className="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/30">
-            <Utensils className="w-5 h-5 text-emerald-400" />
+          <span className="flex items-center justify-center w-12 h-12 rounded-full bg-brand-500/10 border border-brand-500/30">
+            <Utensils className="w-5 h-5 text-brand-400" />
           </span>
           <span className="flex items-center justify-center w-12 h-12 rounded-full bg-entreno-500/10 border border-entreno-500/30">
             <Dumbbell className="w-5 h-5 text-entreno-400" />
           </span>
-          <span className="flex items-center justify-center w-12 h-12 rounded-full bg-violet-500/10 border border-violet-500/30">
-            <Moon className="w-5 h-5 text-violet-400" />
+          <span className="flex items-center justify-center w-12 h-12 rounded-full bg-sueno-500/10 border border-sueno-500/30">
+            <Moon className="w-5 h-5 text-sueno-400" />
           </span>
         </div>
-        <span className="flex items-center gap-1.5 text-sm text-emerald-300 font-semibold">
+        <span className="flex items-center gap-1.5 text-sm text-brand-300 font-semibold">
           <Flame className="w-4 h-4" /> Racha en marcha
         </span>
       </div>

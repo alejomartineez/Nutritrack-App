@@ -84,7 +84,7 @@ export default function ProgressView({ sessionsMap, exercisesById, activeRoutine
         {onGoToToday && (
           <button
             onClick={onGoToToday}
-            className="rounded-xl bg-entreno-500 text-ink-900 px-5 py-3 text-sm font-bold hover:bg-entreno-400"
+            className="rounded-xl bg-entreno-500 text-onaccent px-5 py-3 text-sm font-bold hover:bg-entreno-400"
           >
             Ir al entreno de hoy
           </button>

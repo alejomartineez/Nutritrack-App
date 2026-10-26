@@ -54,8 +54,8 @@ function SummaryCard({ onClick, accentClasses, icon, title, main, sub }) {
         </div>
         <ChevronRight className="w-3.5 h-3.5 opacity-50 shrink-0" />
       </div>
-      <p className="text-sm font-bold text-slate-100 truncate">{main}</p>
-      {sub && <p className="text-[11px] text-slate-400 truncate">{sub}</p>}
+      <p className="text-sm font-bold text-ink-100 truncate">{main}</p>
+      {sub && <p className="text-[11px] text-ink-400 truncate">{sub}</p>}
     </button>
   );
 }

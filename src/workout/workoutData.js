@@ -29,11 +29,11 @@ export const EQUIPMENT_TYPES = [
 ];
 
 export const SET_TYPES = [
-  { id: 'warmup', label: 'Calentamiento', short: 'W', color: 'text-slate-400 bg-slate-700/60' },
+  { id: 'warmup', label: 'Calentamiento', short: 'W', color: 'text-ink-400 bg-ink-700/60' },
   { id: 'effective', label: 'Serie efectiva', short: 'E', color: 'text-entreno-300 bg-entreno-500/20' },
-  { id: 'dropset', label: 'Drop set', short: 'D', color: 'text-rose-300 bg-rose-500/20' },
-  { id: 'myorep', label: 'Myo-rep', short: 'M', color: 'text-purple-300 bg-purple-500/20' },
-  { id: 'superset', label: 'Superserie', short: 'S', color: 'text-cyan-300 bg-cyan-500/20' },
+  { id: 'dropset', label: 'Drop set', short: 'D', color: 'text-red-300 bg-red-500/20' },
+  { id: 'myorep', label: 'Myo-rep', short: 'M', color: 'text-sueno-300 bg-sueno-500/20' },
+  { id: 'superset', label: 'Superserie', short: 'S', color: 'text-ink-300 bg-ink-500/20' },
 ];
 
 export const ROUTINE_TEMPLATES = [

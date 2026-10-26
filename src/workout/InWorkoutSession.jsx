@@ -133,7 +133,7 @@ function SetRow({ set, index, reference, onOpenPad, onUpdate, onRemove, onComple
         onClick={onComplete}
         aria-label={set.completed ? 'Desmarcar serie' : 'Marcar serie completa'}
         className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center ${
-          set.completed ? 'bg-entreno-500 text-ink-900' : 'bg-ink-700 text-ink-400 hover:bg-ink-600'
+          set.completed ? 'bg-entreno-500 text-onaccent' : 'bg-ink-700 text-ink-400 hover:bg-ink-600'
         }`}
       >
         <Check className="w-4 h-4" strokeWidth={set.completed ? 3 : 2} />
@@ -225,7 +225,7 @@ function ExerciseCard({
             <div className="flex items-center gap-2 mt-1">
               {allDone && (
                 <span className="w-5 h-5 rounded-full bg-entreno-500 flex items-center justify-center shrink-0">
-                  <Check className="w-3 h-3 text-ink-900" strokeWidth={3} />
+                  <Check className="w-3 h-3 text-onaccent" strokeWidth={3} />
                 </span>
               )}
               <p className="text-sm font-bold text-ink-100 truncate">{exercise.name}</p>
@@ -414,7 +414,7 @@ function WorkoutSummary({ finished, summary, prs, onDone, onBack, onDiscard }) {
             Tildá al menos una serie para guardar el entreno, o descartalo si no llegaste a arrancar.
           </p>
           <div className="flex flex-col gap-2">
-            <button onClick={onBack} className="rounded-xl bg-entreno-500 text-ink-900 px-5 py-3 text-sm font-bold hover:bg-entreno-400">
+            <button onClick={onBack} className="rounded-xl bg-entreno-500 text-onaccent px-5 py-3 text-sm font-bold hover:bg-entreno-400">
               Seguir entrenando
             </button>
             <button onClick={onDiscard} className="rounded-xl border border-ink-700 text-ink-400 px-5 py-2.5 text-sm font-semibold hover:text-ink-200">
@@ -429,7 +429,7 @@ function WorkoutSummary({ finished, summary, prs, onDone, onBack, onDiscard }) {
             <MiniConfetti />
             <div className="relative">
               <span className="inline-flex w-14 h-14 rounded-full bg-entreno-500 items-center justify-center mb-3">
-                <Check className="w-8 h-8 text-ink-900" strokeWidth={3} />
+                <Check className="w-8 h-8 text-onaccent" strokeWidth={3} />
               </span>
               <h2 className="text-2xl font-black text-ink-100">¡Entreno completado!</h2>
               <p className="text-sm text-ink-400 mt-1">{finished.dayName}</p>
@@ -483,7 +483,7 @@ function WorkoutSummary({ finished, summary, prs, onDone, onBack, onDiscard }) {
 
           <button
             onClick={onDone}
-            className="w-full rounded-2xl bg-entreno-500 text-ink-900 py-3.5 text-sm font-bold hover:bg-entreno-400 flex items-center justify-center gap-2"
+            className="w-full rounded-2xl bg-entreno-500 text-onaccent py-3.5 text-sm font-bold hover:bg-entreno-400 flex items-center justify-center gap-2"
           >
             <Check className="w-5 h-5" strokeWidth={2.5} /> Guardar y salir
           </button>
@@ -604,7 +604,7 @@ export default function InWorkoutSession({
               </button>
               <button
                 onClick={() => setFinished(finishSession(session))}
-                className="px-4 py-2.5 rounded-xl bg-entreno-500 text-ink-900 text-sm font-bold flex items-center gap-1.5 hover:bg-entreno-400"
+                className="px-4 py-2.5 rounded-xl bg-entreno-500 text-onaccent text-sm font-bold flex items-center gap-1.5 hover:bg-entreno-400"
               >
                 <Flag className="w-4 h-4" /> Finalizar
               </button>

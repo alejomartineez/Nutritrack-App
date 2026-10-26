@@ -122,7 +122,7 @@ export default function SleepLogForm({ existingLog, onSave, defaultBedtime, defa
               onClick={() => setMinutesToFallAsleep(mins)}
               className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${
                 minutesToFallAsleep === mins
-                  ? 'bg-sueno-500 border-sueno-400 text-ink-900'
+                  ? 'bg-sueno-500 border-sueno-400 text-onaccent'
                   : 'bg-ink-900 border-ink-700 text-ink-300'
               }`}
             >
@@ -178,7 +178,7 @@ export default function SleepLogForm({ existingLog, onSave, defaultBedtime, defa
                   onClick={() => setInterruptionCount(n)}
                   className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border ${
                     String(interruptionCount) === String(n)
-                      ? 'bg-sueno-500 border-sueno-400 text-ink-900'
+                      ? 'bg-sueno-500 border-sueno-400 text-onaccent'
                       : 'bg-ink-900 border-ink-700 text-ink-300'
                   }`}
                 >
@@ -196,7 +196,7 @@ export default function SleepLogForm({ existingLog, onSave, defaultBedtime, defa
                       onClick={() => setMinutesAwake(mins)}
                       className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${
                         minutesAwake === mins
-                          ? 'bg-sueno-500 border-sueno-400 text-ink-900'
+                          ? 'bg-sueno-500 border-sueno-400 text-onaccent'
                           : 'bg-ink-900 border-ink-700 text-ink-300'
                       }`}
                     >
@@ -240,7 +240,7 @@ export default function SleepLogForm({ existingLog, onSave, defaultBedtime, defa
         onClick={handleSave}
         disabled={!quality}
         className={`w-full py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 ${
-          quality ? 'bg-sueno-500 text-ink-900 hover:bg-sueno-400' : 'bg-ink-900 text-ink-500'
+          quality ? 'bg-sueno-500 text-onaccent hover:bg-sueno-400' : 'bg-ink-900 text-ink-500'
         }`}
       >
         <Check className="w-5 h-5" /> Guardar registro

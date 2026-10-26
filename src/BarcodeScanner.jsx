@@ -127,16 +127,16 @@ export default function BarcodeScanner({ onDetected, onCancel }) {
   }, [onCancel]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900 flex flex-col anim-screen-in" role="dialog" aria-modal="true" aria-label="Escanear código de barras">
+    <div className="fixed inset-0 z-50 bg-ink-900 flex flex-col anim-screen-in" role="dialog" aria-modal="true" aria-label="Escanear código de barras">
       <div
         className="flex items-center justify-between px-5 pb-3"
         style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.25rem)' }}
       >
-        <p className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-          <ScanLine className="w-4 h-4 text-emerald-400" /> Escaneá el código
+        <p className="text-sm font-semibold text-ink-200 flex items-center gap-2">
+          <ScanLine className="w-4 h-4 text-brand-400" /> Escaneá el código
         </p>
-        <button onClick={onCancel} aria-label="Cerrar escáner" className="btn-icon hover:bg-slate-800">
-          <X className="w-5 h-5 text-slate-300" />
+        <button onClick={onCancel} aria-label="Cerrar escáner" className="btn-icon hover:bg-ink-800">
+          <X className="w-5 h-5 text-ink-300" />
         </button>
       </div>
 
@@ -146,13 +146,13 @@ export default function BarcodeScanner({ onDetected, onCancel }) {
         {/* Marco guía */}
         {!error && !starting && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-4/5 h-32 border-2 border-emerald-400/80 rounded-2xl shadow-[0_0_0_100vmax_rgba(15,23,42,0.55)]" />
+            <div className="w-4/5 h-32 border-2 border-brand-400/80 rounded-2xl shadow-[0_0_0_100vmax_rgba(15,23,42,0.55)]" />
           </div>
         )}
 
         {starting && !error && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <p className="text-sm text-slate-400 flex items-center gap-2">
+            <p className="text-sm text-ink-400 flex items-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin" /> Abriendo la cámara…
             </p>
           </div>
@@ -160,18 +160,18 @@ export default function BarcodeScanner({ onDetected, onCancel }) {
 
         {error && (
           <div className="absolute inset-0 flex items-center justify-center px-8">
-            <p className="text-sm text-slate-300 text-center leading-relaxed">{error}</p>
+            <p className="text-sm text-ink-300 text-center leading-relaxed">{error}</p>
           </div>
         )}
       </div>
 
       <div className="px-5" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)', paddingTop: '1rem' }}>
-        <p className="text-xs text-slate-500 text-center mb-3">
+        <p className="text-xs text-ink-500 text-center mb-3">
           {error ? 'Podés cargar el alimento a mano desde el buscador.' : 'Centrá el código de barras dentro del marco'}
         </p>
         <button
           onClick={onCancel}
-          className="w-full rounded-2xl border border-slate-600 text-slate-300 font-semibold py-3 hover:bg-slate-800"
+          className="w-full rounded-2xl border border-ink-600 text-ink-300 font-semibold py-3 hover:bg-ink-800"
         >
           Cancelar
         </button>

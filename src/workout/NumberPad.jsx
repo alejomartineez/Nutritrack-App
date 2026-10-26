@@ -32,12 +32,12 @@ export default function NumberPad({ label, value, onChange, onClose, quickSteps 
       <div className="w-full max-w-md sheet sheet-entreno rounded-t-3xl p-4 pb-6">
         <div className="flex items-center justify-between mb-3">
           <p className="label-section text-entreno-400">{label}</p>
-          <button onClick={onClose} aria-label="Cerrar teclado" className="btn-icon hover:bg-neutral-800">
-            <X className="w-4 h-4 text-slate-400" />
+          <button onClick={onClose} aria-label="Cerrar teclado" className="btn-icon hover:bg-ink-800">
+            <X className="w-4 h-4 text-ink-400" />
           </button>
         </div>
 
-        <div className="text-center py-3 mb-3 rounded-2xl bg-neutral-800 border border-neutral-700">
+        <div className="text-center py-3 mb-3 rounded-2xl bg-ink-800 border border-ink-700">
           <span className="font-mono text-4xl font-black text-entreno-300">{value || '0'}</span>
         </div>
 
@@ -62,16 +62,16 @@ export default function NumberPad({ label, value, onChange, onClose, quickSteps 
                 key={k}
                 onClick={backspace}
                 aria-label="Borrar"
-                className="py-4 rounded-2xl bg-neutral-800 border border-neutral-700 flex items-center justify-center hover:bg-neutral-700"
+                className="py-4 rounded-2xl bg-ink-800 border border-ink-700 flex items-center justify-center hover:bg-ink-700"
               >
-                <Delete className="w-5 h-5 text-slate-300" />
+                <Delete className="w-5 h-5 text-ink-300" />
               </button>
             ) : (
               <button
                 key={k}
                 onClick={() => push(k)}
                 disabled={k === '.' && !allowDecimal}
-                className="py-4 rounded-2xl bg-neutral-800 border border-neutral-700 text-xl font-bold text-slate-100 hover:bg-neutral-700 disabled:opacity-30"
+                className="py-4 rounded-2xl bg-ink-800 border border-ink-700 text-xl font-bold text-ink-100 hover:bg-ink-700 disabled:opacity-30"
               >
                 {k}
               </button>
@@ -81,7 +81,7 @@ export default function NumberPad({ label, value, onChange, onClose, quickSteps 
 
         <button
           onClick={onClose}
-          className="w-full mt-3 py-3.5 rounded-2xl bg-entreno-500 text-neutral-900 font-bold flex items-center justify-center gap-2 hover:bg-entreno-400"
+          className="w-full mt-3 py-3.5 rounded-2xl bg-entreno-500 text-onaccent font-bold flex items-center justify-center gap-2 hover:bg-entreno-400"
         >
           <Check className="w-5 h-5" /> Listo
         </button>
