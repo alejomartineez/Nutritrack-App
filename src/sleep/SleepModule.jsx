@@ -1,177 +1,254 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { CalendarClock, LayoutDashboard, Sparkles, ChevronLeft, ChevronRight, MoonStar } from 'lucide-react';
-import ModuleIntro from '../ModuleIntro';
-import SubTabs from '../lib/SubTabs';
-import SleepLogForm from './SleepLogForm';
-import SleepDashboard from './SleepDashboard';
-import SleepInsights from './SleepInsights';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Plus, SlidersHorizontal, BarChart3 } from 'lucide-react';
+import { ScreenHeader, SectionTitle, Segmented, IconButton, EmptyState, toast } from '../ui';
+import { useTodayKey } from '../lib/today';
+import { haptic } from '../lib/haptics';
+import { formatLongDate, keyToDate } from '../lib/dates';
 import {
   loadSleepLogs,
   saveSleepLogs,
   loadSleepGoalHours,
   saveSleepGoalHours,
   upsertSleepLog,
-  localDateKey,
-  addDaysToKey,
+  deleteSleepLog,
+  getPendingSleep,
+  startPendingSleep,
+  clearPendingSleep,
+  pendingNightKey,
+  nightFromPending,
+  minutesInBed,
+  listNights,
+  scoreNight,
+  getFormDefaults,
+  nightSeries,
+  summarizeRange,
+  computeSleepDebt,
+  computeConsistency,
+  suggestBedtime,
+  computeFactorImpact,
+  computeSocialJetlag,
+  qualityOf,
+  isHM,
 } from './sleepStorage';
+import SleepLogSheet from './SleepLogSheet';
+import { ScoreSheet, GoalSheet, RateSheet } from './SleepSheets';
+import { SleepingHero, LastNightHero, LogPromptHero } from './SleepHero';
+import { NightsChart, RhythmCards, Patterns } from './SleepTrends';
+import { nightTitle } from './sleepFormat';
 
-// Mismo esqueleto que Entreno (Hoy · Semana · Progreso): las tres pestañas van
-// de "lo que hago ahora" a "cómo vengo" a "qué significa".
-const TABS = [
-  { id: 'hoy', label: 'Hoy', icon: CalendarClock },
-  { id: 'semana', label: 'Semana', icon: LayoutDashboard },
-  { id: 'insights', label: 'Insights', icon: Sparkles },
-];
-
-const sleepBadge = (Icon) => (
-  <div className="flex items-center justify-center w-28 h-28 rounded-full bg-sueno-500/10 border border-sueno-500/30">
-    <Icon className="w-12 h-12 text-sueno-400" />
-  </div>
-);
-
-const SLEEP_INTRO_SLIDES = [
-  {
-    key: 'intro',
-    visual: sleepBadge(MoonStar),
-    title: 'Tu descanso, en un lugar',
-    text: 'Registrá cuánto y cómo dormís para entender tu energía día a día.',
-  },
-  {
-    key: 'hoy',
-    visual: sleepBadge(CalendarClock),
-    title: 'Registrá tu noche',
-    text: 'A qué hora te acostaste, cuándo te despertaste y cómo amaneciste. Toma segundos.',
-  },
-  {
-    key: 'insights',
-    visual: sleepBadge(Sparkles),
-    title: 'Descubrí tus patrones',
-    text: 'En «Semana» ves tus horas de un vistazo. En «Insights», qué factores te ayudan y a qué hora te conviene acostarte.',
-  },
-];
-
-const dayLabelFor = (key, todayKey) => {
-  if (key === todayKey) return 'Hoy';
-  if (key === addDaysToKey(todayKey, -1)) return 'Ayer';
-  const d = new Date(`${key}T00:00:00`);
-  const text = d.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' });
-  return text.charAt(0).toUpperCase() + text.slice(1);
-};
-
-function SleepDayNav({ label, isToday, onPrev, onNext }) {
-  return (
-    <div className="flex items-center justify-between surface rounded-2xl px-2 py-1.5">
-      <button onClick={onPrev} aria-label="Día anterior" className="btn-icon text-ink-300 hover:bg-ink-700">
-        <ChevronLeft className="w-5 h-5" />
-      </button>
-      <span className="text-sm font-bold text-ink-100">{label}</span>
-      <button
-        onClick={onNext}
-        disabled={isToday}
-        aria-label="Día siguiente"
-        className={`btn-icon ${isToday ? 'text-ink-700 cursor-not-allowed' : 'text-ink-300 hover:bg-ink-700'}`}
-      >
-        <ChevronRight className="w-5 h-5" />
-      </button>
-    </div>
-  );
+/** Hora actual, refrescada cada 30 s y al volver a la app. */
+function useNow(ms = 30000) {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const tick = () => setNow(new Date());
+    const id = setInterval(tick, ms);
+    document.addEventListener('visibilitychange', tick);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', tick);
+    };
+  }, [ms]);
+  return now;
 }
 
+const RANGES = [
+  { value: 7, label: '7 noches' },
+  { value: 30, label: '30 noches' },
+];
+
+const stagger = (i) => ({ animationDelay: `${i * 50}ms` });
+
 export default function SleepModule() {
-  const [loaded, setLoaded] = useState(false);
-  const [sleepLogs, setSleepLogs] = useState({});
-  const [goalHours, setGoalHours] = useState(8);
-  const [subTab, setSubTab] = useState('hoy');
+  const todayKey = useTodayKey();
+  const now = useNow();
+  const [logs, setLogs] = useState(loadSleepLogs);
+  const [goalHours, setGoalHours] = useState(loadSleepGoalHours);
+  const [pending, setPending] = useState(() => getPendingSleep());
+  const [range, setRange] = useState(7);
+  const [sheet, setSheet] = useState(null);
 
-  const todayKey = localDateKey();
-  // Día que se está registrando/editando (por defecto hoy; se puede retroceder).
-  const [selectedKey, setSelectedKey] = useState(todayKey);
-  const selectedLog = sleepLogs[selectedKey] || null;
-  const isToday = selectedKey === todayKey;
+  useEffect(() => setPending(getPendingSleep(now.getTime())), [now]);
 
-  useEffect(() => {
-    const logs = loadSleepLogs();
-    setSleepLogs(logs);
-    setGoalHours(loadSleepGoalHours());
-    // Si ya registraste lo de hoy, abrir el formulario otra vez no aporta:
-    // se entra directo a la semana.
-    setSubTab(logs[localDateKey()] ? 'semana' : 'hoy');
-    setLoaded(true);
+  const update = useCallback((fn) => {
+    setLogs((prev) => {
+      const next = fn(prev);
+      saveSleepLogs(next);
+      return next;
+    });
   }, []);
 
-  useEffect(() => {
-    if (loaded) saveSleepLogs(sleepLogs);
-  }, [sleepLogs, loaded]);
+  const evening = now.getHours() >= 18 || now.getHours() < 4;
+  const nights = useMemo(() => listNights(logs), [logs]);
+  const lastNight = nights.find((n) => n.date === todayKey) || null;
+  const lastScore = useMemo(() => (lastNight ? scoreNight(logs, todayKey, goalHours) : null), [logs, lastNight, todayKey, goalHours]);
+  const defaults = useMemo(() => getFormDefaults(logs, todayKey), [logs, todayKey]);
 
-  // Valores por defecto para pre-cargar el form: la noche anterior al día elegido.
-  const prevDayLog = useMemo(
-    () => sleepLogs[addDaysToKey(selectedKey, -1)] || null,
-    [sleepLogs, selectedKey]
-  );
+  const series = useMemo(() => nightSeries(logs, goalHours, todayKey, range), [logs, goalHours, todayKey, range]);
+  const summary = useMemo(() => summarizeRange(logs, goalHours, series[0].key, todayKey), [logs, goalHours, series, todayKey]);
+  const debt = useMemo(() => computeSleepDebt(logs, goalHours, todayKey), [logs, goalHours, todayKey]);
+  const consistency = useMemo(() => computeConsistency(logs, todayKey), [logs, todayKey]);
+  const suggestion = useMemo(() => suggestBedtime(logs, goalHours, todayKey), [logs, goalHours, todayKey]);
+  const factors = useMemo(() => computeFactorImpact(logs, todayKey), [logs, todayKey]);
+  const jetlag = useMemo(() => computeSocialJetlag(logs, todayKey), [logs, todayKey]);
 
-  const handleSave = (patch) => {
-    setSleepLogs((prev) => upsertSleepLog(prev, selectedKey, patch));
-    setSubTab('semana');
+  const close = () => setSheet(null);
+
+  const saveNight = (dateKey, patch) => {
+    update((m) => upsertSleepLog(m, dateKey, patch));
+    if (pending && pendingNightKey(pending) === dateKey) {
+      clearPendingSleep();
+      setPending(null);
+    }
+    close();
+    toast('Noche guardada');
   };
 
-  const handleChangeGoal = (hours) => {
+  const removeNight = (dateKey) => {
+    const removed = logs[dateKey];
+    update((m) => deleteSleepLog(m, dateKey));
+    close();
+    toast('Noche borrada', { action: { label: 'Deshacer', onClick: () => update((m) => ({ ...m, [dateKey]: removed })) } });
+  };
+
+  const rate = (dateKey, quality) => {
+    update((m) => upsertSleepLog(m, dateKey, { quality }));
+    close();
+    toast('¡Que tengas un buen día!');
+  };
+
+  const goToBed = () => {
+    haptic();
+    setPending(startPendingSleep(new Date()));
+    toast('Que descanses');
+  };
+
+  const cancelBed = () => {
+    clearPendingSleep();
+    setPending(null);
+  };
+
+  const wakeUp = () => {
+    if (!pending) return;
+    const { dateKey, patch } = nightFromPending(pending, new Date(), defaults.minutesToFallAsleep);
+    clearPendingSleep();
+    setPending(null);
+    if (minutesInBed(patch.bedtime, patch.wakeTime) < 30) {
+      toast('Fueron menos de 30 minutos: no lo guardé', { tone: 'info' });
+      return;
+    }
+    if (dateKey !== pendingNightKey(pending) && logs[dateKey]) {
+      toast('No lo guardé para no pisar la noche que ya registraste hoy', { tone: 'info' });
+      return;
+    }
+    const fresh = { interruptions: { count: 0, minutesAwake: 0 }, quality: null, factors: [] };
+    update((m) => upsertSleepLog(m, dateKey, m[dateKey] ? patch : { ...patch, ...fresh }));
+    setSheet({ type: 'rate', dateKey, ...patch });
+  };
+
+  const changeGoal = (hours) => {
     setGoalHours(hours);
     saveSleepGoalHours(hours);
   };
 
-  const openDayInForm = (key) => {
-    setSelectedKey(key);
-    setSubTab('hoy');
-  };
+  const openLog = (dateKey = todayKey) => setSheet({ type: 'log', dateKey });
 
-  const goToTab = (id) => {
-    if (id === 'hoy') setSelectedKey(todayKey); // la pestaña "Hoy" siempre abre hoy
-    setSubTab(id);
-  };
+  let hero;
+  if (pending) {
+    hero = <SleepingHero pending={pending} now={now} onWake={wakeUp} onCancel={cancelBed} />;
+  } else if (lastNight && lastScore) {
+    hero = (
+      <LastNightHero
+        night={{
+          minutes: lastNight.minutes,
+          quality: qualityOf(lastNight),
+          bedtime: isHM(lastNight.bedtime) ? lastNight.bedtime : null,
+          wakeTime: isHM(lastNight.wakeTime) ? lastNight.wakeTime : null,
+        }}
+        score={lastScore}
+        evening={evening}
+        onScore={() => setSheet({ type: 'score', dateKey: todayKey })}
+        onEdit={() => openLog(todayKey)}
+        onRate={(q) => rate(todayKey, q)}
+        onBed={goToBed}
+      />
+    );
+  } else {
+    hero = <LogPromptHero evening={evening} firstTime={nights.length === 0} defaults={defaults} onLog={() => openLog(todayKey)} onBed={goToBed} />;
+  }
 
-  if (!loaded) return null;
+  const scoreResult = sheet?.type === 'score' ? scoreNight(logs, sheet.dateKey, goalHours) : null;
 
   return (
-    <div className="space-y-4">
-      <ModuleIntro
-        storageKey="sleep_intro_seen"
-        slides={SLEEP_INTRO_SLIDES}
-        dotActiveClass="bg-sueno-400"
-        buttonClass="bg-sueno-500 hover:bg-sueno-400 text-onaccent"
-        finalLabel="Entendido"
+    <div className="pb-4">
+      <ScreenHeader
+        title="Sueño"
+        eyebrow={formatLongDate(keyToDate(todayKey))}
+        eyebrowTone="sueno"
+        right={
+          <>
+            <IconButton icon={Plus} label="Registrar una noche" tone="sueno" onClick={() => openLog(todayKey)} />
+            <IconButton icon={SlidersHorizontal} label="Meta de sueño" onClick={() => setSheet({ type: 'goal' })} />
+          </>
+        }
       />
 
-      <SubTabs tabs={TABS} value={subTab} onChange={goToTab} accent="sueno" />
+      <div className="space-y-7 pt-1">
+        <div className="anim-item-in" style={stagger(0)}>
+          {hero}
+        </div>
 
-      {subTab === 'hoy' && (
-        <>
-          <SleepDayNav
-            label={dayLabelFor(selectedKey, todayKey)}
-            isToday={isToday}
-            onPrev={() => setSelectedKey((k) => addDaysToKey(k, -1))}
-            onNext={() => setSelectedKey((k) => (k === todayKey ? k : addDaysToKey(k, 1)))}
+        {nights.length === 0 ? (
+          <EmptyState
+            icon={BarChart3}
+            title="Tus tendencias van a aparecer acá"
+            text="Con 3 noches registradas vas a ver tu deuda de sueño, tu constancia y la hora ideal para acostarte."
+            className="anim-item-in"
           />
-          <SleepLogForm
-            key={selectedKey}
-            existingLog={selectedLog}
-            isToday={isToday}
-            onSave={handleSave}
-            defaultBedtime={prevDayLog?.bedtime || '23:00'}
-            defaultWakeTime={prevDayLog?.wakeTime || '07:00'}
-          />
-        </>
-      )}
+        ) : (
+          <>
+            <section className="anim-item-in" style={stagger(1)}>
+              <SectionTitle action={<Segmented size="sm" tone="ink" value={range} onChange={setRange} options={RANGES} className="w-[10rem]" />}>
+                Noches
+              </SectionTitle>
+              <NightsChart series={series} summary={summary} goalHours={goalHours} todayKey={todayKey} onSelect={openLog} />
+            </section>
 
-      {subTab === 'semana' && (
-        <SleepDashboard
-          sleepLogs={sleepLogs}
+            <section className="anim-item-in" style={stagger(2)}>
+              <SectionTitle>Tu ritmo</SectionTitle>
+              <RhythmCards debt={debt} consistency={consistency} suggestion={suggestion} goalHours={goalHours} />
+            </section>
+
+            <section className="anim-item-in" style={stagger(3)}>
+              <SectionTitle>Patrones</SectionTitle>
+              <Patterns factors={factors} jetlag={jetlag} />
+            </section>
+          </>
+        )}
+      </div>
+
+      {sheet?.type === 'log' && (
+        <SleepLogSheet
+          initialKey={sheet.dateKey}
+          todayKey={todayKey}
+          logs={logs}
           goalHours={goalHours}
-          onSelectDay={openDayInForm}
-          onChangeGoal={handleChangeGoal}
+          onSave={saveNight}
+          onDelete={removeNight}
+          onClose={close}
         />
       )}
-
-      {subTab === 'insights' && <SleepInsights sleepLogs={sleepLogs} goalHours={goalHours} />}
+      {scoreResult && <ScoreSheet title={nightTitle(sheet.dateKey, todayKey)} result={scoreResult} onClose={close} />}
+      {sheet?.type === 'goal' && <GoalSheet goalHours={goalHours} onChange={changeGoal} onClose={close} />}
+      {sheet?.type === 'rate' && (
+        <RateSheet
+          minutes={logs[sheet.dateKey]?.totalSleepMinutes || 0}
+          bedtime={sheet.bedtime}
+          wakeTime={sheet.wakeTime}
+          onRate={(q) => rate(sheet.dateKey, q)}
+          onDetails={() => openLog(sheet.dateKey)}
+          onClose={close}
+        />
+      )}
     </div>
   );
 }

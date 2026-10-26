@@ -1,422 +1,401 @@
-import { DEFAULT_SLEEP_GOAL_HOURS, ALL_SLEEP_FACTORS } from './sleepData';
+import { readJSON, writeJSON, removeKey, uid } from '../lib/storage';
+import { dateKeyOf, addDaysToKey, keyToDate, lastNKeys, hmToMinutes, minutesToHM } from '../lib/dates';
+import {
+  DEFAULT_SLEEP_GOAL_HOURS,
+  DEFAULT_BEDTIME,
+  DEFAULT_WAKE_TIME,
+  DEFAULT_FALL_ASLEEP_MINUTES,
+  FALL_ASLEEP_PRESETS,
+  SLEEP_FACTORS,
+  energyOf,
+} from './sleepData';
 
-// ---------------------------------------------------------------------------
-// PERSISTENCIA (localStorage — mismo enfoque offline-first que nutrición y
-// entrenamiento). Las correlaciones leen directamente las claves de esos
-// módulos (nutri_log_* y workout_sessions) como fuente de solo lectura.
-// ---------------------------------------------------------------------------
+// Registros por fecha de DESPERTAR: sleep_logs['2026-10-26'] es la noche del 25 al 26.
+export { localDateKey, addDaysToKey } from '../lib/dates';
 
-const KEYS = {
-  LOGS: 'sleep_logs',
-  GOAL_HOURS: 'sleep_goal_hours',
+const KEYS = { LOGS: 'sleep_logs', GOAL: 'sleep_goal_hours', PENDING: 'sleep_pending' };
+const DAY = 1440;
+const PENDING_MAX_MS = 20 * 3600000;
+export const WINDOW_NIGHTS = 14;
+
+// ------------------------------- Utilidades --------------------------------
+
+const isObj = (x) => Boolean(x) && typeof x === 'object' && !Array.isArray(x);
+const isKey = (k) => /^\d{4}-\d{2}-\d{2}$/.test(k);
+export const isHM = (s) => typeof s === 'string' && /^\d{1,2}:\d{2}$/.test(s) && hmToMinutes(s) < DAY;
+const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
+const round1 = (n) => Math.round(n * 10) / 10;
+const round5 = (n) => Math.round(n / 5) * 5;
+const mean = (a) => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : 0);
+export const median = (a) => {
+  if (!a.length) return null;
+  const s = [...a].sort((x, y) => x - y);
+  const mid = s.length >> 1;
+  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+};
+const stdDev = (a) => {
+  const m = mean(a);
+  return Math.sqrt(mean(a.map((x) => (x - m) ** 2)));
+};
+const hmOf = (d) => minutesToHM(d.getHours() * 60 + d.getMinutes());
+
+/** Hora de acostarse en una línea continua: 00:30 va después de 23:30 (1470 > 1410). */
+const bedLine = (hm) => {
+  const m = hmToMinutes(hm);
+  return m < 12 * 60 ? m + DAY : m;
 };
 
-const uid = (prefix) => `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+const nearestFallAsleep = (m) =>
+  FALL_ASLEEP_PRESETS.reduce((best, p) => (Math.abs(p.value - m) < Math.abs(best - m) ? p.value : best), FALL_ASLEEP_PRESETS[0].value);
 
-const readJSON = (key, fallback) => {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return fallback;
-    return JSON.parse(raw);
-  } catch (e) {
-    return fallback;
-  }
+// ------------------------------- Lectura robusta ---------------------------
+
+export const minutesInBed = (bedtime, wakeTime) => {
+  if (!isHM(bedtime) || !isHM(wakeTime)) return 0;
+  const d = hmToMinutes(wakeTime) - hmToMinutes(bedtime);
+  return d <= 0 ? d + DAY : d;
 };
 
-const writeJSON = (key, value) => {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch (e) {
-    // almacenamiento no disponible, se continúa sin persistir
-  }
+/** Minutos dormidos: tiempo en cama menos lo que tardaste en dormirte y lo que estuviste despierto. */
+export const computeTotalSleepMinutes = ({ bedtime, wakeTime, minutesToFallAsleep = 0, interruptions } = {}) => {
+  const inBed = minutesInBed(bedtime, wakeTime);
+  if (!inBed) return 0;
+  const awake = (Number(minutesToFallAsleep) || 0) + (Number(interruptions?.minutesAwake) || 0);
+  return Math.max(0, inBed - awake);
 };
 
-/** Fecha local YYYY-MM-DD (no UTC), consistente con dateKeyOf en App.jsx. */
-export const localDateKey = (d = new Date()) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-
-export const addDaysToKey = (dateKey, amount) => {
-  const d = new Date(`${dateKey}T00:00:00`);
-  d.setDate(d.getDate() + amount);
-  return localDateKey(d);
+export const sleptMinutes = (log) => {
+  if (!isObj(log)) return 0;
+  const stored = Number(log.totalSleepMinutes);
+  return Number.isFinite(stored) && stored > 0 ? stored : computeTotalSleepMinutes(log);
 };
 
-// --------------------------------- Logs -----------------------------------
+export const qualityOf = (log) => {
+  const q = Number(log?.quality);
+  return q >= 1 && q <= 5 ? Math.round(q) : null;
+};
 
-export const loadSleepLogs = () => readJSON(KEYS.LOGS, {});
+/** Despertares 0..3 (3 = "3 o más"; los viejos '4+' cuentan como 3). */
+export const wakeCountOf = (log) => {
+  const c = log?.interruptions?.count;
+  if (c === '4+') return 3;
+  return clamp(Math.round(Number(c) || 0), 0, 3);
+};
+
+const fallAsleepOf = (log) => {
+  const m = Number(log?.minutesToFallAsleep);
+  return Number.isFinite(m) && m >= 0 ? m : null;
+};
+
+const factorsOf = (log) => (Array.isArray(log?.factors) ? log.factors : []);
+
+/** Noches válidas (con minutos > 0), ordenadas de la más vieja a la más nueva. */
+export const listNights = (map) =>
+  Object.entries(isObj(map) ? map : {})
+    .filter(([key, log]) => isKey(key) && isObj(log))
+    .map(([key, log]) => ({ ...log, date: key, minutes: sleptMinutes(log) }))
+    .filter((n) => n.minutes > 0)
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+/** Noches con fecha en (endKey - days, endKey]. */
+const windowNights = (nights, endKey, days = WINDOW_NIGHTS) => {
+  const from = addDaysToKey(endKey, -days);
+  return nights.filter((n) => n.date > from && n.date <= endKey);
+};
+
+// ------------------------------- Persistencia ------------------------------
+
+export const loadSleepLogs = () => {
+  const map = readJSON(KEYS.LOGS, {});
+  return isObj(map) ? map : {};
+};
 export const saveSleepLogs = (map) => writeJSON(KEYS.LOGS, map);
 
-export const loadSleepGoalHours = () => readJSON(KEYS.GOAL_HOURS, DEFAULT_SLEEP_GOAL_HOURS);
-export const saveSleepGoalHours = (hours) => writeJSON(KEYS.GOAL_HOURS, hours);
-
-/** Convierte "HH:MM" a minutos desde medianoche. */
-const timeToMinutes = (hhmm) => {
-  const [h, m] = hhmm.split(':').map(Number);
-  return h * 60 + m;
+export const loadSleepGoalHours = () => {
+  const g = Number(readJSON(KEYS.GOAL, DEFAULT_SLEEP_GOAL_HOURS));
+  return g >= 3 && g <= 14 ? g : DEFAULT_SLEEP_GOAL_HOURS;
 };
+export const saveSleepGoalHours = (hours) => writeJSON(KEYS.GOAL, hours);
 
-/**
- * Minutos totales dormidos entre acostarse y despertar, restando el tiempo
- * en quedarse dormido y los minutos despierto por interrupciones. Asume que
- * wakeTime ocurre al día siguiente de bedtime si wakeTime <= bedtime.
- */
-export const computeTotalSleepMinutes = ({ bedtime, wakeTime, minutesToFallAsleep = 0, interruptions }) => {
-  if (!bedtime || !wakeTime) return 0;
-  const bedMin = timeToMinutes(bedtime);
-  let wakeMin = timeToMinutes(wakeTime);
-  if (wakeMin <= bedMin) wakeMin += 24 * 60; // cruza medianoche
-  const awakeMinutes = (interruptions?.minutesAwake || 0) + (Number(minutesToFallAsleep) || 0);
-  const total = wakeMin - bedMin - awakeMinutes;
-  return Math.max(0, total);
-};
-
-export const upsertSleepLog = (logsMap, dateKey, patch) => {
-  const existing = logsMap[dateKey] || { id: uid('sleep'), date: dateKey, factors: [] };
+export const upsertSleepLog = (map, dateKey, patch) => {
+  const existing = isObj(map[dateKey]) ? map[dateKey] : { id: uid('sleep'), factors: [] };
   const merged = { ...existing, ...patch, date: dateKey };
   merged.totalSleepMinutes = computeTotalSleepMinutes(merged);
-  return { ...logsMap, [dateKey]: merged };
+  return { ...map, [dateKey]: merged };
 };
 
-export const deleteSleepLog = (logsMap, dateKey) => {
-  const next = { ...logsMap };
+export const deleteSleepLog = (map, dateKey) => {
+  const next = { ...map };
   delete next[dateKey];
   return next;
 };
 
-// ------------------------------ Semana actual -------------------------------
+// ------------------------- "Me voy a dormir" (pendiente) -------------------
 
-const startOfWeek = (date) => {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = (day === 0 ? -6 : 1) - day; // lunes como inicio de semana
-  d.setDate(d.getDate() + diff);
-  d.setHours(0, 0, 0, 0);
-  return d;
+export const getPendingSleep = (now = Date.now()) => {
+  const p = readJSON(KEYS.PENDING, null);
+  if (!isObj(p) || !isHM(p.bedtime) || !Number.isFinite(p.startedAt)) return null;
+  const age = now - p.startedAt;
+  return age >= 0 && age <= PENDING_MAX_MS ? { bedtime: p.bedtime, startedAt: p.startedAt } : null;
 };
 
-export const getLast7DaysSleep = (logsMap, referenceDate = new Date()) => {
-  const days = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(referenceDate);
-    d.setDate(d.getDate() - i);
-    const key = localDateKey(d);
-    const log = logsMap[key] || null;
-    const label = d.toLocaleDateString('es-AR', { weekday: 'short' }).slice(0, 3);
-    days.push({ key, label, log, hours: log ? Math.round((log.totalSleepMinutes / 60) * 10) / 10 : 0 });
-  }
-  return days;
+export const startPendingSleep = (now = new Date()) => {
+  const p = { bedtime: hmOf(now), startedAt: now.getTime() };
+  writeJSON(KEYS.PENDING, p);
+  return p;
 };
 
-const stdDevMinutes = (minutesArray) => {
-  if (minutesArray.length < 2) return 0;
-  const mean = minutesArray.reduce((a, b) => a + b, 0) / minutesArray.length;
-  const variance = minutesArray.reduce((a, b) => a + (b - mean) ** 2, 0) / minutesArray.length;
-  return Math.sqrt(variance);
+export const clearPendingSleep = () => removeKey(KEYS.PENDING);
+
+/** Día de despertar al que corresponde un pendiente: desde el mediodía, el de mañana. */
+export const pendingNightKey = (p) => {
+  const d = new Date(p.startedAt);
+  const key = dateKeyOf(d);
+  return d.getHours() >= 12 ? addDaysToKey(key, 1) : key;
 };
 
-export const computeWeeklyStats = (logsMap, goalHours = DEFAULT_SLEEP_GOAL_HOURS, referenceDate = new Date()) => {
-  const week = getLast7DaysSleep(logsMap, referenceDate).filter((d) => d.log);
-  if (week.length === 0) {
-    return { avgHours: 0, sleepDebtHours: 0, bedtimeConsistencyMin: null, wakeConsistencyMin: null, nightsLogged: 0 };
-  }
-  const totalMinutes = week.reduce((sum, d) => sum + d.log.totalSleepMinutes, 0);
-  const avgHours = Math.round((totalMinutes / week.length / 60) * 10) / 10;
-  const sleepDebtHours = Math.round((goalHours * week.length - totalMinutes / 60) * 10) / 10;
+/** Datos de la noche al tocar "Me desperté". */
+export const nightFromPending = (pending, now = new Date(), fallAsleep = DEFAULT_FALL_ASLEEP_MINUTES) => ({
+  dateKey: dateKeyOf(now),
+  patch: { bedtime: pending.bedtime, wakeTime: hmOf(now), minutesToFallAsleep: fallAsleep },
+});
 
-  // Las horas de acostarse suelen rondar la medianoche (23:50 vs 00:10 están a 20min,
-  // no a ~23.5h): se corren a una línea de tiempo continua antes de medir la dispersión.
-  const normalizeNightMinutes = (mins) => (mins < 12 * 60 ? mins + 24 * 60 : mins);
+// ---------------------------- Horario habitual -----------------------------
 
-  const bedtimes = week
-    .map((d) => timeToMinutes(d.log.bedtime))
-    .filter((n) => !Number.isNaN(n))
-    .map(normalizeNightMinutes);
-  const wakeTimes = week.map((d) => timeToMinutes(d.log.wakeTime)).filter((n) => !Number.isNaN(n));
-
+/** Mediana de horarios de las noches de la ventana que termina en endKey. */
+export const getTypicalTimes = (map, endKey = dateKeyOf(), days = WINDOW_NIGHTS) => {
+  const recent = windowNights(listNights(map), endKey, days);
+  const beds = recent.filter((n) => isHM(n.bedtime)).map((n) => bedLine(n.bedtime));
+  const wakes = recent.filter((n) => isHM(n.wakeTime)).map((n) => hmToMinutes(n.wakeTime));
+  const lat = recent.map(fallAsleepOf).filter((m) => m != null);
   return {
-    avgHours,
-    sleepDebtHours: Math.max(0, sleepDebtHours),
-    bedtimeConsistencyMin: bedtimes.length > 1 ? Math.round(stdDevMinutes(bedtimes)) : null,
-    wakeConsistencyMin: wakeTimes.length > 1 ? Math.round(stdDevMinutes(wakeTimes)) : null,
-    nightsLogged: week.length,
+    nights: recent.length,
+    bedtime: beds.length ? minutesToHM(round5(median(beds))) : null,
+    wakeTime: wakes.length ? minutesToHM(round5(median(wakes))) : null,
+    fallAsleep: lat.length ? nearestFallAsleep(median(lat)) : null,
   };
 };
 
-// --------------------------- Análisis del propio sueño -----------------------
-//
-// Todo lo de esta sección se calcula SOLO con los registros de sueño. Las
-// correlaciones de más abajo cruzan módulos y por eso tardan semanas en
-// desbloquearse; estas empiezan a dar respuestas a los pocos días, que es lo
-// que hace que valga la pena registrar el detalle.
-
-const average = (arr) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0);
-const round1 = (n) => Math.round(n * 10) / 10;
-
-/** Registros de los últimos `days` días, del más viejo al más nuevo. */
-export const getRecentLogs = (logsMap, days = 30, referenceDate = new Date()) => {
-  const cutoff = localDateKey(new Date(referenceDate.getTime() - (days - 1) * 86400000));
-  const todayKey = localDateKey(referenceDate);
-  return Object.values(logsMap)
-    .filter((log) => log.date >= cutoff && log.date <= todayKey && log.totalSleepMinutes > 0)
-    .sort((a, b) => a.date.localeCompare(b.date));
-};
-
-/** Cifras de cabecera del período: noches, promedio, energía y cumplimiento de meta. */
-export const computeSleepSummary = (logsMap, goalHours = DEFAULT_SLEEP_GOAL_HOURS, days = 30, referenceDate = new Date()) => {
-  const logs = getRecentLogs(logsMap, days, referenceDate);
-  if (logs.length === 0) {
-    return { nights: 0, avgHours: 0, avgQuality: null, goalHitRate: 0, goalHits: 0 };
-  }
-  const hours = logs.map((l) => l.totalSleepMinutes / 60);
-  const qualities = logs.map((l) => l.quality).filter((q) => q != null);
-  const goalHits = hours.filter((h) => h >= goalHours).length;
-
-  return {
-    nights: logs.length,
-    avgHours: round1(average(hours)),
-    avgQuality: qualities.length ? round1(average(qualities)) : null,
-    goalHits,
-    goalHitRate: Math.round((goalHits / logs.length) * 100),
-  };
-};
-
-/**
- * Noches consecutivas cumpliendo la meta, contando hacia atrás desde hoy.
- * Un hueco sin registro corta la racha igual que una noche corta: la racha
- * mide el hábito, y no registrar es no tener el hábito.
- */
-export const computeGoalStreak = (logsMap, goalHours = DEFAULT_SLEEP_GOAL_HOURS, referenceDate = new Date()) => {
-  let streak = 0;
-  let key = localDateKey(referenceDate);
-
-  // Si hoy todavía no se registró, la racha se mide desde ayer: registrar el
-  // sueño de la noche pasada es lo primero que hacés a la mañana, pero no
-  // necesariamente antes de abrir la app.
-  if (!logsMap[key]) key = addDaysToKey(key, -1);
-
-  while (logsMap[key] && logsMap[key].totalSleepMinutes / 60 >= goalHours) {
-    streak++;
-    key = addDaysToKey(key, -1);
-  }
-  return streak;
-};
-
-/**
- * Impacto de cada factor marcado (cafeína tardía, pantallas, estrés…) sobre
- * las horas dormidas y la energía al despertar: promedio de las noches con el
- * factor vs las noches sin él.
- *
- * Es una comparación de medias, no una prueba estadística — con 4 noches de
- * un lado no hay significancia posible. Por eso la UI la presenta como
- * "lo que veo en tus datos" y muestra siempre el tamaño de muestra.
- */
-export const computeFactorImpact = (logsMap, minOccurrences = 3, days = 90, referenceDate = new Date()) => {
-  const logs = getRecentLogs(logsMap, days, referenceDate).filter((l) => l.quality != null);
-
-  return ALL_SLEEP_FACTORS.map((factor) => {
-    const withFactor = logs.filter((l) => (l.factors || []).includes(factor.id));
-    const withoutFactor = logs.filter((l) => !(l.factors || []).includes(factor.id));
-
-    if (withFactor.length < minOccurrences || withoutFactor.length < minOccurrences) {
-      return { ...factor, available: false, nights: withFactor.length, needed: minOccurrences };
-    }
-
-    const qualityWith = average(withFactor.map((l) => l.quality));
-    const qualityWithout = average(withoutFactor.map((l) => l.quality));
-    const hoursWith = average(withFactor.map((l) => l.totalSleepMinutes / 60));
-    const hoursWithout = average(withoutFactor.map((l) => l.totalSleepMinutes / 60));
-
+/** Valores iniciales del formulario: tu horario típico (3+ noches) o tu último registro. */
+export const getFormDefaults = (map, endKey = dateKeyOf()) => {
+  const typical = getTypicalTimes(map, endKey);
+  if (typical.nights >= 3 && typical.bedtime && typical.wakeTime) {
     return {
-      ...factor,
-      available: true,
-      nights: withFactor.length,
-      nightsWithout: withoutFactor.length,
-      qualityWith: round1(qualityWith),
-      qualityWithout: round1(qualityWithout),
-      qualityDiff: round1(qualityWith - qualityWithout),
-      hoursDiff: round1(hoursWith - hoursWithout),
+      bedtime: typical.bedtime,
+      wakeTime: typical.wakeTime,
+      minutesToFallAsleep: typical.fallAsleep ?? DEFAULT_FALL_ASLEEP_MINUTES,
     };
-  })
-    .filter((f) => f.available)
-    .sort((a, b) => Math.abs(b.qualityDiff) - Math.abs(a.qualityDiff));
+  }
+  const last = listNights(map).filter((n) => n.date <= endKey).pop();
+  const lat = fallAsleepOf(last);
+  return {
+    bedtime: isHM(last?.bedtime) ? last.bedtime : DEFAULT_BEDTIME,
+    wakeTime: isHM(last?.wakeTime) ? last.wakeTime : DEFAULT_WAKE_TIME,
+    minutesToFallAsleep: lat != null ? nearestFallAsleep(lat) : DEFAULT_FALL_ASLEEP_MINUTES,
+  };
+};
+
+// --------------------------------- Puntaje ---------------------------------
+
+export const SCORE_WEIGHTS = { duration: 50, timing: 20, energy: 20, wakes: 10 };
+const WAKE_POINTS = [1, 0.7, 0.4, 0.1];
+
+/**
+ * Puntaje 0–100 de una noche. Cada parte suma puntos sobre su máximo; las que
+ * no se pueden medir (sin energía, sin historial) quedan afuera y el total se
+ * reescala sobre lo medido.
+ */
+export const computeSleepScore = (log, { goalHours = DEFAULT_SLEEP_GOAL_HOURS, usualBedtime = null } = {}) => {
+  const minutes = sleptMinutes(log);
+  if (!minutes) return null;
+  const goal = goalHours * 60;
+  const quality = qualityOf(log);
+  const count = wakeCountOf(log);
+  const delta = isHM(usualBedtime) && isHM(log.bedtime) ? bedLine(log.bedtime) - bedLine(usualBedtime) : null;
+  const diff = delta == null ? null : Math.abs(delta);
+
+  const parts = [
+    { id: 'duration', max: SCORE_WEIGHTS.duration, ratio: clamp((minutes - goal / 2) / (goal / 2), 0, 1), minutes, goalMinutes: goal },
+    { id: 'timing', max: SCORE_WEIGHTS.timing, ratio: diff == null ? null : clamp(1 - (diff - 15) / 75, 0, 1), deltaMinutes: delta, usualBedtime },
+    { id: 'energy', max: SCORE_WEIGHTS.energy, ratio: quality == null ? null : (quality - 1) / 4, quality },
+    { id: 'wakes', max: SCORE_WEIGHTS.wakes, ratio: WAKE_POINTS[count], count },
+  ].map(({ ratio, ...p }) => ({ ...p, points: ratio == null ? null : Math.round(ratio * p.max) }));
+
+  const counted = parts.filter((p) => p.points != null);
+  const score = Math.round((100 * counted.reduce((s, p) => s + p.points, 0)) / counted.reduce((s, p) => s + p.max, 0));
+  return { score, label: scoreLabel(score), parts };
+};
+
+export const scoreLabel = (score) => (score >= 85 ? 'Excelente' : score >= 70 ? 'Buena' : score >= 50 ? 'Regular' : 'Floja');
+
+/** Mediana de la hora de acostarse en las 14 noches ANTERIORES a dateKey (mínimo 3). */
+const usualBedtimeBefore = (nights, dateKey) => {
+  const prev = windowNights(nights, addDaysToKey(dateKey, -1)).filter((n) => isHM(n.bedtime));
+  return prev.length >= 3 ? minutesToHM(median(prev.map((n) => bedLine(n.bedtime)))) : null;
+};
+
+const scoreIn = (nights, night, goalHours) =>
+  computeSleepScore(night, { goalHours, usualBedtime: usualBedtimeBefore(nights, night.date) });
+
+export const scoreNight = (map, dateKey, goalHours = DEFAULT_SLEEP_GOAL_HOURS) => {
+  const nights = listNights(map);
+  const night = nights.find((n) => n.date === dateKey);
+  return night ? scoreIn(nights, night, goalHours) : null;
+};
+
+// ------------------------------ Tendencias ---------------------------------
+
+/** Una entrada por día (de la más vieja a endKey), con o sin registro. */
+export const nightSeries = (map, goalHours, endKey, days) => {
+  const nights = listNights(map);
+  const byDate = Object.fromEntries(nights.map((n) => [n.date, n]));
+  return lastNKeys(days, endKey).map((key) => {
+    const night = byDate[key];
+    return { key, minutes: night ? night.minutes : 0, score: night ? scoreIn(nights, night, goalHours).score : null };
+  });
+};
+
+/** Deuda de las últimas 14 noches: lo que faltó (o sobró) contra la meta en las noches registradas. */
+export const computeSleepDebt = (map, goalHours, endKey, days = WINDOW_NIGHTS) => {
+  const recent = windowNights(listNights(map), endKey, days);
+  const debt = recent.reduce((s, n) => s + (goalHours * 60 - n.minutes), 0);
+  return { debtHours: round1(debt / 60), nights: recent.length, days };
+};
+
+/** Desvío estándar de la hora de acostarse en las últimas 14 noches (mínimo 3). */
+export const computeConsistency = (map, endKey, days = WINDOW_NIGHTS) => {
+  const beds = windowNights(listNights(map), endKey, days)
+    .filter((n) => isHM(n.bedtime))
+    .map((n) => bedLine(n.bedtime));
+  if (beds.length < 3) return { stdDevMin: null, nights: beds.length, label: null };
+  const sd = Math.round(stdDev(beds));
+  const label = sd <= 20 ? 'Muy constante' : sd <= 45 ? 'Constante' : sd <= 75 ? 'Variable' : 'Irregular';
+  return { stdDevMin: sd, nights: beds.length, label };
+};
+
+/** Hora para acostarte: tu despertar habitual menos la meta y lo que tardás en dormirte. */
+export const suggestBedtime = (map, goalHours, endKey) => {
+  const typical = getTypicalTimes(map, endKey);
+  const last = listNights(map).filter((n) => n.date <= endKey && isHM(n.wakeTime)).pop();
+  const wakeTime = typical.wakeTime || last?.wakeTime;
+  if (!wakeTime) return null;
+  const fallAsleep = typical.fallAsleep ?? DEFAULT_FALL_ASLEEP_MINUTES;
+  return { bedtime: minutesToHM(round5(hmToMinutes(wakeTime) - goalHours * 60 - fallAsleep)), wakeTime, fallAsleep };
+};
+
+// ------------------------------- Patrones ----------------------------------
+
+/**
+ * Factores: promedio de horas (y energía, si hay) con el factor vs sin él, en
+ * los últimos 90 días. Recién opina con `minNights` noches de cada lado y solo
+ * muestra diferencias de al menos 15 min o medio punto de energía.
+ */
+export const computeFactorImpact = (map, endKey, { minNights = 4, days = 90 } = {}) => {
+  const nights = windowNights(listNights(map), endKey, days);
+  let progress = 0;
+  const ready = [];
+  SLEEP_FACTORS.forEach((f) => {
+    const withF = nights.filter((n) => factorsOf(n).includes(f.id));
+    const without = nights.filter((n) => !factorsOf(n).includes(f.id));
+    const have = Math.min(withF.length, without.length);
+    progress = Math.max(progress, Math.min(have, minNights));
+    if (have < minNights) return;
+    const qW = withF.map(qualityOf).filter((q) => q != null);
+    const qWo = without.map(qualityOf).filter((q) => q != null);
+    ready.push({
+      ...f,
+      nightsWith: withF.length,
+      nightsWithout: without.length,
+      hoursDiff: round1((mean(withF.map((n) => n.minutes)) - mean(without.map((n) => n.minutes))) / 60),
+      minutesDiff: Math.round(mean(withF.map((n) => n.minutes)) - mean(without.map((n) => n.minutes))),
+      qualityDiff: qW.length >= 3 && qWo.length >= 3 ? round1(mean(qW) - mean(qWo)) : null,
+    });
+  });
+  const weight = (r) => Math.abs(r.minutesDiff) / 60 + Math.abs(r.qualityDiff || 0) / 2;
+  const notable = ready
+    .filter((r) => Math.abs(r.minutesDiff) >= 15 || Math.abs(r.qualityDiff || 0) >= 0.5)
+    .sort((a, b) => weight(b) - weight(a));
+  return { needed: minNights, progress, checked: ready.length, notable };
 };
 
 /**
- * ¿Te conviene acostarte temprano o tarde? Parte tus noches por la mediana de
- * tu propia hora de acostarte y compara las dos mitades. Es relativo a vos, no
- * a una hora "correcta" universal: alguien que se acuesta 1:00 todos los días
- * igual puede descubrir que a las 0:30 duerme mejor.
+ * "Jet lag social": cuánto se corre el punto medio de tu sueño las noches que
+ * terminan sábado o domingo respecto del resto (últimos 28 días).
  */
-export const computeBedtimeComparison = (logsMap, minPerGroup = 3, days = 90, referenceDate = new Date()) => {
-  const logs = getRecentLogs(logsMap, days, referenceDate)
-    .filter((l) => l.quality != null && l.bedtime)
-    .map((l) => {
-      const mins = timeToMinutes(l.bedtime);
-      // Misma línea de tiempo continua que en computeWeeklyStats: 23:50 y 00:10
-      // están a 20 minutos, no a 23 horas y media.
-      return { ...l, bedMinutes: mins < 12 * 60 ? mins + 24 * 60 : mins };
-    })
-    .sort((a, b) => a.bedMinutes - b.bedMinutes);
-
-  if (logs.length < minPerGroup * 2) {
-    return { available: false, nights: logs.length, needed: minPerGroup * 2 };
-  }
-
-  const half = Math.floor(logs.length / 2);
-  const early = logs.slice(0, half);
-  const late = logs.slice(logs.length - half);
-
-  const formatBed = (mins) => {
-    const m = Math.round(mins) % (24 * 60);
-    return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
-  };
-
-  const earlyQuality = average(early.map((l) => l.quality));
-  const lateQuality = average(late.map((l) => l.quality));
-  const earlyHours = average(early.map((l) => l.totalSleepMinutes / 60));
-  const lateHours = average(late.map((l) => l.totalSleepMinutes / 60));
-
+export const computeSocialJetlag = (map, endKey, days = 28) => {
+  const mid = (n) => bedLine(n.bedtime) + minutesInBed(n.bedtime, n.wakeTime) / 2;
+  const nights = windowNights(listNights(map), endKey, days).filter((n) => isHM(n.bedtime) && isHM(n.wakeTime));
+  const isWeekend = (n) => [0, 6].includes(keyToDate(n.date).getDay());
+  const weekend = nights.filter(isWeekend).map(mid);
+  const weekday = nights.filter((n) => !isWeekend(n)).map(mid);
+  const ready = weekend.length >= 2 && weekday.length >= 3;
   return {
-    available: true,
-    nights: logs.length,
-    earlyBedtime: formatBed(average(early.map((l) => l.bedMinutes))),
-    lateBedtime: formatBed(average(late.map((l) => l.bedMinutes))),
-    earlyQuality: round1(earlyQuality),
-    lateQuality: round1(lateQuality),
-    earlyHours: round1(earlyHours),
-    lateHours: round1(lateHours),
-    better: Math.abs(earlyQuality - lateQuality) < 0.3 ? 'igual' : earlyQuality > lateQuality ? 'temprano' : 'tarde',
+    ready,
+    weekendNights: weekend.length,
+    weekdayNights: weekday.length,
+    shiftMinutes: ready ? Math.round(median(weekend) - median(weekday)) : null,
   };
 };
 
-/** Mejor y peor noche del período, por energía al despertar y horas como desempate. */
-export const computeBestWorstNights = (logsMap, days = 30, referenceDate = new Date()) => {
-  const logs = getRecentLogs(logsMap, days, referenceDate).filter((l) => l.quality != null);
-  if (logs.length < 3) return { available: false, nights: logs.length };
+// ------------------------- API para otras pantallas ------------------------
 
-  const score = (l) => l.quality * 100 + l.totalSleepMinutes / 60;
-  const sorted = [...logs].sort((a, b) => score(b) - score(a));
-
-  return { available: true, nights: logs.length, best: sorted[0], worst: sorted[sorted.length - 1] };
+/** Resumen de la noche que terminó en dateKey (Hoy / Progreso). */
+export const getSleepDaySummary = (dateKey = dateKeyOf(), now = Date.now()) => {
+  const map = loadSleepLogs();
+  const nights = listNights(map);
+  const night = nights.find((n) => n.date === dateKey);
+  if (!night) {
+    const pending = dateKey === dateKeyOf(new Date(now)) ? getPendingSleep(now) : null;
+    return pending ? { logged: false, pendingBedtime: pending.bedtime } : { logged: false };
+  }
+  const { score, label } = scoreIn(nights, night, loadSleepGoalHours());
+  const quality = qualityOf(night);
+  const energy = energyOf(quality);
+  return {
+    logged: true,
+    hours: round1(night.minutes / 60),
+    minutes: night.minutes,
+    score,
+    quality,
+    emoji: energy ? energy.emoji : '',
+    label: energy ? energy.label : label,
+    bedtime: isHM(night.bedtime) ? night.bedtime : null,
+    wakeTime: isHM(night.wakeTime) ? night.wakeTime : null,
+  };
 };
 
-// ------------------------- Correlaciones entre módulos -----------------------
+export const summarizeRange = (map, goalHours, fromKey, toKey) => {
+  const [from, to] = fromKey <= toKey ? [fromKey, toKey] : [toKey, fromKey];
+  const nights = listNights(map);
+  const inRange = nights.filter((n) => n.date >= from && n.date <= to);
+  if (!inRange.length) return { nights: 0, avgHours: null, avgScore: null, avgQuality: null, goalHours };
+  const qualities = inRange.map(qualityOf).filter((q) => q != null);
+  return {
+    nights: inRange.length,
+    avgHours: round1(mean(inRange.map((n) => n.minutes)) / 60),
+    avgScore: Math.round(mean(inRange.map((n) => scoreIn(nights, n, goalHours).score))),
+    avgQuality: qualities.length ? round1(mean(qualities)) : null,
+    goalHours,
+  };
+};
 
-/** Parsea horas tipo "11:15 p. m." / "8:05 a.m." / "23:15" a minutos desde medianoche. */
+/** Promedios de las noches que terminan entre fromKey y toKey (inclusive). */
+export const getSleepRangeSummary = (fromKey, toKey) => summarizeRange(loadSleepLogs(), loadSleepGoalHours(), fromKey, toKey);
+
+// ---- Compatibilidad: solo para WeeklyRecap.jsx y reminders.js (se reescriben aparte). Borrar cuando no los importen.
+
+export const computeWeeklyStats = (map, goalHours = DEFAULT_SLEEP_GOAL_HOURS, ref = new Date()) => {
+  const to = dateKeyOf(ref);
+  const s = summarizeRange(map, goalHours, addDaysToKey(to, -6), to);
+  return { avgHours: s.avgHours ?? 0, nightsLogged: s.nights };
+};
+export const correlateLateDinnerWithQuality = () => ({ available: false, sampleSize: 0 });
+export const correlateSleepWithWorkoutVolume = () => ({ available: false, sampleSize: 0 });
 export const parseAnyTimeToMinutes = (raw) => {
-  if (!raw) return null;
-  const match = raw.match(/(\d{1,2}):(\d{2})/);
+  const match = typeof raw === 'string' ? raw.match(/(\d{1,2}):(\d{2})/) : null;
   if (!match) return null;
-  let hour = parseInt(match[1], 10);
-  const minute = parseInt(match[2], 10);
-  const isPM = /p\.?\s?m\.?/i.test(raw);
-  const isAM = /a\.?\s?m\.?/i.test(raw);
-  if (isPM && hour !== 12) hour += 12;
-  if (isAM && hour === 12) hour = 0;
-  return hour * 60 + minute;
-};
-
-const readNutritionLog = (dateKey) => {
-  try {
-    const raw = localStorage.getItem(`nutri_log_${dateKey}`);
-    return raw ? JSON.parse(raw) : null;
-  } catch (e) {
-    return null;
-  }
-};
-
-const readWorkoutSessions = () => {
-  try {
-    const raw = localStorage.getItem('workout_sessions');
-    return raw ? JSON.parse(raw) : {};
-  } catch (e) {
-    return {};
-  }
-};
-
-const sessionVolume = (session) =>
-  session.exercises.reduce(
-    (sum, ex) =>
-      sum +
-      ex.sets.reduce((s, set) => s + (set.completed && set.type !== 'warmup' ? (Number(set.weight) || 0) * (Number(set.reps) || 0) : 0), 0),
-    0
-  );
-
-const MIN_SAMPLE_SIZE = 3;
-
-/**
- * Correlación nutrición + sueño: compara la calidad del descanso las noches
- * en que la última comida del día anterior fue después de las 22:00 vs el resto.
- */
-export const correlateLateDinnerWithQuality = (logsMap) => {
-  const lateQualities = [];
-  const normalQualities = [];
-
-  Object.values(logsMap).forEach((log) => {
-    if (!log.quality) return;
-    const prevDay = addDaysToKey(log.date, -1);
-    const nutriLog = readNutritionLog(prevDay);
-    if (!nutriLog) return;
-    const meals = [...(nutriLog.planMeals || []), ...(nutriLog.freeMeals || [])];
-    if (meals.length === 0) return;
-    const lastMealMinutes = Math.max(...meals.map((m) => parseAnyTimeToMinutes(m.time)).filter((n) => n != null));
-    if (!Number.isFinite(lastMealMinutes)) return;
-    if (lastMealMinutes >= 22 * 60) lateQualities.push(log.quality);
-    else normalQualities.push(log.quality);
-  });
-
-  if (lateQualities.length < MIN_SAMPLE_SIZE || normalQualities.length < MIN_SAMPLE_SIZE) {
-    return { available: false, sampleSize: lateQualities.length + normalQualities.length };
-  }
-
-  const lateAvg = average(lateQualities);
-  const normalAvg = average(normalQualities);
-  const pctDiff = normalAvg > 0 ? Math.round(((normalAvg - lateAvg) / normalAvg) * 100) : 0;
-
-  return {
-    available: true,
-    lateAvg: Math.round(lateAvg * 10) / 10,
-    normalAvg: Math.round(normalAvg * 10) / 10,
-    pctDiff,
-    lateNights: lateQualities.length,
-    normalNights: normalQualities.length,
-  };
-};
-
-/**
- * Correlación sueño + entrenamiento: compara el volumen total levantado en el
- * gimnasio los días con >= 7.5h de descanso esa misma noche vs el resto.
- */
-export const correlateSleepWithWorkoutVolume = (logsMap, sleepThresholdHours = 7.5) => {
-  const sessions = Object.values(readWorkoutSessions()).filter((s) => s.endedAt);
-  const highSleepVolumes = [];
-  const lowSleepVolumes = [];
-
-  sessions.forEach((session) => {
-    const log = logsMap[session.date];
-    if (!log || !log.totalSleepMinutes) return;
-    const volume = sessionVolume(session);
-    if (volume <= 0) return;
-    const hours = log.totalSleepMinutes / 60;
-    if (hours >= sleepThresholdHours) highSleepVolumes.push(volume);
-    else lowSleepVolumes.push(volume);
-  });
-
-  if (highSleepVolumes.length < MIN_SAMPLE_SIZE || lowSleepVolumes.length < MIN_SAMPLE_SIZE) {
-    return { available: false, sampleSize: highSleepVolumes.length + lowSleepVolumes.length };
-  }
-
-  const highAvg = average(highSleepVolumes);
-  const lowAvg = average(lowSleepVolumes);
-  const pctDiff = lowAvg > 0 ? Math.round(((highAvg - lowAvg) / lowAvg) * 100) : 0;
-
-  return {
-    available: true,
-    highAvg: Math.round(highAvg),
-    lowAvg: Math.round(lowAvg),
-    pctDiff,
-    highNights: highSleepVolumes.length,
-    lowNights: lowSleepVolumes.length,
-    thresholdHours: sleepThresholdHours,
-  };
+  let hour = Number(match[1]);
+  if (/p\.?\s?m\.?/i.test(raw) && hour !== 12) hour += 12;
+  if (/a\.?\s?m\.?/i.test(raw) && hour === 12) hour = 0;
+  return hour * 60 + Number(match[2]);
 };
