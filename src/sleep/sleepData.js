@@ -1,12 +1,32 @@
-// ---------------------------------------------------------------------------
-// DATOS BASE DEL MÓDULO DE SUEÑO Y RECUPERACIÓN
-// ---------------------------------------------------------------------------
+// Constantes del módulo de sueño. Los ids de factores y los valores de energía
+// son los que ya están guardados en los teléfonos: no cambiarlos.
 
 export const DEFAULT_SLEEP_GOAL_HOURS = 8;
+export const GOAL_MIN_HOURS = 5;
+export const GOAL_MAX_HOURS = 11;
 
-export const FALL_ASLEEP_MINUTES_PRESETS = [0, 10, 20, 30, 45, 60];
+export const DEFAULT_BEDTIME = '23:00';
+export const DEFAULT_WAKE_TIME = '07:00';
+export const DEFAULT_FALL_ASLEEP_MINUTES = 10;
 
-export const INTERRUPTION_COUNT_PRESETS = [0, 1, 2, 3, '4+'];
+export const FALL_ASLEEP_PRESETS = [
+  { value: 0, label: 'Enseguida' },
+  { value: 10, label: '10 min' },
+  { value: 20, label: '20 min' },
+  { value: 30, label: '30 min' },
+  { value: 45, label: '45 min' },
+  { value: 60, label: '1 h+' },
+];
+
+/** "3+" se guarda como 3; los registros viejos con '4+' se leen como 3+. */
+export const WAKE_COUNT_PRESETS = [
+  { value: 0, label: 'Ninguno' },
+  { value: 1, label: '1' },
+  { value: 2, label: '2' },
+  { value: 3, label: '3+' },
+];
+
+export const MINUTES_AWAKE_PRESETS = [5, 15, 30, 45, 60];
 
 export const ENERGY_LEVELS = [
   { value: 1, emoji: '😫', label: 'Agotado' },
@@ -16,36 +36,20 @@ export const ENERGY_LEVELS = [
   { value: 5, emoji: '😄', label: 'Con energía' },
 ];
 
-export const SLEEP_FACTOR_GROUPS = [
-  {
-    id: 'nutricion',
-    label: 'Nutrición',
-    factors: [
-      { id: 'cena_pesada', label: 'Cena pesada' },
-      { id: 'cafeina_tardia', label: 'Cafeína tardía' },
-      { id: 'alcohol', label: 'Alcohol' },
-      { id: 'hidratacion_tardia', label: 'Hidratación tardía' },
-      { id: 'ayuno', label: 'Ayuno' },
-    ],
-  },
-  {
-    id: 'estilo_vida',
-    label: 'Estilo de vida',
-    factors: [
-      { id: 'pantallas', label: 'Pantallas antes de dormir' },
-      { id: 'lectura', label: 'Lectura' },
-      { id: 'meditacion', label: 'Meditación' },
-      { id: 'estres_alto', label: 'Estrés alto' },
-    ],
-  },
-  {
-    id: 'entrenamiento',
-    label: 'Entrenamiento',
-    factors: [
-      { id: 'entreno_nocturno', label: 'Entreno nocturno intenso' },
-      { id: 'dia_descanso', label: 'Día de descanso' },
-    ],
-  },
+export const energyOf = (quality) => ENERGY_LEVELS.find((e) => e.value === quality) || null;
+
+export const SLEEP_FACTORS = [
+  { id: 'cafeina_tardia', emoji: '☕', label: 'Cafeína tarde' },
+  { id: 'alcohol', emoji: '🍷', label: 'Alcohol' },
+  { id: 'cena_pesada', emoji: '🍝', label: 'Cena pesada' },
+  { id: 'hidratacion_tardia', emoji: '💧', label: 'Mucho líquido' },
+  { id: 'ayuno', emoji: '⏳', label: 'Ayuno' },
+  { id: 'pantallas', emoji: '📱', label: 'Pantallas' },
+  { id: 'estres_alto', emoji: '😣', label: 'Estrés' },
+  { id: 'entreno_nocturno', emoji: '🏋️', label: 'Entreno nocturno' },
+  { id: 'dia_descanso', emoji: '🛋️', label: 'Día de descanso' },
+  { id: 'lectura', emoji: '📖', label: 'Lectura' },
+  { id: 'meditacion', emoji: '🧘', label: 'Meditación' },
 ];
 
-export const ALL_SLEEP_FACTORS = SLEEP_FACTOR_GROUPS.flatMap((g) => g.factors);
+export const factorOf = (id) => SLEEP_FACTORS.find((f) => f.id === id) || null;
