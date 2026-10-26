@@ -1,126 +1,49 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Timer, Plus, Minus, X } from 'lucide-react';
-import { REST_PRESETS_SEC } from './workoutData';
+import React from 'react';
+import { Timer, X } from 'lucide-react';
+import { formatClock } from './format';
 
-const beep = () => {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.frequency.value = 880;
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    gain.gain.setValueAtTime(0.15, ctx.currentTime);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.25);
-    osc.onended = () => ctx.close();
-  } catch (e) {
-    // audio no disponible en este entorno, se omite el sonido
-  }
-};
-
-/** Barra flotante de descanso: se dispara al completar una serie y avisa en naranja al llegar a cero. */
-export default function RestTimer({ durationSec, onDismiss }) {
-  const [remaining, setRemaining] = useState(durationSec);
-  const firedRef = useRef(false);
-  const peakRef = useRef(durationSec);
-
-  useEffect(() => {
-    if (remaining <= 0) {
-      if (!firedRef.current) {
-        firedRef.current = true;
-        beep();
-        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-      }
-      return;
-    }
-    const t = setTimeout(() => setRemaining((r) => r - 1), 1000);
-    return () => clearTimeout(t);
-  }, [remaining]);
-
-  const isDone = remaining <= 0;
-  const mm = String(Math.floor(Math.max(0, remaining) / 60)).padStart(1, '0');
-  const ss = String(Math.max(0, remaining) % 60).padStart(2, '0');
-
-  // Denominador del progreso: el pico de tiempo visto (cambia con los presets y
-  // el ±15), así la línea siempre arranca llena y se vacía hasta cero.
-  peakRef.current = Math.max(peakRef.current, remaining);
-  const pct = peakRef.current > 0 ? (Math.max(0, remaining) / peakRef.current) * 100 : 0;
+/** Barra de descanso acoplada abajo de la sesión. */
+export default function RestTimer({ timer, remaining, onAdd, onStop }) {
+  if (!timer) return null;
+  const done = remaining <= 0;
+  const pct = timer.durationSec > 0 ? Math.min(1, Math.max(0, remaining / timer.durationSec)) : 0;
 
   return (
-    <div
-      className={`fixed bottom-24 inset-x-0 flex flex-col items-center px-4 z-40 pointer-events-none`}
-    >
+    <div className="px-3 pb-2 anim-item-in">
       <div
-        // Mismo material que los avisos flotantes de la app (ver .toast en
-        // index.css): es chrome que flota sobre el contenido, así que usa el
-        // vidrio fino con filtro y el canto teñido con el acento del módulo. Al
-        // llegar a cero pasa a relleno sólido a propósito —ahí ya no es un aviso
-        // discreto, es lo único que importa en pantalla—.
-        className={`relative overflow-hidden w-full max-w-md rounded-2xl px-4 py-3 flex items-center justify-between gap-3 pointer-events-auto transition-colors ${
-          isDone
-            ? 'border border-entreno-400 bg-entreno-500 shadow-lg animate-pulse motion-reduce:animate-none'
-            : 'toast toast-entreno'
+        className={`relative overflow-hidden rounded-2xl h-14 pl-4 pr-1.5 flex items-center gap-2 ${
+          done ? 'bg-entreno-500 text-onaccent' : 'glass text-ink-100'
         }`}
+        role="timer"
+        aria-live="off"
       >
-        {/* Línea de progreso: se vacía a medida que corre el descanso. Al llegar
-            a cero desaparece —ahí el fondo entero ya es el aviso—. */}
-        {!isDone && (
+        {!done && (
           <span
-            className="absolute bottom-0 left-0 h-0.5 bg-entreno-400/80 transition-all duration-1000 ease-linear"
-            style={{ width: `${pct}%` }}
             aria-hidden="true"
+            className="absolute inset-y-0 left-0 bg-entreno-500/15 transition-[width] duration-300 ease-linear"
+            style={{ width: `${pct * 100}%` }}
           />
         )}
-        {/* min-w-0 + truncate: los tres controles de la derecha ahora ocupan
-            44px cada uno (área táctil mínima), así que en pantallas angostas el
-            que tiene que ceder es este bloque de texto, no la fila. */}
-        <div className="flex items-center gap-2 min-w-0">
-          <Timer className={`w-5 h-5 shrink-0 ${isDone ? 'text-onaccent' : 'text-entreno-400'}`} />
-          <span className={`font-mono text-xl font-black shrink-0 ${isDone ? 'text-onaccent' : 'text-entreno-300'}`}>
-            {mm}:{ss}
-          </span>
-          <span className={`text-xs font-semibold truncate ${isDone ? 'text-onaccent' : 'text-ink-400'}`}>
-            {isDone ? '¡A seguir!' : 'descanso'}
-          </span>
-        </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setRemaining((r) => Math.max(0, r - 15))}
-            aria-label="Restar 15 segundos"
-            className={`btn-icon ${isDone ? 'hover:bg-entreno-400' : 'hover:bg-ink-800'}`}
-          >
-            <Minus className={`w-4 h-4 ${isDone ? 'text-onaccent' : 'text-ink-300'}`} />
-          </button>
-          <button
-            onClick={() => setRemaining((r) => Math.max(0, r) + 15)}
-            aria-label="Sumar 15 segundos"
-            className={`btn-icon ${isDone ? 'hover:bg-entreno-400' : 'hover:bg-ink-800'}`}
-          >
-            <Plus className={`w-4 h-4 ${isDone ? 'text-onaccent' : 'text-ink-300'}`} />
-          </button>
-          <button
-            onClick={onDismiss}
-            aria-label="Cerrar temporizador"
-            className={`btn-icon ${isDone ? 'hover:bg-entreno-400' : 'hover:bg-ink-800'}`}
-          >
-            <X className={`w-4 h-4 ${isDone ? 'text-onaccent' : 'text-ink-300'}`} />
-          </button>
-        </div>
+        <Timer className={`relative w-5 h-5 shrink-0 ${done ? '' : 'text-entreno-400'}`} />
+        <span className="relative num-display text-2xl min-w-[4.2rem]">{done ? '0:00' : formatClock(remaining)}</span>
+        <span className={`relative flex-1 min-w-0 truncate text-sm font-semibold ${done ? '' : 'text-ink-500'}`}>
+          {done ? '¡A la próxima serie!' : 'Descanso'}
+        </span>
+        <button
+          onClick={() => onAdd(-15)}
+          disabled={done}
+          aria-label="Restar 15 segundos"
+          className="relative h-10 px-2.5 rounded-xl text-sm font-semibold num disabled:opacity-0"
+        >
+          −15
+        </button>
+        <button onClick={() => onAdd(15)} aria-label="Sumar 15 segundos" className={`relative h-10 px-2.5 rounded-xl text-sm font-semibold num ${done ? 'bg-onaccent/10' : 'bg-ink-700/60'}`}>
+          +15
+        </button>
+        <button onClick={onStop} aria-label="Saltar descanso" className="relative btn-icon w-10 h-10">
+          <X className="w-[18px] h-[18px]" strokeWidth={2.5} />
+        </button>
       </div>
-      {!isDone && (
-        <div className="w-full max-w-md flex gap-1.5 justify-center mt-1.5 pointer-events-auto">
-          {REST_PRESETS_SEC.map((preset) => (
-            <button
-              key={preset}
-              onClick={() => setRemaining(preset)}
-              className="px-2.5 py-1 rounded-full surface text-entreno-300 text-[11px] font-semibold"
-            >
-              {preset}s
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

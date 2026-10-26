@@ -1,312 +1,236 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, BarChart3, Dumbbell, Flame } from 'lucide-react';
-import ModuleIntro from '../ModuleIntro';
-import SubTabs from '../lib/SubTabs';
-import WeekView from './WeekView';
+import React, { useMemo, useState } from 'react';
+import { Settings2, Play } from 'lucide-react';
+import { ScreenHeader, Segmented, IconButton, toast } from '../ui';
+import { dateKeyOf } from '../lib/dates';
+import { useWorkoutData } from './useWorkoutData';
+import { buildRoutineFromTemplate, getRoutineDayForDate, startSession, startFreeSession } from './workoutStorage';
+import { finishedSessions, computeWeekPlan } from './workoutStats';
 import TodayView from './TodayView';
-import InWorkoutSession from './InWorkoutSession';
+import RoutineView from './RoutineView';
 import ProgressView from './ProgressView';
-import {
-  getRoutineDayForDate,
-  getSessionsForDate,
-  getRecentSessions,
-  computeWeekPlan,
-  summarizeSession,
-  loadExercises,
-  saveExercises,
-  loadRoutines,
-  saveRoutines,
-  loadActiveRoutineId,
-  saveActiveRoutineId,
-  loadSessions,
-  saveSessions,
-  loadActiveSession,
-  saveActiveSession,
-  clearActiveSession,
-  buildRoutineFromTemplate,
-  addExerciseToDay,
-  removeExerciseFromDay,
-  updateRoutineExerciseTarget,
-  createCustomExercise,
-  startSession,
-  addSetToExercise,
-  addExerciseToSession,
-  updateSet as updateSetInSession,
-  removeSet as removeSetInSession,
-  updateExerciseNotes,
-  substituteExercise,
-  finishSession,
-} from './workoutStorage';
-
-const workoutBadge = (Icon) => (
-  <div className="flex items-center justify-center w-28 h-28 rounded-full bg-entreno-500/10 border border-entreno-500/30">
-    <Icon className="w-12 h-12 text-entreno-400" />
-  </div>
-);
-
-const WORKOUT_INTRO_SLIDES = [
-  {
-    key: 'intro',
-    visual: workoutBadge(Dumbbell),
-    title: 'Armá y seguí tus entrenamientos',
-    text: 'Creá una rutina semanal, registrá tus series y mirá cómo progresás con el tiempo.',
-  },
-  {
-    key: 'hoy',
-    visual: workoutBadge(Flame),
-    title: 'Todo empieza en «Hoy»',
-    text: 'Te dice qué te toca hoy y arranca el entreno de un toque. Si es día de descanso, también.',
-  },
-  {
-    key: 'semana',
-    visual: workoutBadge(CalendarDays),
-    title: 'Tu semana de entreno',
-    text: 'Elegí una plantilla y armá los ejercicios de cada día. Se configura una vez.',
-  },
-  {
-    key: 'progreso',
-    visual: workoutBadge(BarChart3),
-    title: 'Mirá tu progreso',
-    text: 'Volumen, series por músculo, récords y el historial completo de tus sesiones.',
-  },
-];
+import ActiveWorkout from './ActiveWorkout';
+import ExerciseHistorySheet from './ExerciseHistorySheet';
+import SettingsSheet from './SettingsSheet';
+import { SessionDetailSheet, LogPastSheet } from './SessionSheets';
 
 const TABS = [
-  { id: 'hoy', label: 'Hoy', icon: Flame },
-  { id: 'semana', label: 'Semana', icon: CalendarDays },
-  { id: 'progreso', label: 'Progreso', icon: BarChart3 },
+  { value: 'hoy', label: 'Hoy' },
+  { value: 'rutina', label: 'Rutina' },
+  { value: 'progreso', label: 'Progreso' },
 ];
 
 export default function WorkoutModule() {
-  const [subTab, setSubTab] = useState('hoy'); // 'hoy' | 'semana' | 'progreso'
-  const [loaded, setLoaded] = useState(false);
-  // El editor de día y el alta de rutina se abren tanto desde "Semana" como
-  // desde el hero de "Hoy", así que el estado vive acá y WeekView lo recibe
-  // controlado.
-  const [editingDayId, setEditingDayId] = useState(null);
-  const [showNewRoutine, setShowNewRoutine] = useState(false);
+  const data = useWorkoutData();
+  const { exercises, exercisesById, routines, setRoutines, activeRoutine, setActiveRoutineId, sessions, setSessions, activeSession, setActiveSession, settings } = data;
 
-  const [exercises, setExercises] = useState([]);
-  const [routines, setRoutines] = useState([]);
-  const [activeRoutineId, setActiveRoutineId] = useState(null);
-  const [sessions, setSessions] = useState({});
-  const [activeSession, setActiveSession] = useState(null);
+  const [tab, setTab] = useState('hoy');
+  const [workoutOpen, setWorkoutOpen] = useState(() => !!activeSession);
+  const [editing, setEditing] = useState(null); // sesión pasada en edición
+  const [editDayId, setEditDayId] = useState(null);
+  const [detail, setDetail] = useState(null); // id de sesión
+  const [historyId, setHistoryId] = useState(null);
+  const [logPast, setLogPast] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
-  useEffect(() => {
-    setExercises(loadExercises());
-    setRoutines(loadRoutines());
-    setActiveRoutineId(loadActiveRoutineId());
-    setSessions(loadSessions());
-    setActiveSession(loadActiveSession());
-    setLoaded(true);
-  }, []);
+  const todayKey = dateKeyOf();
+  const ordered = useMemo(() => finishedSessions(sessions), [sessions]);
+  const todaySessions = useMemo(() => ordered.filter((s) => s.date === todayKey), [ordered, todayKey]);
+  const weekPlan = useMemo(() => computeWeekPlan(activeRoutine, sessions, todayKey), [activeRoutine, sessions, todayKey]);
+  const todayDay = getRoutineDayForDate(activeRoutine);
 
-  useEffect(() => {
-    if (loaded) saveExercises(exercises);
-  }, [exercises, loaded]);
+  const exerciseActions = { onCreate: data.createExercise, onUpdate: data.updateExercise, onArchive: data.archiveExercise };
 
-  useEffect(() => {
-    if (loaded) saveRoutines(routines);
-  }, [routines, loaded]);
-
-  useEffect(() => {
-    if (loaded) saveActiveRoutineId(activeRoutineId);
-  }, [activeRoutineId, loaded]);
-
-  useEffect(() => {
-    if (loaded) saveSessions(sessions);
-  }, [sessions, loaded]);
-
-  useEffect(() => {
-    if (!loaded) return;
-    if (activeSession) saveActiveSession(activeSession);
-    else clearActiveSession();
-  }, [activeSession, loaded]);
-
-  const exercisesById = useMemo(() => Object.fromEntries(exercises.map((e) => [e.id, e])), [exercises]);
-  const activeRoutine = useMemo(() => routines.find((r) => r.id === activeRoutineId) || null, [routines, activeRoutineId]);
-
-  // Estado de hoy y de la semana, compartido entre "Hoy" y "Semana".
-  const todayDay = useMemo(() => getRoutineDayForDate(activeRoutine), [activeRoutine]);
-  const todaySessions = useMemo(() => getSessionsForDate(sessions), [sessions]);
-  const weekPlan = useMemo(() => computeWeekPlan(activeRoutine, sessions), [activeRoutine, sessions]);
-  const lastSession = useMemo(() => getRecentSessions(sessions, 1)[0] || null, [sessions]);
-  const lastSessionSummary = useMemo(
-    () => (lastSession ? summarizeSession(lastSession, exercisesById) : null),
-    [lastSession, exercisesById]
-  );
-
-  const updateActiveRoutine = (updater) => {
-    setRoutines((prev) => prev.map((r) => (r.id === activeRoutineId ? updater(r) : r)));
+  const begin = (session) => {
+    if (activeSession) {
+      setWorkoutOpen(true);
+      toast('Ya tenés un entreno en curso', { tone: 'info' });
+      return;
+    }
+    setActiveSession(session);
+    setWorkoutOpen(true);
   };
 
-  // ------------------------------- Rutinas --------------------------------
+  const saveSession = (finished) => setSessions((map) => ({ ...map, [finished.id]: finished }));
 
-  const handleCreateRoutine = (templateId, name) => {
-    const routine = buildRoutineFromTemplate(templateId, name);
-    setRoutines((prev) => [...prev, routine]);
-    setActiveRoutineId(routine.id);
+  const deleteSession = (session) => {
+    setSessions((map) => {
+      const next = { ...map };
+      delete next[session.id];
+      return next;
+    });
+    setDetail(null);
+    toast('Entreno borrado', { action: { label: 'Deshacer', onClick: () => saveSession(session) } });
   };
 
-  const handleRenameRoutine = (routineId, name) => {
-    const clean = name.trim();
-    if (!clean) return;
-    setRoutines((prev) => prev.map((r) => (r.id === routineId ? { ...r, name: clean } : r)));
-  };
-
-  const handleDeleteRoutine = (routineId) => {
-    const next = routines.filter((r) => r.id !== routineId);
-    setRoutines(next);
-    if (activeRoutineId === routineId) setActiveRoutineId(next[0]?.id || null);
-  };
-
-  const handleCreateCustomExercise = (data) => {
-    const newExercise = createCustomExercise(data);
-    setExercises((prev) => [...prev, newExercise]);
-    return newExercise.id;
-  };
-
-  const handleAddExercise = (dayId, exerciseId) => {
-    updateActiveRoutine((r) => addExerciseToDay(r, dayId, exerciseId));
-  };
-
-  const handleRemoveExercise = (dayId, routineExerciseId) => {
-    updateActiveRoutine((r) => removeExerciseFromDay(r, dayId, routineExerciseId));
-  };
-
-  const handleUpdateTarget = (dayId, routineExerciseId, patch) => {
-    updateActiveRoutine((r) => updateRoutineExerciseTarget(r, dayId, routineExerciseId, patch));
-  };
-
-  // ------------------------------- Sesiones --------------------------------
-
-  const handleStartSession = (day) => {
-    setActiveSession(startSession(activeRoutine, day));
-  };
-
-  const handleAddSet = (sessionExerciseId, set) => {
-    setActiveSession((s) => addSetToExercise(s, sessionExerciseId, set));
-  };
-
-  const handleAddSessionExercise = (exerciseId) => {
-    setActiveSession((s) => addExerciseToSession(s, exerciseId));
-  };
-
-  const handleUpdateSet = (sessionExerciseId, setId, patch) => {
-    setActiveSession((s) => updateSetInSession(s, sessionExerciseId, setId, patch));
-  };
-
-  const handleRemoveSet = (sessionExerciseId, setId) => {
-    setActiveSession((s) => removeSetInSession(s, sessionExerciseId, setId));
-  };
-
-  const handleUpdateNotes = (sessionExerciseId, notes) => {
-    setActiveSession((s) => updateExerciseNotes(s, sessionExerciseId, notes));
-  };
-
-  const handleSubstitute = (sessionExerciseId, newExerciseId) => {
-    setActiveSession((s) => substituteExercise(s, sessionExerciseId, newExerciseId));
-  };
-
-  // Recibe la sesión ya finalizada (con `endedAt` congelado en el momento en que
-  // se tocó "Finalizar" y las series podadas): así el resumen que ve el usuario y
-  // lo que se guarda son exactamente lo mismo. Si no llega —camino viejo—, se
-  // finaliza acá.
-  const handleFinishSession = (finished) => {
-    const done = finished || finishSession(activeSession);
-    setSessions((prev) => ({ ...prev, [done.id]: done }));
-    setActiveSession(null);
-  };
-
-  const handleDiscardSession = () => {
-    setActiveSession(null);
-  };
-
-  if (!loaded) return null;
-
-  if (activeSession) {
-    return (
-      <InWorkoutSession
-        session={activeSession}
-        exercisesById={exercisesById}
-        exercises={exercises}
-        sessionsMap={sessions}
-        onAddSet={handleAddSet}
-        onAddSessionExercise={handleAddSessionExercise}
-        onUpdateSet={handleUpdateSet}
-        onRemoveSet={handleRemoveSet}
-        onUpdateNotes={handleUpdateNotes}
-        onSubstitute={handleSubstitute}
-        onCreateCustomExercise={handleCreateCustomExercise}
-        onFinish={handleFinishSession}
-        onDiscard={handleDiscardSession}
-      />
-    );
-  }
+  const detailSession = detail ? sessions[detail] : null;
 
   return (
-    <div className="space-y-4">
-      <ModuleIntro
-        storageKey="workout_intro_seen"
-        slides={WORKOUT_INTRO_SLIDES}
-        dotActiveClass="bg-entreno-400"
-        buttonClass="bg-entreno-500 hover:bg-entreno-400 text-onaccent"
-        finalLabel="Entendido"
-      />
+    <div>
+      <ScreenHeader
+        title="Entreno"
+        eyebrowTone="entreno"
+        eyebrow={activeSession && !workoutOpen ? 'Entreno en curso' : undefined}
+        right={
+          <>
+            {activeSession && !workoutOpen && (
+              <IconButton icon={Play} label="Volver al entreno" variant="primary" tone="entreno" onClick={() => setWorkoutOpen(true)} />
+            )}
+            <IconButton icon={Settings2} label="Ajustes de entreno" onClick={() => setSettingsOpen(true)} />
+          </>
+        }
+      >
+        <Segmented value={tab} onChange={setTab} options={TABS} className="mt-3" />
+      </ScreenHeader>
 
-      <SubTabs tabs={TABS} value={subTab} onChange={setSubTab} accent="entreno" />
+      <div key={tab} className="anim-tab-in pt-3">
+        {tab === 'hoy' && (
+          <TodayView
+            routine={activeRoutine}
+            todayDay={todayDay}
+            todaySessions={todaySessions}
+            activeSession={activeSession}
+            weekPlan={weekPlan}
+            lastSession={ordered[0] || null}
+            exercisesById={exercisesById}
+            onStart={(day) => begin(startSession(activeRoutine, day))}
+            onStartFree={() => begin(startFreeSession())}
+            onResume={() => setWorkoutOpen(true)}
+            onGoRoutine={() => setTab('rutina')}
+            onEditDay={(day) => {
+              setTab('rutina');
+              setEditDayId(day.id);
+            }}
+            onOpenSession={(s) => setDetail(s.id)}
+          />
+        )}
 
-      {subTab === 'hoy' && (
-        <TodayView
-          activeRoutine={activeRoutine}
-          todayDay={todayDay}
-          todaySessions={todaySessions}
-          lastSession={lastSession}
-          lastSessionSummary={lastSessionSummary}
-          weekPlan={weekPlan}
-          summarize={(session) => summarizeSession(session, exercisesById)}
-          onStartSession={handleStartSession}
-          onEditDay={(day) => {
-            setSubTab('semana');
-            setEditingDayId(day.id);
-          }}
-          onCreateRoutine={() => {
-            setSubTab('semana');
-            setShowNewRoutine(true);
-          }}
-          onGoToWeek={() => setSubTab('semana')}
-        />
-      )}
+        {tab === 'rutina' && (
+          <RoutineView
+            routines={routines}
+            routine={activeRoutine}
+            setActiveRoutineId={setActiveRoutineId}
+            onCreate={(templateId) => {
+              const r = buildRoutineFromTemplate(templateId);
+              setRoutines((list) => [...list, r]);
+              setActiveRoutineId(r.id);
+            }}
+            onRename={(id, name) => data.updateRoutine(id, (r) => ({ ...r, name }))}
+            onDelete={(id) => {
+              const rest = routines.filter((r) => r.id !== id);
+              setRoutines(rest);
+              if (activeRoutine?.id === id) setActiveRoutineId(rest[0]?.id || null);
+            }}
+            updateRoutine={data.updateRoutine}
+            exercises={exercises}
+            exercisesById={exercisesById}
+            exerciseActions={exerciseActions}
+            editDayId={editDayId}
+            setEditDayId={setEditDayId}
+            onStart={(day) => begin(startSession(activeRoutine, day))}
+          />
+        )}
 
-      {subTab === 'semana' && (
-        <WeekView
-          routines={routines}
-          activeRoutine={activeRoutine}
-          activeRoutineId={activeRoutineId}
-          setActiveRoutineId={setActiveRoutineId}
+        {tab === 'progreso' && (
+          <ProgressView
+            sessionsMap={sessions}
+            exercisesById={exercisesById}
+            routine={activeRoutine}
+            onOpenSession={(s) => setDetail(s.id)}
+            onOpenExercise={setHistoryId}
+            onLogPast={() => setLogPast(true)}
+          />
+        )}
+      </div>
+
+      {activeSession && workoutOpen && (
+        <ActiveWorkout
+          mode="live"
+          session={activeSession}
+          onChange={(fn) => setActiveSession((s) => (s ? fn(s) : s))}
           exercises={exercises}
-          weekPlan={weekPlan}
-          editingDayId={editingDayId}
-          setEditingDayId={setEditingDayId}
-          showNewRoutine={showNewRoutine}
-          setShowNewRoutine={setShowNewRoutine}
-          onCreateRoutine={handleCreateRoutine}
-          onRenameRoutine={handleRenameRoutine}
-          onDeleteRoutine={handleDeleteRoutine}
-          onAddExercise={handleAddExercise}
-          onRemoveExercise={handleRemoveExercise}
-          onUpdateTarget={handleUpdateTarget}
-          onCreateCustomExercise={handleCreateCustomExercise}
-          onStartSession={handleStartSession}
+          exercisesById={exercisesById}
+          sessionsMap={sessions}
+          settings={settings}
+          onSettingsChange={data.updateSettings}
+          onCreateExercise={data.createExercise}
+          onUpdateExercise={data.updateExercise}
+          onArchiveExercise={data.archiveExercise}
+          onMinimize={() => setWorkoutOpen(false)}
+          onDiscard={() => {
+            setActiveSession(null);
+            setWorkoutOpen(false);
+          }}
+          onSave={(finished) => {
+            saveSession(finished);
+            setActiveSession(null);
+            setWorkoutOpen(false);
+            setTab('hoy');
+          }}
         />
       )}
 
-      {subTab === 'progreso' && (
-        <ProgressView
-          sessionsMap={sessions}
+      {editing && (
+        <ActiveWorkout
+          mode="edit"
+          session={editing}
+          onChange={(fn) => setEditing((s) => (s ? fn(s) : s))}
+          exercises={exercises}
           exercisesById={exercisesById}
-          activeRoutine={activeRoutine}
-          onGoToToday={() => setSubTab('hoy')}
+          sessionsMap={sessions}
+          settings={settings}
+          onSettingsChange={data.updateSettings}
+          onCreateExercise={data.createExercise}
+          onUpdateExercise={data.updateExercise}
+          onArchiveExercise={data.archiveExercise}
+          onDiscard={() => setEditing(null)}
+          onSave={(finished) => {
+            saveSession(finished);
+            setEditing(null);
+            toast('Entreno guardado');
+          }}
+        />
+      )}
+
+      {detailSession && (
+        <SessionDetailSheet
+          session={detailSession}
+          exercisesById={exercisesById}
+          onClose={() => setDetail(null)}
+          onOpenExercise={setHistoryId}
+          onDelete={() => deleteSession(detailSession)}
+          onEdit={() => {
+            setDetail(null);
+            setEditing(detailSession);
+          }}
+        />
+      )}
+
+      {historyId && (
+        <ExerciseHistorySheet exerciseId={historyId} exercise={exercisesById[historyId]} sessionsMap={sessions} onClose={() => setHistoryId(null)} />
+      )}
+
+      {logPast && (
+        <LogPastSheet
+          routine={activeRoutine}
+          onClose={() => setLogPast(false)}
+          onCreate={(date, day) => {
+            const startedAt = new Date(`${date}T18:00:00`).getTime();
+            const base = day ? startSession(activeRoutine, day, { date, now: startedAt }) : startFreeSession({ date, now: startedAt });
+            setLogPast(false);
+            setEditing({ ...base, endedAt: startedAt + 60 * 60000 });
+          }}
+        />
+      )}
+
+      {settingsOpen && (
+        <SettingsSheet
+          settings={settings}
+          onChange={data.updateSettings}
+          exercises={exercises}
+          onCreateExercise={data.createExercise}
+          onUpdateExercise={data.updateExercise}
+          onArchiveExercise={data.archiveExercise}
+          onClose={() => setSettingsOpen(false)}
         />
       )}
     </div>
