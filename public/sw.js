@@ -12,7 +12,8 @@
 // así que la rama cache-first de abajo seguiría sirviendo los viejos para
 // siempre; subir el nombre de la caché es lo que fuerza que se vuelvan a pedir.
 // v6: se agrega el handler de `notificationclick`.
-const CACHE_NAME = 'nutritrack-v6';
+// v7: rediseño completo (assets nuevos).
+const CACHE_NAME = 'nutritrack-v7';
 const APP_SHELL = ['/', '/index.html', '/manifest.json'];
 
 self.addEventListener('install', (event) => {

@@ -43,6 +43,7 @@ export default function ProfileSetup({
   initialProfile = null,
   submitLabel = 'Usar este plan',
   dismissLabel = 'Omitir',
+  welcome = false,
 }) {
   // Salida animada al guardar u omitir (ver lib/exitGhost.js).
   const rootRef = useRef(null);
@@ -122,7 +123,7 @@ export default function ProfileSetup({
               <Calculator className="w-9 h-9 text-brand-400" />
             </div>
             <h2 className="text-2xl font-semibold tracking-tight text-ink-100">
-              Calculemos tu plan
+              {welcome ? '¡Hola! Armemos tu plan' : 'Calculemos tu plan'}
             </h2>
             <p className="text-sm text-ink-400 leading-relaxed max-w-xs">
               Con estos datos estimamos tus calorías diarias con la fórmula
@@ -202,13 +203,13 @@ export default function ProfileSetup({
                 <span className="text-sm font-bold text-ink-200">Tu plan estimado</span>
               </div>
               <div className="flex items-baseline gap-1.5 mb-3">
-                <span className="font-mono text-4xl font-black text-brand-300">{plan.calories}</span>
+                <span className="num-display text-4xl text-brand-300">{plan.calories}</span>
                 <span className="text-sm text-ink-400 font-semibold">kcal / día</span>
               </div>
               <div className="grid grid-cols-3 gap-2">
-                <MacroPill label="Proteína" value={`${Math.round(plan.protein)} g`} color="text-brand-300" />
-                <MacroPill label="Carbos" value={`${Math.round(plan.carbs)} g`} color="text-amber-300" />
-                <MacroPill label="Grasas" value={`${Math.round(plan.fat)} g`} color="text-ink-300" />
+                <MacroPill label="Proteína" value={`${Math.round(plan.protein)} g`} color="text-protein" />
+                <MacroPill label="Carbos" value={`${Math.round(plan.carbs)} g`} color="text-carbs" />
+                <MacroPill label="Grasas" value={`${Math.round(plan.fat)} g`} color="text-fat" />
               </div>
               <p className="mt-3 text-[11px] text-ink-500 leading-snug flex items-start gap-1.5">
                 <Info className="w-3.5 h-3.5 shrink-0 mt-px" />
@@ -300,7 +301,7 @@ function NumberField({ label, unit, value, onChange, invalid, placeholder }) {
 function MacroPill({ label, value, color }) {
   return (
     <div className="rounded-xl surface px-2 py-2 text-center">
-      <p className={`font-mono text-base font-bold ${color}`}>{value}</p>
+      <p className={`num text-base font-bold ${color}`}>{value}</p>
       <p className="label-section text-ink-500 mt-0.5">{label}</p>
     </div>
   );

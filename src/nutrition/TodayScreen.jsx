@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Plus, Minus, Droplet, Flame, BookOpen, Settings, MoreHorizontal, RotateCcw, Scale, Lightbulb } from 'lucide-react';
-import { ScreenHeader, IconButton, Ring, ProgressBar, toast, Sheet, ListGroup, ListRow } from '../ui';
+import { ScreenHeader, IconButton, Ring, ProgressBar, toast, Sheet, ListGroup, ListRow, Button } from '../ui';
 import { haptic } from '../lib/haptics';
 import { useSettings } from '../lib/settings';
 import { dateKeyOf, keyToDate, addDays, addDaysToKey, startOfWeek, formatDisplayDate, formatLongDate, WEEKDAY_INITIALS } from '../lib/dates';
@@ -405,9 +405,10 @@ function AddCircle() {
 
 function MealMenu({ meal, dateKey, todayKey, entries, onClose }) {
   const totals = totalsOf(entries);
+  const [naming, setNaming] = useState(false);
+  const [name, setName] = useState(`Mi ${meal.label.toLowerCase()}`);
   const saveAsMeal = () => {
-    const name = window.prompt('Nombre para esta comida', `Mi ${meal.label.toLowerCase()}`);
-    if (!name?.trim()) return;
+    if (!name.trim()) return;
     saveCatalogItem(
       { name: name.trim(), kcal: Math.round(totals.kcal), p: Math.round(totals.p * 10) / 10, c: Math.round(totals.c * 10) / 10, f: Math.round(totals.f * 10) / 10 },
       entries.every((e) => e.free)
@@ -429,7 +430,15 @@ function MealMenu({ meal, dateKey, todayKey, entries, onClose }) {
   return (
     <Sheet title={meal.label} subtitle={`${entries.length} ${entries.length === 1 ? 'alimento' : 'alimentos'} · ${fmt(totals.kcal)} kcal`} onClose={onClose}>
       <ListGroup>
-        <ListRow icon={Plus} title="Guardar como comida" subtitle="Queda en Mis comidas para agregarla de un toque" onClick={saveAsMeal} />
+        <ListRow icon={Plus} title="Guardar como comida" subtitle="Queda en Mis comidas para agregarla de un toque" onClick={() => setNaming(true)} />
+        {naming && (
+          <div className="px-4 py-3 flex gap-2">
+            <input value={name} onChange={(e) => setName(e.target.value)} autoFocus onFocus={(e) => e.target.select()} className="field flex-1" aria-label="Nombre de la comida" />
+            <Button onClick={saveAsMeal} disabled={!name.trim()}>
+              Guardar
+            </Button>
+          </div>
+        )}
         {dateKey !== todayKey && <ListRow icon={RotateCcw} title="Copiar a hoy" onClick={copyToToday} />}
         <ListRow icon={Minus} iconTone="red" title="Vaciar este momento" danger onClick={clearAll} />
       </ListGroup>

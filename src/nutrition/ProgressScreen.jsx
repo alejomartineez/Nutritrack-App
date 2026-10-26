@@ -1,13 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { Flame, Sparkles, CalendarCheck, Scale, Plus, Gauge, Info } from 'lucide-react';
-import { ScreenHeader, Segmented, Card, Button, ProgressBar } from '../ui';
+import { ScreenHeader, Segmented, Card, Button, ProgressBar, toast } from '../ui';
 import { lastNKeys, addDaysToKey, WEEKDAY_INITIALS, mondayIndex, keyToDate, formatShortDate } from '../lib/dates';
 import { useGoals, useWeights, logsInRange, getProfile, setGoals } from './store';
 import { dayStats, weightTrend, estimateTDEE, foodHistory, avg } from './insights';
 import { BarChart, TrendChart } from './charts';
 import { MACROS, fmt, fmt1 } from './parts';
 import { splitName } from './model';
-import { toast } from '../ui';
 
 const RANGES = [
   { value: 7, label: '7 días' },
@@ -230,7 +229,7 @@ function TdeeCard({ tdee, goals }) {
           {Math.abs(suggested - goals.calories) >= 50 && (
             <div className="mt-3 rounded-2xl bg-ink-900 p-3 flex items-center gap-3">
               <p className="flex-1 text-sm text-ink-300 leading-snug">
-                Para <b className="text-ink-100">{objective}</b> te convendría ~<b className="num text-ink-100">{fmt(suggested)}</b> kcal (hoy: {fmt(goals.calories)}).
+                Para <b className="text-ink-100">{{ perder: 'bajar de peso', mantener: 'mantenerte', ganar: 'ganar masa' }[objective] || objective}</b> te convendría ~<b className="num text-ink-100">{fmt(suggested)}</b> kcal (hoy: {fmt(goals.calories)}).
               </p>
               <Button size="sm" onClick={apply}>
                 Usar

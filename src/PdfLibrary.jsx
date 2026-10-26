@@ -87,6 +87,8 @@ export default function PdfLibrary({ onClose }) {
   };
 
   const removeItem = async (id) => {
+    const item = items.find((x) => x.id === id);
+    if (!window.confirm(`¿Borrar “${item?.name || 'este PDF'}”? No se puede deshacer.`)) return;
     setBusy(true);
     try {
       await deletePdf(id);

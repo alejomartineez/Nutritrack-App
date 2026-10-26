@@ -195,6 +195,7 @@ export default function App() {
           initialProfile={sheet.context === 'settings' ? getProfile() : null}
           submitLabel={sheet.context === 'settings' ? 'Guardar plan' : 'Usar este plan'}
           dismissLabel={sheet.context === 'settings' ? 'Cancelar' : 'Omitir'}
+          welcome={sheet.context === 'onboarding'}
         />
       )}
       <Suspense fallback={null}>

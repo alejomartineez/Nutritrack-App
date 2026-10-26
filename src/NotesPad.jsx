@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { X, Plus, ChevronLeft, Trash2, PenLine } from 'lucide-react';
+import { toast } from './ui/toast';
 import Sheet from './lib/Sheet';
 import { blankNote, loadNotes, saveNotes, titleFromBody } from './notesStorage';
 
@@ -64,8 +65,10 @@ export default function NotesPad({ onClose }) {
   };
 
   const removeNote = (id) => {
+    const before = notes;
     const next = notes.filter((n) => n.id !== id);
     persist(next);
+    toast('Nota borrada', { action: { label: 'Deshacer', onClick: () => persist(before) } });
     if (activeId === id) {
       setActiveId(next[0]?.id ?? null);
       if (next.length === 0) setView('write');
